@@ -2,8 +2,28 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <title>Function Plot Demo</title>
+        <title>Convex Function Demo</title>
         <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <style>
+            .footer {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 100%;
+                background-color: #f8f9fa;
+                color: #6c757d;
+                text-align: center;
+                padding: 10px 0;
+                margin: 50px;
+            }
+            .footer a {
+                color: #007bff;
+                text-decoration: none;
+            }
+            .footer a:hover {
+                text-decoration: underline;
+            }
+        </style>
     </head>
     <body>
         <select id="function-dropdown">
@@ -33,6 +53,10 @@
         />
 
         <div id="plot"></div>
+        <div class="footer">
+            Built with ❤️ by&nbsp;
+            <a href="https://shenshen.mit.edu" target="_blank"> Shen²</a>
+        </div>
 
         <script>
             function plotFunction() {
