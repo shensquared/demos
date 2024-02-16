@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Gradient Descent Visualization with Value Display</title>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    </head>
+    <body>
+        <div id="gradientDescentPlot"></div>
+        <div>
+            Learning Rate: <span id="lrValue">0.05</span>
+            <input
+                type="range"
+                id="lrSlider"
+                min="0"
+                max="4"
+                value="0"
+                step="1"
+            />
+        </div>
+        <div>
+            Iterations: <span id="iterValue">1</span>
+            <input
+                type="range"
+                id="iterSlider"
+                min="1"
+                max="10"
+                value="1"
+                step="1"
+            />
+        </div>
+
+        <script>
+            // Example function and its derivative
+            function f(x) {
+                return x * x;
+            }
+
+            function df(x) {
+                return 2 * x;
+            }
+
+            const xValues = Array.from(
+                { length: 400 },
+                (_, i) => -10 + i * 0.05
+            );
+            const yFunction = xValues.map((x) => f(x));
+
+            // Initialize the plot with the function
+            Plotly.newPlot("gradientDescentPlot", [
+                {
+                    x: xValues,
+                    y: yFunction,
+                    type: "scatter",
+                    mode: "lines",
+                    name: "Function",
+                },
+            ]);
+
+            function updatePlot() {
+                const lrSlider = document.getElementById("lrSlider");
+                const iterSlider = document.getElementById("iterSlider");
+                const lrValueSpan = document.getElementById("lrValue");
+                const iterValueSpan = document.getElementById("iterValue");
+
+                const lr = lrSlider.value * 0.2 + 0.05; // Convert slider value to learning rate
+                const iterations = parseInt(iterSlider.value);
+
+                // Update display values
+                lrValueSpan.textContent = lr.toFixed(2);
+                iterValueSpan.textContent = iterations;
+
+                let x = 9; // Starting point for gradient descent
+                const xGradient = [x];
+                const yGradient = [f(x)];
+
+                // Perform gradient descent
+                for (let i = 0; i < iterations; i++) {
+                    x = x - lr * df(x); // Update x using the derivative
+                    xGradient.push(x);
+                    yGradient.push(f(x));
+                }
+
+                // Update the plot
+                Plotly.react("gradientDescentPlot", [
+                    {
+                        x: xValues,
+                        y: yFunction,
+                        type: "scatter",
+                        mode: "lines",
+                        name: "Function",
+                    },
+                    {
+                        x: xGradient,
+                        y: yGradient,
+                        mode: "markers+lines",
+                        name: "Gradient Descent",
+                    },
+                ]);
+            }
+
+            // Attach event listeners to sliders
+            document
+                .getElementById("lrSlider")
+                .addEventListener("input", updatePlot);
+            document
+                .getElementById("iterSlider")
+                .addEventListener("input", updatePlot);
+
+            // Initial plot update
+            updatePlot();
+        </script>
+    </body>
+</html>
