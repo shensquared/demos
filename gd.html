@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Gradient Descent Visualization with Fixed Scale</title>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    </head>
+    <body>
+        <div id="gradientDescentPlot"></div>
+        <div>
+            Learning Rate: <span id="lrValue">0.05</span>
+            <input
+                type="range"
+                id="lrSlider"
+                min="0"
+                max="4"
+                value="0"
+                step="1"
+            />
+        </div>
+        <div>
+            Iterations: <span id="iterValue">1</span>
+            <input
+                type="range"
+                id="iterSlider"
+                min="1"
+                max="10"
+                value="1"
+                step="1"
+            />
+        </div>
+        <div>
+            Initial Point: <span id="initialPointValue">9</span>
+            <input
+                type="range"
+                id="initialPointSlider"
+                min="-10"
+                max="10"
+                value="9"
+                step="1"
+            />
+        </div>
+
+        <script>
+            function f(x) {
+                return x * x;
+            }
+
+            function df(x) {
+                return 2 * x;
+            }
+
+            const xValues = Array.from(
+                { length: 400 },
+                (_, i) => -10 + i * 0.05
+            );
+            const yFunction = xValues.map((x) => f(x));
+
+            // Define fixed axis ranges to keep the scale constant
+            const axisRange = {
+                xaxis: {
+                    range: [-10, 10],
+                },
+                yaxis: {
+                    range: [0, 100], // Adjust based on expected output range
+                },
+            };
+
+            Plotly.newPlot(
+                "gradientDescentPlot",
+                [
+                    {
+                        x: xValues,
+                        y: yFunction,
+                        type: "scatter",
+                        mode: "lines",
+                        name: "Function",
+                    },
+                ],
+                axisRange
+            );
+
+            function updatePlot() {
+                const lr = (
+                    document.getElementById("lrSlider").value * 0.2 +
+                    0.05
+                ).toFixed(2); // Learning rate
+                const iterations = parseInt(
+                    document.getElementById("iterSlider").value
+                );
+                let x = parseInt(
+                    document.getElementById("initialPointSlider").value
+                ); // Initial point
+
+                document.getElementById("lrValue").textContent = lr;
+                document.getElementById("iterValue").textContent = iterations;
+                document.getElementById("initialPointValue").textContent = x;
+
+                const xGradient = [x];
+                const yGradient = [f(x)];
+
+                for (let i = 0; i < iterations; i++) {
+                    x = x - lr * df(x);
+                    xGradient.push(x);
+                    yGradient.push(f(x));
+                }
+
+                Plotly.react(
+                    "gradientDescentPlot",
+                    [
+                        {
+                            x: xValues,
+                            y: yFunction,
+                            type: "scatter",
+                            mode: "lines",
+                            name: "Function",
+                        },
+                        {
+                            x: xGradient,
+                            y: yGradient,
+                            mode: "markers+lines",
+                            name: "Gradient Descent",
+                        },
+                    ],
+                    axisRange
+                );
+            }
+
+            document
+                .getElementById("lrSlider")
+                .addEventListener("input", updatePlot);
+            document
+                .getElementById("iterSlider")
+                .addEventListener("input", updatePlot);
+            document
+                .getElementById("initialPointSlider")
+                .addEventListener("input", updatePlot);
+
+            updatePlot();
+        </script>
+    </body>
+</html>
