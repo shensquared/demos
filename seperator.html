@@ -173,6 +173,13 @@
                     z: z,
                     type: "surface",
                     showscale: false,
+                    opacity: 0.5,
+                    colorscale: [
+                        [0, "rgba(128,128,128,0.5)"],
+                        [1, "rgba(128,128,128,0.5)"],
+                    ],
+                    name: "z0Surface", // Add a unique name for identification
+                    visible: false, // Initially hidden
                 };
             }
             // Function to update the plot when sliders change
