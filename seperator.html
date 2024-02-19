@@ -73,9 +73,12 @@
                     oninput="updatePlot()"
                 />
             </div>
+            <button id="toggleZ0">Toggle z=0 Surface</button>
         </div>
 
         <script>
+            let z0SurfaceVisible = false; // Tracks if the z=0 surface is currently supposed to be visible
+            let z0SurfaceAdded = false;
             // Initialize the layout
             var layout = {
                 title: "3D Visualization",
@@ -140,6 +143,38 @@
                     showscale: false,
                 };
             }
+            function generateZ0SurfaceData(theta_1, theta_2, theta_0) {
+                var x = [],
+                    y = [],
+                    z = [];
+
+                // Generate x and y grid
+                for (var i = -2; i <= 2; i += 1) {
+                    // Adjust step for finer grid if needed
+                    x.push(i);
+                }
+                for (var j = -2; j <= 2; j += 1) {
+                    // Adjust step for finer grid if needed
+                    y.push(j);
+                }
+
+                // Generate z values as a 2D array
+                for (var i = 0; i < x.length; i++) {
+                    var zRow = [];
+                    for (var j = 0; j < y.length; j++) {
+                        zRow.push(0);
+                    }
+                    z.push(zRow);
+                }
+
+                return {
+                    x: x,
+                    y: y,
+                    z: z,
+                    type: "surface",
+                    showscale: false,
+                };
+            }
             // Function to update the plot when sliders change
             function updatePlot() {
                 var theta_1 = parseFloat(
@@ -153,6 +188,11 @@
                 );
 
                 var data = generateSurfaceData(theta_1, theta_2, theta_0);
+                // If the z=0 surface is supposed to be visible, add it to the data array
+                if (z0SurfaceVisible && !z0SurfaceAdded) {
+                    data.push(generateZ0SurfaceData());
+                    z0SurfaceAdded = true; // Mark that the z=0 surface has been added
+                }
                 Plotly.react("plot", [data], layout);
             }
 
