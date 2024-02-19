@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Linear Separator</title>
+        <!-- Include Plotly.js -->
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <style>
+            body,
+            html {
+                margin: 0;
+                padding: 0;
+                height: 100%;
+            }
+            #plot {
+                display: flex;
+                justify-content: space-around;
+                align-items: center;
+                height: 80vh;
+                width: 90vw; /* 100% of the viewport width */
+            }
+            .slider-container {
+                display: flex; /* Enables flexbox layout */
+                justify-content: space-around; /* Distributes space around items */
+                align-items: center; /* Vertically centers items */
+                padding: 20px; /* Adds some padding around the container */
+            }
+            .slider-group {
+                display: flex; /* Enables flexbox within each slider group */
+                flex-direction: column; /* Aligns the label and slider vertically */
+                align-items: center; /* Centers the items horizontally */
+            }
+        </style>
+    </head>
+    <body>
+        <div id="plot"></div>
+        <!-- Slider controls wrapped in a div container -->
+        <div class="slider-container">
+            <div class="slider-group">
+                <label for="theta_1">θ₁:</label>
+                <input
+                    type="range"
+                    id="theta_1"
+                    min="-2"
+                    max="2"
+                    value="1"
+                    step="0.1"
+                    oninput="updatePlot()"
+                />
+            </div>
+            <div class="slider-group">
+                <label for="theta_2">θ₂:</label>
+                <input
+                    type="range"
+                    id="theta_2"
+                    min="-2"
+                    max="2"
+                    value="1"
+                    step="0.1"
+                    oninput="updatePlot()"
+                />
+            </div>
+            <div class="slider-group">
+                <label for="theta_0">θ₀:</label>
+                <input
+                    type="range"
+                    id="theta_0"
+                    min="-2"
+                    max="2"
+                    value="0"
+                    step="0.1"
+                    oninput="updatePlot()"
+                />
+            </div>
+        </div>
+
+        <script>
+            // Initialize the layout
+            var layout = {
+                title: "3D Visualization",
+                scene: {
+                    xaxis: { title: "x₁", range: [-2, 2] },
+                    yaxis: { title: "x₂", range: [-2, 2] },
+                    zaxis: { title: "z", range: [-10, 10] },
+                    aspectmode: "manual", // Fix the aspect ratio
+                    aspectratio: { x: 1, y: 1, z: 1 }, // Set the aspect ratio to 1:1:1
+                },
+                sliders: [
+                    {
+                        currentvalue: { prefix: "Theta 1: " },
+                        pad: { t: 50 },
+                        steps: [],
+                        len: 0.5,
+                    },
+                    {
+                        currentvalue: { prefix: "Theta 2: " },
+                        pad: { t: 50 },
+                        steps: [],
+                        len: 0.5,
+                    },
+                    {
+                        currentvalue: { prefix: "Theta 0: " },
+                        pad: { t: 50 },
+                        steps: [],
+                        len: 0.5,
+                    },
+                ],
+            };
+
+            function generateSurfaceData(theta_1, theta_2, theta_0) {
+                var x = [],
+                    y = [],
+                    z = [];
+
+                // Generate x and y grid
+                for (var i = -2; i <= 2; i += 1) {
+                    // Adjust step for finer grid if needed
+                    x.push(i);
+                }
+                for (var j = -2; j <= 2; j += 1) {
+                    // Adjust step for finer grid if needed
+                    y.push(j);
+                }
+
+                // Generate z values as a 2D array
+                for (var i = 0; i < x.length; i++) {
+                    var zRow = [];
+                    for (var j = 0; j < y.length; j++) {
+                        zRow.push(theta_1 * x[i] + theta_2 * y[j] + theta_0);
+                    }
+                    z.push(zRow);
+                }
+
+                return {
+                    x: x,
+                    y: y,
+                    z: z,
+                    type: "surface",
+                    showscale: false,
+                };
+            }
+            // Function to update the plot when sliders change
+            function updatePlot() {
+                var theta_1 = parseFloat(
+                    document.getElementById("theta_1").value
+                );
+                var theta_2 = parseFloat(
+                    document.getElementById("theta_2").value
+                );
+                var theta_0 = parseFloat(
+                    document.getElementById("theta_0").value
+                );
+
+                var data = generateSurfaceData(theta_1, theta_2, theta_0);
+                Plotly.react("plot", [data], layout);
+            }
+
+            // Initialize the plot
+            updatePlot();
+        </script>
+    </body>
+</html>
