@@ -81,7 +81,7 @@
             let z0SurfaceAdded = false;
             // Initialize the layout
             var layout = {
-                title: "3D Visualization",
+                title: "Linear Separator",
                 scene: {
                     xaxis: { title: "x₁", range: [-2, 2] },
                     yaxis: { title: "x₂", range: [-2, 2] },
@@ -195,16 +195,50 @@
                 );
 
                 var data = generateSurfaceData(theta_1, theta_2, theta_0);
-                // If the z=0 surface is supposed to be visible, add it to the data array
-                if (z0SurfaceVisible && !z0SurfaceAdded) {
-                    data.push(generateZ0SurfaceData());
-                    z0SurfaceAdded = true; // Mark that the z=0 surface has been added
+                var z0data = generateZ0SurfaceData();
+                Plotly.react("plot", [data, z0data], layout);
+                // Inside your updatePlot function, after generating the main surface data
+                var traceIndex = findTraceIndexByName("plot", "z0Surface");
+                if (traceIndex !== -1) {
+                    // Apply the current visibility state to the z0 surface when updating the plot
+                    Plotly.restyle(
+                        "plot",
+                        { visible: z0SurfaceVisible ? true : "legendonly" },
+                        [traceIndex]
+                    );
                 }
-                Plotly.react("plot", [data], layout);
             }
 
             // Initialize the plot
             updatePlot();
+            function findTraceIndexByName(plotId, traceName) {
+                var plotElement = document.getElementById(plotId);
+                if (plotElement && plotElement.data) {
+                    // Search through the plot data for a trace with the matching name
+                    for (var i = 0; i < plotElement.data.length; i++) {
+                        if (plotElement.data[i].name === traceName) {
+                            return i; // Return the index of the found trace
+                        }
+                    }
+                }
+                return -1; // Return -1 if the trace is not found
+            }
+            document
+                .getElementById("toggleZ0")
+                .addEventListener("click", function () {
+                    z0SurfaceVisible = !z0SurfaceVisible; // Toggle the visibility state
+                    var visibilityState = z0SurfaceVisible
+                        ? true
+                        : "legendonly"; // Use 'legendonly' or false as needed
+
+                    // Find the index of the z=0 surface
+                    var traceIndex = findTraceIndexByName("plot", "z0Surface");
+                    if (traceIndex !== -1) {
+                        Plotly.restyle("plot", { visible: visibilityState }, [
+                            traceIndex,
+                        ]);
+                    }
+                });
         </script>
     </body>
 </html>
