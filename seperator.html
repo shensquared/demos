@@ -13,13 +13,24 @@
                 padding: 0;
                 height: 100%;
             }
-            #plot {
+            .plots-container {
                 display: flex;
-                justify-content: space-around;
+                justify-content: space-between; /* Adjusts alignment */
                 align-items: center;
-                height: 80vh;
-                width: 90vw; /* 100% of the viewport width */
+                height: 80vh; /* Ensure both plots have the same height */
             }
+
+            #plot {
+                flex-grow: 1;
+                width: 70%;
+                height: 90%;
+            }
+
+            #plot2D {
+                width: 30%; /* Set #plot2D to be 30% wide */
+                /* height: 100%; */
+            }
+
             .slider-container {
                 display: flex; /* Enables flexbox layout */
                 justify-content: space-around; /* Distributes space around items */
@@ -34,7 +45,10 @@
         </style>
     </head>
     <body>
-        <div id="plot"></div>
+        <div class="plots-container">
+            <div id="plot"></div>
+            <div id="plot2D"></div>
+        </div>
         <!-- Slider controls wrapped in a div container -->
         <div class="slider-container">
             <div class="slider-group">
@@ -80,6 +94,13 @@
             let z0SurfaceVisible = false; // Tracks if the z=0 surface is currently supposed to be visible
             let z0SurfaceAdded = false;
             // Initialize the layout
+
+            var customCameraSettings = {
+                eye: { x: 0, y: -1, z: 1.25 }, // Adjusts the view point for the 3D plot
+                up: { x: 0, y: 0, z: 1 }, // Sets the up direction for the 3D plot
+                center: { x: 0, y: 0, z: 0 }, // Centers the view
+            };
+
             var layout = {
                 title: "Linear Separator",
                 scene: {
@@ -88,6 +109,8 @@
                     zaxis: { title: "z", range: [-10, 10] },
                     aspectmode: "manual", // Fix the aspect ratio
                     aspectratio: { x: 1, y: 1, z: 1 }, // Set the aspect ratio to 1:1:1
+
+                    camera: { customCameraSettings },
                 },
                 sliders: [
                     {
@@ -143,6 +166,64 @@
                     showscale: false,
                 };
             }
+
+            function update2DPlot(theta_1, theta_2, theta_0) {
+                if (theta_2 === 0) {
+                    // Handle the case where theta_2 = 0: Plot a vertical line at x1 = -theta_0/theta_1
+                    // Since it's a vertical line, x1 is constant, and x2 ranges across the plot
+                    if (theta_1 === 0) {
+                        // Ensure theta_1 is not 0 to avoid division by zero
+                        // Handle special case or show error/warning
+                        console.error(
+                            "Theta_1 and Theta_2 are both 0 - cannot plot a line."
+                        );
+                        return; // Exit the function or handle accordingly
+                    }
+                    var x1 = -theta_0 / theta_1;
+                    traces.push({
+                        x: [x1, x1],
+                        y: [-2, 2], // Use the full range of the plot for y
+                        mode: "lines",
+                        type: "scatter",
+                        name: "Separator Line",
+                    });
+                } else if (theta_1 === 0) {
+                    var x2 = -theta_0 / theta_2;
+                    traces.push({
+                        x: [-2, 2],
+                        y: [x2, x2], // Use the full range of the plot for y
+                        mode: "lines",
+                        type: "scatter",
+                        name: "Separator Line",
+                    });
+                } else {
+                    // Define a range of x1 values to plot the line
+                    var x1 = Array.from({ length: 10 }, (_, i) => -2 + i * 0.4);
+
+                    // Calculate x2 values based on the line equation: Theta1*x1 + Theta2*x2 + Theta0 = 0
+                    // Rearranged to x2 = (-Theta0 - Theta1*x1) / Theta2
+                    var x2 = x1.map(
+                        (x1Val) => (-theta_0 - theta_1 * x1Val) / theta_2
+                    );
+                }
+
+                var trace = {
+                    x: x1,
+                    y: x2,
+                    mode: "lines",
+                    type: "scatter",
+                    name: "Separator Line",
+                };
+
+                var layout = {
+                    title: "Viewed in the feature/input space",
+                    xaxis: { title: "x₁", range: [-2, 2] },
+                    yaxis: { title: "x₂", range: [-2, 2], scaleanchor: "x" },
+                };
+
+                Plotly.newPlot("plot2D", [trace], layout);
+            }
+
             function generateZ0SurfaceData(theta_1, theta_2, theta_0) {
                 var x = [],
                     y = [],
@@ -197,6 +278,7 @@
                 var data = generateSurfaceData(theta_1, theta_2, theta_0);
                 var z0data = generateZ0SurfaceData();
                 Plotly.react("plot", [data, z0data], layout);
+                update2DPlot(theta_1, theta_2, theta_0);
                 // Inside your updatePlot function, after generating the main surface data
                 var traceIndex = findTraceIndexByName("plot", "z0Surface");
                 if (traceIndex !== -1) {
