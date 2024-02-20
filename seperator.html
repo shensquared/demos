@@ -217,6 +217,23 @@
                     title: "Viewed in the feature/input space",
                     xaxis: { title: "x₁", range: [-2, 2] },
                     yaxis: { title: "x₂", range: [-2, 2], scaleanchor: "x" },
+                    annotations: [
+                        {
+                            x: theta_1, // End point of the arrow (x)
+                            y: theta_2, // End point of the arrow (y)
+                            ax: 0, // Starting point relative to x
+                            ay: 0, // Starting point relative to y
+                            xref: "x",
+                            yref: "y",
+                            axref: "x",
+                            ayref: "y",
+                            showarrow: true,
+                            arrowhead: 2,
+                            arrowsize: 1,
+                            arrowwidth: 2,
+                            arrowcolor: "red",
+                        },
+                    ],
                 };
 
                 Plotly.newPlot("plot2D", [trace], layout);
