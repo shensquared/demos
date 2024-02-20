@@ -58,7 +58,7 @@
                     id="theta_1"
                     min="-2"
                     max="2"
-                    value="1"
+                    value="0.1"
                     step="0.1"
                     oninput="updatePlot()"
                 />
@@ -70,7 +70,7 @@
                     id="theta_2"
                     min="-2"
                     max="2"
-                    value="1"
+                    value="-2"
                     step="0.1"
                     oninput="updatePlot()"
                 />
@@ -106,11 +106,11 @@
                 scene: {
                     xaxis: { title: "x₁", range: [-2, 2] },
                     yaxis: { title: "x₂", range: [-2, 2] },
-                    zaxis: { title: "z", range: [-10, 10] },
+                    zaxis: { title: "z", range: [-8, 8] },
                     aspectmode: "manual", // Fix the aspect ratio
                     aspectratio: { x: 1, y: 1, z: 1 }, // Set the aspect ratio to 1:1:1
 
-                    camera: { customCameraSettings },
+                    camera: customCameraSettings,
                 },
                 sliders: [
                     {
@@ -135,33 +135,31 @@
             };
 
             function generateSurfaceData(theta_1, theta_2, theta_0) {
-                var x = [],
-                    y = [],
+                var a = [],
+                    b = [],
                     z = [];
 
                 // Generate x and y grid
-                for (var i = -2; i <= 2; i += 1) {
-                    // Adjust step for finer grid if needed
-                    x.push(i);
+                for (var i = -2; i <= 2; i++) {
+                    a.push(i);
                 }
-                for (var j = -2; j <= 2; j += 1) {
-                    // Adjust step for finer grid if needed
-                    y.push(j);
+                for (var j = -2; j <= 2; j++) {
+                    b.push(j);
                 }
 
                 // Generate z values as a 2D array
-                for (var i = 0; i < x.length; i++) {
-                    var zRow = [];
-                    for (var j = 0; j < y.length; j++) {
-                        zRow.push(theta_1 * x[i] + theta_2 * y[j] + theta_0);
+                for (var i = 0; i < a.length; i++) {
+                    var zRow = []; // Create a new row for each value of a
+                    for (var j = 0; j < b.length; j++) {
+                        zRow.push(theta_2 * a[i] + theta_1 * b[j] + theta_0); // Compute z for each combination of a and b
                     }
-                    z.push(zRow);
+                    z.push(zRow); // Add the row to the z matrix
                 }
 
                 return {
-                    x: x,
-                    y: y,
-                    z: z,
+                    x: a, // x and y arrays define the grid, and should only be 1D
+                    y: b,
+                    z: z, // z should be a 2D array matching the grid defined by x and y
                     type: "surface",
                     showscale: false,
                 };
@@ -198,7 +196,7 @@
                     });
                 } else {
                     // Define a range of x1 values to plot the line
-                    var x1 = Array.from({ length: 10 }, (_, i) => -2 + i * 0.4);
+                    var x1 = Array.from({ length: 10 }, (_, i) => -2 + i * 1);
 
                     // Calculate x2 values based on the line equation: Theta1*x1 + Theta2*x2 + Theta0 = 0
                     // Rearranged to x2 = (-Theta0 - Theta1*x1) / Theta2
@@ -276,6 +274,8 @@
                 );
 
                 var data = generateSurfaceData(theta_1, theta_2, theta_0);
+                console.log(theta_1, theta_2, theta_0);
+                console.log(data);
                 var z0data = generateZ0SurfaceData();
                 Plotly.react("plot", [data, z0data], layout);
                 update2DPlot(theta_1, theta_2, theta_0);
