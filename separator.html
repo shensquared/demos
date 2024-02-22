@@ -170,10 +170,10 @@
                     z = [];
 
                 // Generate x and y grid
-                for (var i = -2; i <= 2; i++) {
+                for (var i = -2; i <= 2; i += 0.01) {
                     a.push(i);
                 }
-                for (var j = -2; j <= 2; j++) {
+                for (var j = -2; j <= 2; j += 0.01) {
                     b.push(j);
                 }
 
@@ -185,6 +185,13 @@
                     }
                     z.push(zRow); // Add the row to the z matrix
                 }
+                var surfaceColor = z.map((row) =>
+                    row.map((value) => {
+                        if (value < 0) return 0; // Map negative values to 0 (blue)
+                        if (value === 0) return 0.5; // Map zero to 0.5 (grey)
+                        return 1; // Map positive values to 1 (red)
+                    })
+                );
 
                 return {
                     x: a, // x and y arrays define the grid, and should only be 1D
@@ -193,6 +200,7 @@
                     type: "surface",
                     showscale: false,
                     colorscale: customColorscale,
+                    surfacecolor: surfaceColor,
                 };
             }
 
@@ -214,7 +222,7 @@
                         y: [-2, 2], // Use the full range of the plot for y
                         mode: "lines",
                         type: "scatter",
-                        name: "Separator Line",
+                        name: "Separator",
                     });
                 } else if (theta_1 === 0) {
                     var x2 = -theta_0 / theta_2;
@@ -223,7 +231,7 @@
                         y: [x2, x2], // Use the full range of the plot for y
                         mode: "lines",
                         type: "scatter",
-                        name: "Separator Line",
+                        name: "Separator",
                     });
                 } else {
                     // Define a range of x1 values to plot the line
@@ -241,9 +249,18 @@
                     y: x2,
                     mode: "lines",
                     type: "scatter",
-                    name: "Separator Line",
+                    name: "Separator",
                 };
-
+                // Dummy trace for the legend entry
+                var legendEntryForVector = {
+                    x: [null], // Using null to not display points
+                    y: [null], // Using null to not display points
+                    mode: "lines",
+                    name: "Normal vector", // Description for the legend
+                    line: {
+                        color: "red", // Match the color with your vector line
+                    },
+                };
                 var layout = {
                     title: "View of the feature space (x₁ and x₂)",
                     xaxis: { title: "x₁", range: [-2, 2] },
@@ -280,13 +297,10 @@
                             ayref: "y",
                         },
                     ],
-                    legend: {
-                        x: 1,
-                        y: 1,
-                    },
+                    showlegend: true,
                 };
 
-                Plotly.newPlot("plot2D", [trace], layout);
+                Plotly.newPlot("plot2D", [trace, legendEntryForVector], layout);
             }
 
             function generateZ0SurfaceData(theta_1, theta_2, theta_0) {
