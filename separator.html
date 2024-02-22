@@ -11,7 +11,7 @@
             html {
                 margin: 0;
                 padding: 0;
-                height: 100%;
+                /* height: 100%; */
             }
             .plots-container {
                 display: flex;
@@ -27,7 +27,7 @@
             }
 
             #plot2D {
-                width: 30%; /* Set #plot2D to be 30% wide */
+                width: 25%; /* Set #plot2D to be 30% wide */
                 /* height: 100%; */
             }
 
@@ -248,23 +248,42 @@
                     title: "View of the feature space (x₁ and x₂)",
                     xaxis: { title: "x₁", range: [-2, 2] },
                     yaxis: { title: "x₂", range: [-2, 2], scaleanchor: "x" },
-                    annotations: [
+                    shapes: [
+                        // Line part of the arrow (shaft)
                         {
-                            x: theta_1, // End point of the arrow (x)
-                            y: theta_2, // End point of the arrow (y)
-                            ax: 0, // Starting point relative to x
-                            ay: 0, // Starting point relative to y
+                            type: "line",
+                            x0: 0,
+                            y0: 0,
+                            x1: theta_1, // End point of the arrow (adjust as needed)
+                            y1: theta_2, // End point of the arrow (adjust as needed)
+                            line: {
+                                color: "red",
+                                width: 2,
+                            },
+                        },
+                    ],
+                    annotations: [
+                        // Arrowhead using an annotation for visibility
+                        {
+                            x: theta_1,
+                            y: theta_2,
                             xref: "x",
                             yref: "y",
-                            axref: "x",
-                            ayref: "y",
                             showarrow: true,
                             arrowhead: 2,
                             arrowsize: 1,
                             arrowwidth: 2,
                             arrowcolor: "red",
+                            ax: theta_1 / 2,
+                            ay: theta_2 / 2,
+                            axref: "x",
+                            ayref: "y",
                         },
                     ],
+                    legend: {
+                        x: 1,
+                        y: 1,
+                    },
                 };
 
                 Plotly.newPlot("plot2D", [trace], layout);
