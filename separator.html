@@ -65,6 +65,7 @@
     <body>
         <div class="plots-container">
             <div id="plot"></div>
+
             <div id="plot2D"></div>
         </div>
         <!-- Slider controls wrapped in a div container -->
@@ -129,7 +130,7 @@
             };
 
             var layout = {
-                title: "View of the feature space (x₁ and x₂) and decision helper (z)",
+                title: "View of the feature space (x₁ and x₂) and decision helper (z)<br>z = θ₁x₁ + θ₂ x₂ + θ₀ ",
                 scene: {
                     xaxis: { title: "x₁", range: [-2, 2] },
                     yaxis: { title: "x₂", range: [-2, 2] },
