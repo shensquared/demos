@@ -210,14 +210,12 @@
                 };
             }
             var xValues = [
-                -0.50183952461055, 1.8028572256396647, 0.9279757672456204,
-                0.3946339367881464, -1.375925438230254, -1.3760219186551894,
-                -1.7676655513272022,
+                -0.50183952461055, 0.9279757672456204, 0.3946339367881464,
+                -1.3760219186551894, -1.7676655513272022,
             ];
             var yValues = [
                 1.4647045830997407, 0.4044600469728352, 0.832290311184182,
-                -1.9176620228167902, 1.8796394086479773, 1.329770563201687,
-                -1.1506435572868954,
+                -1.9176620228167902, 1.8796394086479773,
             ];
             function generateScatterTraces(theta_1, theta_2, theta_0) {
                 var scatterDataPositive = {
@@ -247,7 +245,7 @@
                 };
 
                 // Generate 7 random scatter points and categorize them based on the computed value
-                for (var i = 0; i < 7; i++) {
+                for (var i = 0; i < 5; i++) {
                     var x = xValues[i]; // Random x between -2 and 2
                     var y = yValues[i]; // Random y between -2 and 2
                     var z = 0; // z value set to 0
@@ -295,7 +293,7 @@
                 };
 
                 // Generate scatter points and categorize them based on the computed value
-                for (var i = 0; i < 7; i++) {
+                for (var i = 0; i < 5; i++) {
                     var x = xValues[i]; // Use fixed x value
                     var y = yValues[i]; // Use fixed y value
                     var value = theta_2 * y + theta_1 * x + theta_0; // Compute the value
