@@ -209,6 +209,110 @@
                     surfacecolor: surfaceColor,
                 };
             }
+            var xValues = [
+                -0.50183952461055, 1.8028572256396647, 0.9279757672456204,
+                0.3946339367881464, -1.375925438230254, -1.3760219186551894,
+                -1.7676655513272022,
+            ];
+            var yValues = [
+                1.4647045830997407, 0.4044600469728352, 0.832290311184182,
+                -1.9176620228167902, 1.8796394086479773, 1.329770563201687,
+                -1.1506435572868954,
+            ];
+            function generateScatterTraces(theta_1, theta_2, theta_0) {
+                var scatterDataPositive = {
+                    x: [],
+                    y: [],
+                    z: [],
+                    mode: "markers",
+                    type: "scatter3d",
+                    name: "Positive",
+                    marker: {
+                        size: 5,
+                        color: "red", // Using green for positive values
+                    },
+                };
+
+                var scatterDataNegative = {
+                    x: [],
+                    y: [],
+                    z: [],
+                    mode: "markers",
+                    type: "scatter3d",
+                    name: "Negative",
+                    marker: {
+                        size: 5,
+                        color: "pink", // Using red for negative values
+                    },
+                };
+
+                // Generate 7 random scatter points and categorize them based on the computed value
+                for (var i = 0; i < 7; i++) {
+                    var x = xValues[i]; // Random x between -2 and 2
+                    var y = yValues[i]; // Random y between -2 and 2
+                    var z = 0; // z value set to 0
+                    var value = theta_2 * y + theta_1 * x + theta_0; // Compute the value
+
+                    // Categorize the point based on the sign of the computed value
+                    if (value > 0) {
+                        scatterDataPositive.x.push(x);
+                        scatterDataPositive.y.push(y);
+                        scatterDataPositive.z.push(z);
+                    } else {
+                        scatterDataNegative.x.push(x);
+                        scatterDataNegative.y.push(y);
+                        scatterDataNegative.z.push(z);
+                    }
+                }
+
+                // Combine the surface and scatter data
+                return [scatterDataPositive, scatterDataNegative];
+            }
+
+            function generateScatterTraces2D(theta_1, theta_2, theta_0) {
+                var scatterDataPositive = {
+                    x: [],
+                    y: [],
+                    mode: "markers",
+                    type: "scatter",
+                    name: "Positive",
+                    marker: {
+                        size: 8,
+                        color: "red", // Using red for positive values
+                    },
+                };
+
+                var scatterDataNegative = {
+                    x: [],
+                    y: [],
+                    mode: "markers",
+                    type: "scatter",
+                    name: "Negative",
+                    marker: {
+                        size: 8,
+                        color: "pink", // Using pink for negative values
+                    },
+                };
+
+                // Generate scatter points and categorize them based on the computed value
+                for (var i = 0; i < 7; i++) {
+                    var x = xValues[i]; // Use fixed x value
+                    var y = yValues[i]; // Use fixed y value
+                    var value = theta_2 * y + theta_1 * x + theta_0; // Compute the value
+
+                    // Categorize the point based on the sign of the computed value
+                    if (value > 0) {
+                        scatterDataPositive.x.push(x);
+                        scatterDataPositive.y.push(y);
+                    } else {
+                        scatterDataNegative.x.push(x);
+                        scatterDataNegative.y.push(y);
+                    }
+                }
+
+                // Return the categorized scatter data for 2D plots
+                return [scatterDataPositive, scatterDataNegative];
+            }
 
             function update2DPlot(theta_1, theta_2, theta_0) {
                 if (theta_2 === 0) {
@@ -371,7 +475,15 @@
                 var data = generateSurfaceData(theta_1, theta_2, theta_0);
                 var z0data = generateZ0SurfaceData(theta_1, theta_2, theta_0);
                 Plotly.react("plot", [data, z0data], layout);
+                Plotly.addTraces(
+                    "plot",
+                    generateScatterTraces(theta_1, theta_2, theta_0)
+                );
                 update2DPlot(theta_1, theta_2, theta_0);
+                Plotly.addTraces(
+                    "plot2D",
+                    generateScatterTraces2D(theta_1, theta_2, theta_0)
+                );
             }
 
             // Initialize the plot
