@@ -1,144 +1,179 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <title>Convex Function Demo</title>
-        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-        <style>
-            .footer {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                width: 100%;
-                background-color: #f8f9fa;
-                color: #6c757d;
-                text-align: center;
-                padding: 10px 0;
-                margin: 50px;
-            }
-            .footer a {
-                color: #007bff;
-                text-decoration: none;
-            }
-            .footer a:hover {
-                text-decoration: underline;
-            }
-        </style>
-    </head>
-    <body>
-        <select id="function-dropdown">
-            <option value="convex">Convex Function: f(x) = x^2</option>
-            <option value="non-convex">
-                Non-Convex Function: g(x) = sin(x)
-            </option>
-        </select>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Convex Function Demo</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
 
-        <p>Point 1 X-Coordinate:</p>
-        <input
-            type="range"
-            id="point1-x-slider"
-            min="-10"
-            max="10"
-            step="0.01"
-            value="-2"
-        />
-        <p>Point 2 X-Coordinate:</p>
-        <input
-            type="range"
-            id="point2-x-slider"
-            min="-10"
-            max="10"
-            step="0.01"
-            value="1"
-        />
+      .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
 
+      .footer {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        background-color: #f8f9fa;
+        color: #6c757d;
+        text-align: center;
+        padding: 10px 0;
+      }
+
+      .footer a {
+        color: #007bff;
+        text-decoration: none;
+        margin: 0 10px;
+      }
+
+      .footer a:hover {
+        text-decoration: underline;
+      }
+
+      /* Responsive plot container */
+      .plot-container {
+        width: 100%;
+        height: 80vh;
+        display: flex;
+        justify-content: center;
+      }
+
+      #plot {
+        width: 100%;
+        height: 100%;
+      }
+
+      select,
+      p {
+        margin: 5px 0;
+      }
+
+      input[type="range"] {
+        width: 300px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="main-content">
+      <select id="function-dropdown">
+        <option value="convex">Convex Function: f(x) = x^2</option>
+        <option value="non-convex">Non-Convex Function: g(x) = sin(x)</option>
+      </select>
+
+      <p>Point 1 X-Coordinate:</p>
+      <input
+        type="range"
+        id="point1-x-slider"
+        min="-10"
+        max="10"
+        step="0.01"
+        value="-2"
+      />
+      <p>Point 2 X-Coordinate:</p>
+      <input
+        type="range"
+        id="point2-x-slider"
+        min="-10"
+        max="10"
+        step="0.01"
+        value="1"
+      />
+
+      <div class="plot-container">
         <div id="plot"></div>
-        <div class="footer">
-            Built with ❤️ by&nbsp;
-            <a href="https://shenshen.mit.edu" target="_blank"> Shen²</a>
-        </div>
+      </div>
+    </div>
 
-        <script>
-            function plotFunction() {
-                var selectedFunction =
-                    document.getElementById("function-dropdown").value;
-                var point1X = parseFloat(
-                    document.getElementById("point1-x-slider").value
-                );
-                var point2X = parseFloat(
-                    document.getElementById("point2-x-slider").value
-                );
+    <div class="footer">
+      Built with ❤️ by
+      <a href="https://shenshen.mit.edu" target="_blank">Shen²</a>
+      <span>|</span>
+      <a href="https://github.com/shensquared/demos" target="_blank"
+        >Report a Bug</a
+      >
+    </div>
 
-                var x = Array.from(
-                    { length: 400 },
-                    (_, i) => -10 + (i * 20) / 399
-                );
-                var y;
+    <script>
+      function plotFunction() {
+        var selectedFunction =
+          document.getElementById("function-dropdown").value;
+        var point1X = parseFloat(
+          document.getElementById("point1-x-slider").value
+        );
+        var point2X = parseFloat(
+          document.getElementById("point2-x-slider").value
+        );
 
-                var functionName =
-                    selectedFunction === "convex"
-                        ? "f(x) = x^2"
-                        : "g(x) = sin(x)";
+        var x = Array.from({ length: 400 }, (_, i) => -10 + (i * 20) / 399);
+        var y;
 
-                if (selectedFunction === "convex") {
-                    y = x.map((x) => x ** 2);
-                } else {
-                    y = x.map((x) => Math.sin(x));
-                }
+        var functionName =
+          selectedFunction === "convex" ? "f(x) = x^2" : "g(x) = sin(x)";
 
-                var point1Y =
-                    selectedFunction === "convex"
-                        ? point1X ** 2
-                        : Math.sin(point1X);
-                var point2Y =
-                    selectedFunction === "convex"
-                        ? point2X ** 2
-                        : Math.sin(point2X);
+        if (selectedFunction === "convex") {
+          y = x.map((x) => x ** 2);
+        } else {
+          y = x.map((x) => Math.sin(x));
+        }
 
-                var trace1 = {
-                    x: x,
-                    y: y,
-                    type: "scatter",
-                    name: functionName,
-                };
+        var point1Y =
+          selectedFunction === "convex" ? point1X ** 2 : Math.sin(point1X);
+        var point2Y =
+          selectedFunction === "convex" ? point2X ** 2 : Math.sin(point2X);
 
-                var trace2 = {
-                    x: [point1X, point2X],
-                    y: [point1Y, point2Y],
-                    mode: "markers+lines",
-                    marker: { size: 10 },
-                    name: "Points and Line Segment",
-                };
+        var trace1 = {
+          x: x,
+          y: y,
+          type: "scatter",
+          name: functionName,
+        };
 
-                var layout = {
-                    title: functionName,
-                    xaxis: {
-                        title: "x",
-                        range: [-10, 10],
-                    },
-                    yaxis: {
-                        title: "y",
-                        range:
-                            selectedFunction === "convex"
-                                ? [-10, 100]
-                                : [-1.5, 1.5],
-                    },
-                };
+        var trace2 = {
+          x: [point1X, point2X],
+          y: [point1Y, point2Y],
+          mode: "markers+lines",
+          marker: { size: 10 },
+          name: "Points and Line Segment",
+        };
 
-                Plotly.newPlot("plot", [trace1, trace2], layout);
-            }
+        var layout = {
+          title: functionName,
+          xaxis: {
+            title: "x",
+            range: [-10, 10],
+          },
+          yaxis: {
+            title: "y",
+            range: selectedFunction === "convex" ? [-10, 100] : [-1.5, 1.5],
+          },
+          responsive: true,
+        };
 
-            document
-                .getElementById("function-dropdown")
-                .addEventListener("change", plotFunction);
-            document
-                .getElementById("point1-x-slider")
-                .addEventListener("input", plotFunction);
-            document
-                .getElementById("point2-x-slider")
-                .addEventListener("input", plotFunction);
+        Plotly.newPlot("plot", [trace1, trace2], layout, { responsive: true });
+      }
 
-            plotFunction(); // Initial plot
-        </script>
-    </body>
+      document
+        .getElementById("function-dropdown")
+        .addEventListener("change", plotFunction);
+      document
+        .getElementById("point1-x-slider")
+        .addEventListener("input", plotFunction);
+      document
+        .getElementById("point2-x-slider")
+        .addEventListener("input", plotFunction);
+
+      plotFunction(); // Initial plot
+    </script>
+  </body>
 </html>
