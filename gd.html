@@ -6,39 +6,42 @@
     <title>Gradient Descent Visualization with Fixed Scale</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
+      html,
       body {
         margin: 0;
-        font-family: Arial, sans-serif;
+        padding: 0;
         width: 100%;
+        height: 100%; /* Ensure the body takes up the full height of the browser */
         display: flex;
         flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
-        height: 100vh;
       }
+
       .content-container {
         display: flex;
         width: 100%;
-        max-width: 1200px;
-        flex-grow: 1;
+        flex-grow: 1; /* Allows it to take up the remaining vertical space */
         padding: 20px;
         box-sizing: border-box;
-        align-items: flex-end; /* Align controls and plot at the bottom */
+        align-items: flex-start; /* Align controls and plot at the top */
       }
+
       .controls {
         flex: 0 0 20%; /* Take up 20% of the width for the controls */
         display: flex;
         flex-direction: column;
-        justify-content: flex-end; /* Align controls at the bottom */
+        justify-content: flex-start; /* Align controls at the top */
         padding-right: 20px;
       }
+
       .controls div {
         margin-bottom: 20px;
       }
+
       #gradientDescentPlot {
         flex: 1; /* Take up the remaining space */
-        height: 500px; /* Fixed height */
+        height: 100%; /* Make sure the plot takes up the full height */
       }
+
       .footer {
         display: flex;
         justify-content: center;
@@ -49,10 +52,12 @@
         text-align: center;
         padding: 10px 0;
       }
+
       .footer a {
         color: #007bff;
         text-decoration: none;
       }
+
       .footer a:hover {
         text-decoration: underline;
       }
@@ -78,7 +83,7 @@
             type="range"
             id="iterSlider"
             min="1"
-            max="10"
+            max="20"
             value="1"
             step="1"
           />
