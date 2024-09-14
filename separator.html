@@ -1,520 +1,510 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Linear Separator</title>
-        <!-- Include Plotly.js -->
-        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-        <style>
-            body,
-            html {
-                margin: 0;
-                padding: 0;
-                /* height: 100%; */
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Linear Separator</title>
+    <!-- Include Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+      }
+      .plots-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 85vh; /* Ensure both plots have the same height */
+      }
+
+      #plot {
+        flex-grow: 1;
+        width: 65%;
+        height: 100%;
+      }
+
+      #plot2D {
+        width: 35%;
+        height: 100%;
+      }
+
+      .slider-container {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        padding: 20px;
+      }
+      .slider-group {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .footer {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        background-color: #f8f9fa;
+        color: #6c757d;
+        text-align: center;
+        padding: 10px 0;
+        margin-top: 20px;
+      }
+      .footer a {
+        color: #007bff;
+        text-decoration: none;
+      }
+      .footer a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="plots-container">
+      <div id="plot"></div>
+      <div id="plot2D"></div>
+    </div>
+    <div class="slider-container">
+      <div class="slider-group">
+        <label for="theta_1">θ₁:</label>
+        <input
+          type="range"
+          id="theta_1"
+          min="-2"
+          max="2"
+          value="1.2"
+          step="0.1"
+          oninput="updatePlot()"
+        />
+        <span id="theta_1_value">0.1</span>
+      </div>
+      <div class="slider-group">
+        <label for="theta_2">θ₂:</label>
+        <input
+          type="range"
+          id="theta_2"
+          min="-2"
+          max="2"
+          value="-2"
+          step="0.1"
+          oninput="updatePlot()"
+        />
+        <span id="theta_2_value">-2</span>
+      </div>
+      <div class="slider-group">
+        <label for="theta_0">θ₀:</label>
+        <input
+          type="range"
+          id="theta_0"
+          min="-1"
+          max="1"
+          value="0"
+          step="0.1"
+          oninput="updatePlot()"
+        />
+        <span id="theta_0_value">0</span>
+      </div>
+      <button id="toggleZ0">Toggle z=0 Surface</button>
+    </div>
+    <div class="footer">
+      Built with ❤️ by&nbsp;<a href="https://shenshen.mit.edu" target="_blank"
+        >Shen²</a
+      >
+      <span>&nbsp;|&nbsp;</span>
+      <a href="https://github.com/shensquared/demos" target="_blank"
+        >Report a Bug</a
+      >
+    </div>
+
+    <script>
+      let z0SurfaceVisible = false; // Tracks if the z=0 surface is currently supposed to be visible
+      let z0SurfaceAdded = false;
+      // Initialize the layout
+
+      var customCameraSettings = {
+        eye: { x: 0, y: -1, z: 2 }, // Adjusts the view point for the 3D plot
+        up: { x: 0, y: 0, z: 1 }, // Sets the up direction for the 3D plot
+        center: { x: 0, y: 0, z: 0 }, // Centers the view
+      };
+
+      var layout = {
+        title:
+          "View of the feature space (x₁ and x₂) and decision helper (z)<br>z = θ₁x₁ + θ₂ x₂ + θ₀ ",
+        scene: {
+          xaxis: { title: "x₁", range: [-2, 2] },
+          yaxis: { title: "x₂", range: [-2, 2] },
+          zaxis: { title: "z", range: [-6, 6] },
+          aspectmode: "manual", // Fix the aspect ratio
+          aspectratio: { x: 1, y: 1, z: 1 }, // Set the aspect ratio to 1:1:1
+
+          camera: customCameraSettings,
+        },
+        sliders: [
+          {
+            currentvalue: { prefix: "Theta 1: " },
+            pad: { t: 50 },
+            steps: [],
+            len: 0.5,
+          },
+          {
+            currentvalue: { prefix: "Theta 2: " },
+            pad: { t: 50 },
+            steps: [],
+            len: 0.5,
+          },
+          {
+            currentvalue: { prefix: "Theta 0: " },
+            pad: { t: 50 },
+            steps: [],
+            len: 0.5,
+          },
+        ],
+      };
+
+      // Custom color scale
+      var customColorscale = [
+        [0, "pink"], // Negative values
+        [0.49, "pink"], // Transition from blue to grey
+        [0.5, "grey"], // Zero value
+        [0.77, "pink"], // Transition from grey to red
+        [1, "red"], // Positive values
+      ];
+
+      function generateSurfaceData(theta_1, theta_2, theta_0) {
+        var a = [],
+          b = [],
+          z = [];
+
+        // Generate x and y grid
+        for (var i = -2; i <= 2; i += 0.01) {
+          a.push(i);
+        }
+        for (var j = -2; j <= 2; j += 0.01) {
+          b.push(j);
+        }
+
+        // Generate z values as a 2D array
+        for (var i = 0; i < a.length; i++) {
+          var zRow = []; // Create a new row for each value of a
+          for (var j = 0; j < b.length; j++) {
+            zRow.push(theta_2 * a[i] + theta_1 * b[j] + theta_0); // Compute z for each combination of a and b
+          }
+          z.push(zRow); // Add the row to the z matrix
+        }
+        var surfaceColor = z.map((row) =>
+          row.map((value) => {
+            if (value < 0) return 0; // Map negative values to 0 (blue)
+            if (value === 0) return 0.5; // Map zero to 0.5 (grey)
+            return 1; // Map positive values to 1 (red)
+          })
+        );
+
+        return {
+          x: a, // x and y arrays define the grid, and should only be 1D
+          y: b,
+          z: z, // z should be a 2D array matching the grid defined by x and y
+          type: "surface",
+          showscale: false,
+          colorscale: customColorscale,
+          surfacecolor: surfaceColor,
+        };
+      }
+      var xValues = [
+        -0.50183952461055, 0.9279757672456204, 0.3946339367881464,
+        -1.3760219186551894, -1.7676655513272022,
+      ];
+      var yValues = [
+        1.4647045830997407, 0.4044600469728352, 0.832290311184182,
+        -1.9176620228167902, 1.8796394086479773,
+      ];
+      function generateScatterTraces(theta_1, theta_2, theta_0) {
+        var scatterDataPositive = {
+          x: [],
+          y: [],
+          z: [],
+          mode: "markers",
+          type: "scatter3d",
+          name: "Positive Label",
+          marker: {
+            size: 5,
+            color: "red", // Using green for positive values
+          },
+        };
+
+        var scatterDataNegative = {
+          x: [],
+          y: [],
+          z: [],
+          mode: "markers",
+          type: "scatter3d",
+          name: "Negative Label",
+          marker: {
+            size: 5,
+            color: "pink", // Using red for negative values
+          },
+        };
+
+        // Generate 7 random scatter points and categorize them based on the computed value
+        for (var i = 0; i < 5; i++) {
+          var x = xValues[i]; // Random x between -2 and 2
+          var y = yValues[i]; // Random y between -2 and 2
+          var z = 0; // z value set to 0
+          var value = theta_2 * y + theta_1 * x + theta_0; // Compute the value
+
+          // Categorize the point based on the sign of the computed value
+          if (value > 0) {
+            scatterDataPositive.x.push(x);
+            scatterDataPositive.y.push(y);
+            scatterDataPositive.z.push(z);
+          } else {
+            scatterDataNegative.x.push(x);
+            scatterDataNegative.y.push(y);
+            scatterDataNegative.z.push(z);
+          }
+        }
+
+        // Combine the surface and scatter data
+        return [scatterDataPositive, scatterDataNegative];
+      }
+
+      function generateScatterTraces2D(theta_1, theta_2, theta_0) {
+        var scatterDataPositive = {
+          x: [],
+          y: [],
+          mode: "markers",
+          type: "scatter",
+          name: "Positive Label",
+          marker: {
+            size: 8,
+            color: "red", // Using red for positive values
+          },
+        };
+
+        var scatterDataNegative = {
+          x: [],
+          y: [],
+          mode: "markers",
+          type: "scatter",
+          name: "Negative Label",
+          marker: {
+            size: 8,
+            color: "pink", // Using pink for negative values
+          },
+        };
+
+        // Generate scatter points and categorize them based on the computed value
+        for (var i = 0; i < 5; i++) {
+          var x = xValues[i]; // Use fixed x value
+          var y = yValues[i]; // Use fixed y value
+          var value = theta_2 * y + theta_1 * x + theta_0; // Compute the value
+
+          // Categorize the point based on the sign of the computed value
+          if (value > 0) {
+            scatterDataPositive.x.push(x);
+            scatterDataPositive.y.push(y);
+          } else {
+            scatterDataNegative.x.push(x);
+            scatterDataNegative.y.push(y);
+          }
+        }
+
+        // Return the categorized scatter data for 2D plots
+        return [scatterDataPositive, scatterDataNegative];
+      }
+
+      function update2DPlot(theta_1, theta_2, theta_0) {
+        if (theta_2 === 0) {
+          // Handle the case where theta_2 = 0: Plot a vertical line at x1 = -theta_0/theta_1
+          // Since it's a vertical line, x1 is constant, and x2 ranges across the plot
+          if (theta_1 === 0) {
+            // Ensure theta_1 is not 0 to avoid division by zero
+            // Handle special case or show error/warning
+            console.error(
+              "Theta_1 and Theta_2 are both 0 - cannot plot a line."
+            );
+            return; // Exit the function or handle accordingly
+          }
+          var x1 = -theta_0 / theta_1;
+          traces.push({
+            x: [x1, x1],
+            y: [-2, 2], // Use the full range of the plot for y
+            mode: "lines",
+            type: "scatter",
+            name: "Separator",
+          });
+        } else if (theta_1 === 0) {
+          var x2 = -theta_0 / theta_2;
+          traces.push({
+            x: [-2, 2],
+            y: [x2, x2], // Use the full range of the plot for y
+            mode: "lines",
+            type: "scatter",
+            name: "Separator",
+          });
+        } else {
+          // Define a range of x1 values to plot the line
+          var x1 = Array.from({ length: 10 }, (_, i) => -3 + i * 1);
+
+          // Calculate x2 values based on the line equation: Theta1*x1 + Theta2*x2 + Theta0 = 0
+          // Rearranged to x2 = (-Theta0 - Theta1*x1) / Theta2
+          var x2 = x1.map((x1Val) => (-theta_0 - theta_1 * x1Val) / theta_2);
+        }
+
+        var trace = {
+          x: x1,
+          y: x2,
+          mode: "lines",
+          type: "scatter",
+          name: "Separator",
+        };
+        // Dummy trace for the legend entry
+        var legendEntryForVector = {
+          x: [null], // Using null to not display points
+          y: [null], // Using null to not display points
+          mode: "lines",
+          name: "Normal vector", // Description for the legend
+          line: {
+            color: "red", // Match the color with your vector line
+          },
+        };
+        var layout = {
+          title: "View of the feature space (x₁ and x₂)",
+          xaxis: { title: "x₁", range: [-2, 2] },
+          yaxis: { title: "x₂", range: [-2, 2], scaleanchor: "x" },
+          shapes: [
+            // Line part of the arrow (shaft)
+            {
+              type: "line",
+              x0: 0,
+              y0: 0,
+              x1: theta_1, // End point of the arrow (adjust as needed)
+              y1: theta_2, // End point of the arrow (adjust as needed)
+              line: {
+                color: "red",
+                width: 2,
+              },
+            },
+          ],
+          annotations: [
+            // Arrowhead using an annotation for visibility
+            {
+              x: theta_1,
+              y: theta_2,
+              xref: "x",
+              yref: "y",
+              showarrow: true,
+              arrowhead: 2,
+              arrowsize: 1,
+              arrowwidth: 2,
+              arrowcolor: "red",
+              ax: theta_1 / 2,
+              ay: theta_2 / 2,
+              axref: "x",
+              ayref: "y",
+            },
+          ],
+          showlegend: true,
+        };
+
+        Plotly.newPlot("plot2D", [trace, legendEntryForVector], layout);
+      }
+
+      function generateZ0SurfaceData(theta_1, theta_2, theta_0) {
+        var x = [],
+          y = [],
+          z = [];
+
+        // Generate x and y grid
+        for (var i = -2; i <= 2; i += 1) {
+          // Adjust step for finer grid if needed
+          x.push(i);
+        }
+        for (var j = -2; j <= 2; j += 1) {
+          // Adjust step for finer grid if needed
+          y.push(j);
+        }
+
+        // Generate z values as a 2D array
+        for (var i = 0; i < x.length; i++) {
+          var zRow = [];
+          for (var j = 0; j < y.length; j++) {
+            zRow.push(0);
+          }
+          z.push(zRow);
+        }
+
+        return {
+          x: x,
+          y: y,
+          z: z,
+          type: "surface",
+          showscale: false,
+          opacity: 0.5,
+          colorscale: [
+            [0, "rgba(128,128,128,0.5)"],
+            [1, "rgba(128,128,128,0.5)"],
+          ],
+          name: "z0Surface", // Add a unique name for identification
+          visible: false, // Initially hidden
+        };
+      }
+      // Function to update the plot when sliders change
+      function updatePlot() {
+        var theta_1 = parseFloat(document.getElementById("theta_1").value);
+        var theta_2 = parseFloat(document.getElementById("theta_2").value);
+        var theta_0 = parseFloat(document.getElementById("theta_0").value);
+
+        // Update the slider value displays
+        document.getElementById("theta_1_value").textContent =
+          theta_1.toFixed(1);
+        document.getElementById("theta_2_value").textContent =
+          theta_2.toFixed(1);
+        document.getElementById("theta_0_value").textContent =
+          theta_0.toFixed(1);
+
+        var data = generateSurfaceData(theta_1, theta_2, theta_0);
+        var z0data = generateZ0SurfaceData(theta_1, theta_2, theta_0);
+        Plotly.react("plot", [data, z0data], layout);
+        Plotly.addTraces(
+          "plot",
+          generateScatterTraces(theta_1, theta_2, theta_0)
+        );
+        update2DPlot(theta_1, theta_2, theta_0);
+        Plotly.addTraces(
+          "plot2D",
+          generateScatterTraces2D(theta_1, theta_2, theta_0)
+        );
+      }
+
+      // Initialize the plot
+      updatePlot();
+      function findTraceIndexByName(plotId, traceName) {
+        var plotElement = document.getElementById(plotId);
+        if (plotElement && plotElement.data) {
+          // Search through the plot data for a trace with the matching name
+          for (var i = 0; i < plotElement.data.length; i++) {
+            if (plotElement.data[i].name === traceName) {
+              return i; // Return the index of the found trace
             }
-            .plots-container {
-                display: flex;
-                justify-content: space-between; /* Adjusts alignment */
-                align-items: center;
-                height: 80vh; /* Ensure both plots have the same height */
-            }
+          }
+        }
+        return -1; // Return -1 if the trace is not found
+      }
+      document
+        .getElementById("toggleZ0")
+        .addEventListener("click", function () {
+          z0SurfaceVisible = !z0SurfaceVisible; // Toggle the visibility state
+          var visibilityState = z0SurfaceVisible ? true : "legendonly"; // Use 'legendonly' or false as needed
 
-            #plot {
-                flex-grow: 1;
-                width: 70%;
-                height: 90%;
-            }
-
-            #plot2D {
-                width: 25%; /* Set #plot2D to be 30% wide */
-                /* height: 100%; */
-            }
-
-            .slider-container {
-                display: flex; /* Enables flexbox layout */
-                justify-content: space-around; /* Distributes space around items */
-                align-items: center; /* Vertically centers items */
-                padding: 20px; /* Adds some padding around the container */
-            }
-            .slider-group {
-                display: flex; /* Enables flexbox within each slider group */
-                flex-direction: column; /* Aligns the label and slider vertically */
-                align-items: center; /* Centers the items horizontally */
-            }
-            .footer {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                width: 100%;
-                background-color: #f8f9fa;
-                color: #6c757d;
-                text-align: center;
-                padding: 10px 0;
-                margin: 50px;
-            }
-            .footer a {
-                color: #007bff;
-                text-decoration: none;
-            }
-            .footer a:hover {
-                text-decoration: underline;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="plots-container">
-            <div id="plot"></div>
-
-            <div id="plot2D"></div>
-        </div>
-        <!-- Slider controls wrapped in a div container -->
-        <div class="slider-container">
-            <div class="slider-group">
-                <label for="theta_1">θ₁:</label>
-                <input
-                    type="range"
-                    id="theta_1"
-                    min="-2"
-                    max="2"
-                    value="1.2"
-                    step="0.1"
-                    oninput="updatePlot()"
-                />
-                <span id="theta_1_value">0.1</span>
-                <!-- Span to display θ₁ value -->
-            </div>
-            <div class="slider-group">
-                <label for="theta_2">θ₂:</label>
-                <input
-                    type="range"
-                    id="theta_2"
-                    min="-2"
-                    max="2"
-                    value="-2"
-                    step="0.1"
-                    oninput="updatePlot()"
-                />
-                <span id="theta_2_value">-2</span>
-                <!-- Span to display θ₂ value -->
-            </div>
-            <div class="slider-group">
-                <label for="theta_0">θ₀:</label>
-                <input
-                    type="range"
-                    id="theta_0"
-                    min="-1"
-                    max="1"
-                    value="0"
-                    step="0.1"
-                    oninput="updatePlot()"
-                />
-                <span id="theta_0_value">0</span>
-                <!-- Span to display θ₀ value -->
-            </div>
-            <button id="toggleZ0">Toggle z=0 Surface</button>
-        </div>
-        <div class="footer">
-            Built with ❤️ by&nbsp;
-            <a href="https://shenshen.mit.edu" target="_blank"> Shen²</a>
-        </div>
-        <script>
-            let z0SurfaceVisible = false; // Tracks if the z=0 surface is currently supposed to be visible
-            let z0SurfaceAdded = false;
-            // Initialize the layout
-
-            var customCameraSettings = {
-                eye: { x: 0, y: -1, z: 2 }, // Adjusts the view point for the 3D plot
-                up: { x: 0, y: 0, z: 1 }, // Sets the up direction for the 3D plot
-                center: { x: 0, y: 0, z: 0 }, // Centers the view
-            };
-
-            var layout = {
-                title: "View of the feature space (x₁ and x₂) and decision helper (z)<br>z = θ₁x₁ + θ₂ x₂ + θ₀ ",
-                scene: {
-                    xaxis: { title: "x₁", range: [-2, 2] },
-                    yaxis: { title: "x₂", range: [-2, 2] },
-                    zaxis: { title: "z", range: [-6, 6] },
-                    aspectmode: "manual", // Fix the aspect ratio
-                    aspectratio: { x: 1, y: 1, z: 1 }, // Set the aspect ratio to 1:1:1
-
-                    camera: customCameraSettings,
-                },
-                sliders: [
-                    {
-                        currentvalue: { prefix: "Theta 1: " },
-                        pad: { t: 50 },
-                        steps: [],
-                        len: 0.5,
-                    },
-                    {
-                        currentvalue: { prefix: "Theta 2: " },
-                        pad: { t: 50 },
-                        steps: [],
-                        len: 0.5,
-                    },
-                    {
-                        currentvalue: { prefix: "Theta 0: " },
-                        pad: { t: 50 },
-                        steps: [],
-                        len: 0.5,
-                    },
-                ],
-            };
-
-            // Custom color scale
-            var customColorscale = [
-                [0, "pink"], // Negative values
-                [0.49, "pink"], // Transition from blue to grey
-                [0.5, "grey"], // Zero value
-                [0.77, "pink"], // Transition from grey to red
-                [1, "red"], // Positive values
-            ];
-
-            function generateSurfaceData(theta_1, theta_2, theta_0) {
-                var a = [],
-                    b = [],
-                    z = [];
-
-                // Generate x and y grid
-                for (var i = -2; i <= 2; i += 0.01) {
-                    a.push(i);
-                }
-                for (var j = -2; j <= 2; j += 0.01) {
-                    b.push(j);
-                }
-
-                // Generate z values as a 2D array
-                for (var i = 0; i < a.length; i++) {
-                    var zRow = []; // Create a new row for each value of a
-                    for (var j = 0; j < b.length; j++) {
-                        zRow.push(theta_2 * a[i] + theta_1 * b[j] + theta_0); // Compute z for each combination of a and b
-                    }
-                    z.push(zRow); // Add the row to the z matrix
-                }
-                var surfaceColor = z.map((row) =>
-                    row.map((value) => {
-                        if (value < 0) return 0; // Map negative values to 0 (blue)
-                        if (value === 0) return 0.5; // Map zero to 0.5 (grey)
-                        return 1; // Map positive values to 1 (red)
-                    })
-                );
-
-                return {
-                    x: a, // x and y arrays define the grid, and should only be 1D
-                    y: b,
-                    z: z, // z should be a 2D array matching the grid defined by x and y
-                    type: "surface",
-                    showscale: false,
-                    colorscale: customColorscale,
-                    surfacecolor: surfaceColor,
-                };
-            }
-            var xValues = [
-                -0.50183952461055, 0.9279757672456204, 0.3946339367881464,
-                -1.3760219186551894, -1.7676655513272022,
-            ];
-            var yValues = [
-                1.4647045830997407, 0.4044600469728352, 0.832290311184182,
-                -1.9176620228167902, 1.8796394086479773,
-            ];
-            function generateScatterTraces(theta_1, theta_2, theta_0) {
-                var scatterDataPositive = {
-                    x: [],
-                    y: [],
-                    z: [],
-                    mode: "markers",
-                    type: "scatter3d",
-                    name: "Positive Label",
-                    marker: {
-                        size: 5,
-                        color: "red", // Using green for positive values
-                    },
-                };
-
-                var scatterDataNegative = {
-                    x: [],
-                    y: [],
-                    z: [],
-                    mode: "markers",
-                    type: "scatter3d",
-                    name: "Negative Label",
-                    marker: {
-                        size: 5,
-                        color: "pink", // Using red for negative values
-                    },
-                };
-
-                // Generate 7 random scatter points and categorize them based on the computed value
-                for (var i = 0; i < 5; i++) {
-                    var x = xValues[i]; // Random x between -2 and 2
-                    var y = yValues[i]; // Random y between -2 and 2
-                    var z = 0; // z value set to 0
-                    var value = theta_2 * y + theta_1 * x + theta_0; // Compute the value
-
-                    // Categorize the point based on the sign of the computed value
-                    if (value > 0) {
-                        scatterDataPositive.x.push(x);
-                        scatterDataPositive.y.push(y);
-                        scatterDataPositive.z.push(z);
-                    } else {
-                        scatterDataNegative.x.push(x);
-                        scatterDataNegative.y.push(y);
-                        scatterDataNegative.z.push(z);
-                    }
-                }
-
-                // Combine the surface and scatter data
-                return [scatterDataPositive, scatterDataNegative];
-            }
-
-            function generateScatterTraces2D(theta_1, theta_2, theta_0) {
-                var scatterDataPositive = {
-                    x: [],
-                    y: [],
-                    mode: "markers",
-                    type: "scatter",
-                    name: "Positive Label",
-                    marker: {
-                        size: 8,
-                        color: "red", // Using red for positive values
-                    },
-                };
-
-                var scatterDataNegative = {
-                    x: [],
-                    y: [],
-                    mode: "markers",
-                    type: "scatter",
-                    name: "Negative Label",
-                    marker: {
-                        size: 8,
-                        color: "pink", // Using pink for negative values
-                    },
-                };
-
-                // Generate scatter points and categorize them based on the computed value
-                for (var i = 0; i < 5; i++) {
-                    var x = xValues[i]; // Use fixed x value
-                    var y = yValues[i]; // Use fixed y value
-                    var value = theta_2 * y + theta_1 * x + theta_0; // Compute the value
-
-                    // Categorize the point based on the sign of the computed value
-                    if (value > 0) {
-                        scatterDataPositive.x.push(x);
-                        scatterDataPositive.y.push(y);
-                    } else {
-                        scatterDataNegative.x.push(x);
-                        scatterDataNegative.y.push(y);
-                    }
-                }
-
-                // Return the categorized scatter data for 2D plots
-                return [scatterDataPositive, scatterDataNegative];
-            }
-
-            function update2DPlot(theta_1, theta_2, theta_0) {
-                if (theta_2 === 0) {
-                    // Handle the case where theta_2 = 0: Plot a vertical line at x1 = -theta_0/theta_1
-                    // Since it's a vertical line, x1 is constant, and x2 ranges across the plot
-                    if (theta_1 === 0) {
-                        // Ensure theta_1 is not 0 to avoid division by zero
-                        // Handle special case or show error/warning
-                        console.error(
-                            "Theta_1 and Theta_2 are both 0 - cannot plot a line."
-                        );
-                        return; // Exit the function or handle accordingly
-                    }
-                    var x1 = -theta_0 / theta_1;
-                    traces.push({
-                        x: [x1, x1],
-                        y: [-2, 2], // Use the full range of the plot for y
-                        mode: "lines",
-                        type: "scatter",
-                        name: "Separator",
-                    });
-                } else if (theta_1 === 0) {
-                    var x2 = -theta_0 / theta_2;
-                    traces.push({
-                        x: [-2, 2],
-                        y: [x2, x2], // Use the full range of the plot for y
-                        mode: "lines",
-                        type: "scatter",
-                        name: "Separator",
-                    });
-                } else {
-                    // Define a range of x1 values to plot the line
-                    var x1 = Array.from({ length: 10 }, (_, i) => -3 + i * 1);
-
-                    // Calculate x2 values based on the line equation: Theta1*x1 + Theta2*x2 + Theta0 = 0
-                    // Rearranged to x2 = (-Theta0 - Theta1*x1) / Theta2
-                    var x2 = x1.map(
-                        (x1Val) => (-theta_0 - theta_1 * x1Val) / theta_2
-                    );
-                }
-
-                var trace = {
-                    x: x1,
-                    y: x2,
-                    mode: "lines",
-                    type: "scatter",
-                    name: "Separator",
-                };
-                // Dummy trace for the legend entry
-                var legendEntryForVector = {
-                    x: [null], // Using null to not display points
-                    y: [null], // Using null to not display points
-                    mode: "lines",
-                    name: "Normal vector", // Description for the legend
-                    line: {
-                        color: "red", // Match the color with your vector line
-                    },
-                };
-                var layout = {
-                    title: "View of the feature space (x₁ and x₂)",
-                    xaxis: { title: "x₁", range: [-2, 2] },
-                    yaxis: { title: "x₂", range: [-2, 2], scaleanchor: "x" },
-                    shapes: [
-                        // Line part of the arrow (shaft)
-                        {
-                            type: "line",
-                            x0: 0,
-                            y0: 0,
-                            x1: theta_1, // End point of the arrow (adjust as needed)
-                            y1: theta_2, // End point of the arrow (adjust as needed)
-                            line: {
-                                color: "red",
-                                width: 2,
-                            },
-                        },
-                    ],
-                    annotations: [
-                        // Arrowhead using an annotation for visibility
-                        {
-                            x: theta_1,
-                            y: theta_2,
-                            xref: "x",
-                            yref: "y",
-                            showarrow: true,
-                            arrowhead: 2,
-                            arrowsize: 1,
-                            arrowwidth: 2,
-                            arrowcolor: "red",
-                            ax: theta_1 / 2,
-                            ay: theta_2 / 2,
-                            axref: "x",
-                            ayref: "y",
-                        },
-                    ],
-                    showlegend: true,
-                };
-
-                Plotly.newPlot("plot2D", [trace, legendEntryForVector], layout);
-            }
-
-            function generateZ0SurfaceData(theta_1, theta_2, theta_0) {
-                var x = [],
-                    y = [],
-                    z = [];
-
-                // Generate x and y grid
-                for (var i = -2; i <= 2; i += 1) {
-                    // Adjust step for finer grid if needed
-                    x.push(i);
-                }
-                for (var j = -2; j <= 2; j += 1) {
-                    // Adjust step for finer grid if needed
-                    y.push(j);
-                }
-
-                // Generate z values as a 2D array
-                for (var i = 0; i < x.length; i++) {
-                    var zRow = [];
-                    for (var j = 0; j < y.length; j++) {
-                        zRow.push(0);
-                    }
-                    z.push(zRow);
-                }
-
-                return {
-                    x: x,
-                    y: y,
-                    z: z,
-                    type: "surface",
-                    showscale: false,
-                    opacity: 0.5,
-                    colorscale: [
-                        [0, "rgba(128,128,128,0.5)"],
-                        [1, "rgba(128,128,128,0.5)"],
-                    ],
-                    name: "z0Surface", // Add a unique name for identification
-                    visible: false, // Initially hidden
-                };
-            }
-            // Function to update the plot when sliders change
-            function updatePlot() {
-                var theta_1 = parseFloat(
-                    document.getElementById("theta_1").value
-                );
-                var theta_2 = parseFloat(
-                    document.getElementById("theta_2").value
-                );
-                var theta_0 = parseFloat(
-                    document.getElementById("theta_0").value
-                );
-
-                // Update the slider value displays
-                document.getElementById("theta_1_value").textContent =
-                    theta_1.toFixed(1);
-                document.getElementById("theta_2_value").textContent =
-                    theta_2.toFixed(1);
-                document.getElementById("theta_0_value").textContent =
-                    theta_0.toFixed(1);
-
-                var data = generateSurfaceData(theta_1, theta_2, theta_0);
-                var z0data = generateZ0SurfaceData(theta_1, theta_2, theta_0);
-                Plotly.react("plot", [data, z0data], layout);
-                Plotly.addTraces(
-                    "plot",
-                    generateScatterTraces(theta_1, theta_2, theta_0)
-                );
-                update2DPlot(theta_1, theta_2, theta_0);
-                Plotly.addTraces(
-                    "plot2D",
-                    generateScatterTraces2D(theta_1, theta_2, theta_0)
-                );
-            }
-
-            // Initialize the plot
-            updatePlot();
-            function findTraceIndexByName(plotId, traceName) {
-                var plotElement = document.getElementById(plotId);
-                if (plotElement && plotElement.data) {
-                    // Search through the plot data for a trace with the matching name
-                    for (var i = 0; i < plotElement.data.length; i++) {
-                        if (plotElement.data[i].name === traceName) {
-                            return i; // Return the index of the found trace
-                        }
-                    }
-                }
-                return -1; // Return -1 if the trace is not found
-            }
-            document
-                .getElementById("toggleZ0")
-                .addEventListener("click", function () {
-                    z0SurfaceVisible = !z0SurfaceVisible; // Toggle the visibility state
-                    var visibilityState = z0SurfaceVisible
-                        ? true
-                        : "legendonly"; // Use 'legendonly' or false as needed
-
-                    // Find the index of the z=0 surface
-                    var traceIndex = findTraceIndexByName("plot", "z0Surface");
-                    if (traceIndex !== -1) {
-                        Plotly.restyle("plot", { visible: visibilityState }, [
-                            traceIndex,
-                        ]);
-                    }
-                });
-        </script>
-    </body>
+          // Find the index of the z=0 surface
+          var traceIndex = findTraceIndexByName("plot", "z0Surface");
+          if (traceIndex !== -1) {
+            Plotly.restyle("plot", { visible: visibilityState }, [traceIndex]);
+          }
+        });
+    </script>
+  </body>
 </html>
