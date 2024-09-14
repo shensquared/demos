@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sigmoid Function Demo</title>
+    <!-- Include Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        font-family: Arial, sans-serif;
+      }
+      .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 90vh;
+      }
+      .slider-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 20px;
+      }
+      .slider-group {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-right: 20px;
+      }
+      #plot {
+        width: 70%;
+        height: 70%;
+      }
+      #plot3d {
+        width: 70%;
+        height: 70%;
+      }
+      .footer {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        background-color: #f8f9fa;
+        color: #6c757d;
+        text-align: center;
+        padding: 10px 0;
+        margin-top: 20px;
+      }
+      .footer a {
+        color: #007bff;
+        text-decoration: none;
+      }
+      .footer a:hover {
+        text-decoration: underline;
+      }
+      .dropdown-container {
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="dropdown-container">
+        <label for="plot-selector">Choose a sigmoid function:</label>
+        <select id="plot-selector" onchange="switchPlot()">
+          <option value="2d">sigmoid(θx + θ₀)</option>
+          <option value="3d">sigmoid(θ₁x₁ + θ₂x₂ + θ₀)</option>
+        </select>
+      </div>
+      <div id="plot"></div>
+      <div id="plot3d" style="display: none"></div>
+      <div id="sliders-2d" class="slider-container">
+        <div class="slider-group">
+          <label for="theta">θ:</label>
+          <input
+            type="range"
+            id="theta"
+            min="-5"
+            max="5"
+            value="1"
+            step="0.1"
+            oninput="updatePlot2D()"
+          />
+          <span id="theta_value">1</span>
+        </div>
+        <div class="slider-group">
+          <label for="theta_0">θ₀:</label>
+          <input
+            type="range"
+            id="theta_0"
+            min="-5"
+            max="5"
+            value="0"
+            step="0.1"
+            oninput="updatePlot2D()"
+          />
+          <span id="theta_0_value">0</span>
+        </div>
+      </div>
+      <div id="sliders-3d" class="slider-container" style="display: none">
+        <div class="slider-group">
+          <label for="theta_1">θ₁:</label>
+          <input
+            type="range"
+            id="theta_1"
+            min="-5"
+            max="5"
+            value="1"
+            step="0.1"
+            oninput="updatePlot3D()"
+          />
+          <span id="theta_1_value">1</span>
+        </div>
+        <div class="slider-group">
+          <label for="theta_2">θ₂:</label>
+          <input
+            type="range"
+            id="theta_2"
+            min="-5"
+            max="5"
+            value="1"
+            step="0.1"
+            oninput="updatePlot3D()"
+          />
+          <span id="theta_2_value">1</span>
+        </div>
+        <div class="slider-group">
+          <label for="theta_0_3d">θ₀:</label>
+          <input
+            type="range"
+            id="theta_0_3d"
+            min="-1"
+            max="1"
+            value="0"
+            step="0.1"
+            oninput="updatePlot3D()"
+          />
+          <span id="theta_0_3d_value">0</span>
+        </div>
+      </div>
+      <button id="toggleZ0" onclick="toggleZ0Surface()" style="display: none">
+        Toggle z=0.5 Surface
+      </button>
+    </div>
+    <div class="footer">
+      Built with ❤️ by&nbsp;<a href="https://shenshen.mit.edu" target="_blank"
+        >Shen²</a
+      >
+      <span>&nbsp;|&nbsp;</span>
+      <a href="https://github.com/shensquared/demos" target="_blank"
+        >Report a Bug</a
+      >
+    </div>
+
+    <script>
+      let z0SurfaceVisible = false;
+      const fixedCameraSettings = {
+        eye: { x: 1.5, y: 1.5, z: 1.5 },
+        center: { x: 0, y: 0, z: 0 },
+        up: { x: 0, y: 0, z: 1 },
+      };
+
+      // Sigmoid function for 2D
+      function sigmoid(x, theta, theta_0) {
+        return 1 / (1 + Math.exp(-(theta * x + theta_0)));
+      }
+
+      // Sigmoid function for 3D
+      function sigmoid3D(x1, x2, theta_1, theta_2, theta_0) {
+        return 1 / (1 + Math.exp(-(theta_1 * x1 + theta_2 * x2 + theta_0)));
+      }
+
+      // Generate data points for 2D sigmoid function
+      function generateSigmoidData2D(theta, theta_0) {
+        let x = [];
+        let y = [];
+        for (let i = -10; i <= 10; i += 0.1) {
+          x.push(i);
+          y.push(sigmoid(i, theta, theta_0));
+        }
+        return { x: x, y: y };
+      }
+
+      // Generate data points for 3D sigmoid function, with x1 and x2 limited to [-2, 2]
+      function generateSigmoidData3D(theta_1, theta_2, theta_0) {
+        let x1 = [];
+        let x2 = [];
+        let z = [];
+        let gridX1 = [];
+        let gridX2 = [];
+
+        for (let i = -2; i <= 2; i += 0.1) {
+          gridX1.push(i);
+          let zRow = [];
+          for (let j = -2; j <= 2; j += 0.1) {
+            if (gridX2.length < (2 / 0.1) * 2 + 1) gridX2.push(j);
+            zRow.push(sigmoid3D(i, j, theta_1, theta_2, theta_0));
+          }
+          z.push(zRow);
+        }
+        return { x1: gridX1, x2: gridX2, z: z };
+      }
+
+      // Plot 2D sigmoid with axis labels
+      function createPlot2D() {
+        var data = generateSigmoidData2D(1, 0); // Initial θ = 1, θ₀ = 0
+        var layout = {
+          title: "Sigmoid Function: sigmoid(θx + θ₀)",
+          xaxis: { title: "x", range: [-10, 10] },
+          yaxis: { title: "sigmoid(θx + θ₀)", range: [0, 1] },
+          margin: { l: 50, r: 10, t: 50, b: 50 },
+        };
+
+        Plotly.newPlot(
+          "plot",
+          [{ x: data.x, y: data.y, mode: "lines" }],
+          layout
+        );
+      }
+
+      // Plot 3D sigmoid with axis labels and z=0.5 surface
+      function createPlot3D() {
+        var data = generateSigmoidData3D(1, 1, 0); // Initial θ₁ = 1, θ₂ = 1, θ₀ = 0
+        var z0data = generateZ05SurfaceData(); // Generate the z=0.5 surface
+        var layout = {
+          title: "Sigmoid Function: sigmoid(θ₁x₁ + θ₂x₂ + θ₀)",
+          scene: {
+            xaxis: { title: "x₁", range: [-2, 2] },
+            yaxis: { title: "x₂", range: [-2, 2] },
+            zaxis: { title: "sigmoid(θ₁x₁ + θ₂x₂ + θ₀)", range: [0, 1] },
+            aspectmode: "cube", // Ensures all axes are on equal scale
+            camera: fixedCameraSettings, // Fix the camera view
+          },
+          margin: { l: 0, r: 0, t: 50, b: 0 },
+        };
+
+        Plotly.newPlot(
+          "plot3d",
+          [
+            {
+              x: data.x1,
+              y: data.x2,
+              z: data.z,
+              type: "surface",
+              colorscale: [
+                [0, "rgb(0, 0, 255)"], // Blue
+                [1, "rgb(255, 0, 0)"], // Red
+              ], // Custom blue-to-red colorscale
+              showscale: false, // Hide the color scale legend
+            },
+            z0data, // Add the z=0.5 surface
+          ],
+          layout
+        );
+      }
+
+      // Generate z=0.5 surface data
+      function generateZ05SurfaceData() {
+        let x = [];
+        let y = [];
+        let z = [];
+        for (let i = -2; i <= 2; i += 0.1) {
+          x.push(i);
+          let zRow = [];
+          for (let j = -2; j <= 2; j += 0.1) {
+            zRow.push(0.5); // All points on the z=0.5 plane
+          }
+          z.push(zRow);
+        }
+        return {
+          x: x,
+          y: x,
+          z: z,
+          type: "surface",
+          showscale: false,
+          opacity: 0.5,
+          name: "z05Surface",
+          visible: z0SurfaceVisible, // Use the current visibility state
+        };
+      }
+
+      // Toggle z=0.5 surface visibility
+      function toggleZ0Surface() {
+        z0SurfaceVisible = !z0SurfaceVisible;
+        Plotly.restyle("plot3d", { visible: z0SurfaceVisible }, [1]); // Toggle the visibility of the z=0.5 surface (index 1)
+      }
+
+      // Update 2D plot when sliders change
+      function updatePlot2D() {
+        var theta = parseFloat(document.getElementById("theta").value);
+        var theta_0 = parseFloat(document.getElementById("theta_0").value);
+
+        document.getElementById("theta_value").textContent = theta.toFixed(1);
+        document.getElementById("theta_0_value").textContent =
+          theta_0.toFixed(1);
+
+        var data = generateSigmoidData2D(theta, theta_0);
+        var layout = {
+          title: "Sigmoid Function: sigmoid(θx + θ₀)",
+          xaxis: { title: "x" },
+          yaxis: { title: "sigmoid(θx + θ₀)" },
+          margin: { l: 50, r: 10, t: 50, b: 50 },
+        };
+
+        Plotly.react("plot", [{ x: data.x, y: data.y, mode: "lines" }], layout);
+      }
+
+      // Update 3D plot when sliders change
+      function updatePlot3D() {
+        var theta_1 = parseFloat(document.getElementById("theta_1").value);
+        var theta_2 = parseFloat(document.getElementById("theta_2").value);
+        var theta_0 = parseFloat(document.getElementById("theta_0_3d").value);
+
+        document.getElementById("theta_1_value").textContent =
+          theta_1.toFixed(1);
+        document.getElementById("theta_2_value").textContent =
+          theta_2.toFixed(1);
+        document.getElementById("theta_0_3d_value").textContent =
+          theta_0.toFixed(1);
+
+        var data = generateSigmoidData3D(theta_1, theta_2, theta_0);
+        var z0data = generateZ05SurfaceData(); // Regenerate the z=0.5 surface with the current visibility state
+
+        var layout = {
+          title: "Sigmoid Function: sigmoid(θ₁x₁ + θ₂x₂ + θ₀)",
+          scene: {
+            xaxis: { title: "x₁", range: [-2, 2] },
+            yaxis: { title: "x₂", range: [-2, 2] },
+            zaxis: { title: "sigmoid(θ₁x₁ + θ₂x₂ + θ₀)", range: [0, 1] },
+            aspectmode: "cube", // Keep axis scales equal
+            camera: fixedCameraSettings, // Keep camera view fixed
+          },
+        };
+
+        Plotly.react(
+          "plot3d",
+          [
+            {
+              x: data.x1,
+              y: data.x2,
+              z: data.z,
+              type: "surface",
+              colorscale: [
+                [0, "rgb(0, 0, 255)"], // Blue
+                [1, "rgb(255, 0, 0)"], // Red
+              ], // Custom blue-to-red colorscale
+              showscale: false, // Hide the color scale legend
+            },
+            z0data,
+          ],
+          layout
+        ); // Reapply the z=0.5 plane with its visibility state
+      }
+
+      // Switch between 2D and 3D plots
+      function switchPlot() {
+        var plotSelector = document.getElementById("plot-selector").value;
+        if (plotSelector === "2d") {
+          document.getElementById("plot").style.display = "block";
+          document.getElementById("sliders-2d").style.display = "flex";
+          document.getElementById("plot3d").style.display = "none";
+          document.getElementById("sliders-3d").style.display = "none";
+          document.getElementById("toggleZ0").style.display = "none";
+          createPlot2D();
+        } else {
+          document.getElementById("plot").style.display = "none";
+          document.getElementById("sliders-2d").style.display = "none";
+          document.getElementById("plot3d").style.display = "block";
+          document.getElementById("sliders-3d").style.display = "flex";
+          document.getElementById("toggleZ0").style.display = "block";
+          createPlot3D();
+        }
+      }
+
+      // Initialize the 2D plot by default
+      window.onload = function () {
+        switchPlot();
+      };
+    </script>
+  </body>
+</html>
