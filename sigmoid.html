@@ -33,13 +33,10 @@
         align-items: center;
         margin-right: 20px;
       }
-      #plot {
-        width: 70%;
-        height: 70%;
-      }
+      #plot,
       #plot3d {
-        width: 70%;
-        height: 70%;
+        width: 95vw;
+        height: 90vh;
       }
       .footer {
         display: flex;
@@ -61,6 +58,7 @@
       }
       .dropdown-container {
         margin-bottom: 20px;
+        margin-top: 20px;
       }
     </style>
   </head>
@@ -143,10 +141,10 @@
           />
           <span id="theta_0_3d_value">0</span>
         </div>
+        <button id="toggleZ0" onclick="toggleZ0Surface()" style="display: none">
+          Toggle z=0.5 Surface
+        </button>
       </div>
-      <button id="toggleZ0" onclick="toggleZ0Surface()" style="display: none">
-        Toggle z=0.5 Surface
-      </button>
     </div>
     <div class="footer">
       Built with ❤️ by&nbsp;<a href="https://shenshen.mit.edu" target="_blank"
@@ -377,6 +375,12 @@
           createPlot3D();
         }
       }
+
+      // Resize the plots when the window is resized
+      window.onresize = function () {
+        Plotly.Plots.resize(document.getElementById("plot"));
+        Plotly.Plots.resize(document.getElementById("plot3d"));
+      };
 
       // Initialize the 2D plot by default
       window.onload = function () {
