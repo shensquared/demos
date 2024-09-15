@@ -1,181 +1,201 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Demo dataset and if using 0-1 loss</title>
-        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-        <style>
-            .plot-container {
-                display: flex;
-                justify-content: space-between;
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Demo dataset and 0-1 loss</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+      /* Flexbox container to ensure the plots are aligned side by side */
+      .plot-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        height: 90vh; /* Overall height for the container */
+      }
+
+      /* Ensure both 2D and 3D plots take up 50% of the container */
+      #plot2D {
+        width: 48%;
+        height: 100%; /* Full height */
+      }
+
+      #plot3D {
+        width: 48%;
+        height: 100%; /* Full height */
+      }
+
+      /* Footer styling */
+      .footer {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        background-color: #f8f9fa;
+        color: #6c757d;
+        text-align: center;
+        padding: 10px 0;
+        margin-top: 20px;
+      }
+
+      .footer a {
+        color: #007bff;
+        text-decoration: none;
+      }
+
+      .footer a:hover {
+        text-decoration: underline;
+      }
+
+      .centered-text {
+        text-align: center;
+        margin-top: 20px;
+      }
+
+      /* For smaller screens, stack the plots vertically */
+      @media (max-width: 768px) {
+        .plot-container {
+          flex-direction: column;
+        }
+
+        #plot2D,
+        #plot3D {
+          width: 90%;
+          height: 50vh; /* Adjust the height to fit vertically */
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Plots Container -->
+    <div class="plot-container">
+      <div id="plot2D"></div>
+      <div id="plot3D"></div>
+    </div>
+
+    <!-- Text Section -->
+    <h3 class="centered-text">
+      Try to make sense of the dataset shown in the 2D plot, and observe the 0-1
+      loss given by the 3D plot.
+    </h3>
+
+    <!-- Footer Section -->
+    <div class="footer">
+      Built with ❤️ by&nbsp;<a href="https://shenshen.mit.edu" target="_blank"
+        >Shen²</a
+      >
+      <span>&nbsp;|&nbsp;</span>
+      <a href="https://github.com/shensquared/demos" target="_blank"
+        >Report a Bug</a
+      >
+    </div>
+
+    <script>
+      (function () {
+        // 2D Plot adjustments (without the separator)
+        const trace1 = {
+          x: [1],
+          y: [2],
+          mode: "markers",
+          type: "scatter",
+          marker: {
+            color: "red",
+            size: 12,
+            symbol: "cross",
+          },
+          name: "Positive",
+        };
+
+        const trace2 = {
+          x: [2],
+          y: [1],
+          mode: "markers",
+          type: "scatter",
+          marker: {
+            color: "pink",
+            size: 12,
+            symbol: "-",
+          },
+          name: "Negative",
+        };
+
+        const layout2D = {
+          title: "Demo dataset", // Updated plot title
+          xaxis: {
+            title: "x1", // Updated axis name
+            range: [0, 3],
+          },
+          yaxis: {
+            title: "x2", // Updated axis name
+            range: [0, 3],
+          },
+        };
+
+        Plotly.newPlot("plot2D", [trace1, trace2], layout2D);
+
+        // 3D Plot adjustments
+        const theta1 = [...Array(400).keys()].map((i) => -10 + (20 / 399) * i);
+        const theta2 = [...Array(400).keys()].map((i) => -10 + (20 / 399) * i);
+        let Z = new Array(400);
+        for (let i = 0; i < 400; i++) {
+          Z[i] = new Array(400).fill(0);
+          for (let j = 0; j < 400; j++) {
+            const theta1_val = theta1[i];
+            const theta2_val = theta2[j];
+            if (
+              theta1_val + 2 * theta2_val < 0 &&
+              2 * theta1_val + theta2_val > 0
+            ) {
+              Z[i][j] = 2;
+            } else if (
+              theta1_val + 2 * theta2_val > 0 &&
+              2 * theta1_val + theta2_val > 0
+            ) {
+              Z[i][j] = 1;
+            } else if (
+              theta1_val + 2 * theta2_val < 0 &&
+              2 * theta1_val + theta2_val < 0
+            ) {
+              Z[i][j] = 1;
+            } else if (
+              theta1_val + 2 * theta2_val > 0 &&
+              2 * theta1_val + theta2_val < 0
+            ) {
+              Z[i][j] = 0;
             }
-            #plot2D,
-            #plot3D {
-                width: 50%;
-            }
-            .footer {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                width: 100%;
-                background-color: #f8f9fa;
-                color: #6c757d;
-                text-align: center;
-                padding: 10px 0;
-                margin: 50px;
-            }
-            .footer a {
-                color: #007bff;
-                text-decoration: none;
-            }
-            .footer a:hover {
-                text-decoration: underline;
-            }
-            .centered-text {
-                text-align: center;
-                margin-top: 20px; /* Adjust as needed */
-            }
-        </style>
-    </head>
-    <body>
-        <div class="plot-container">
-            <div id="plot2D"></div>
-            <div id="plot3D"></div>
-        </div>
-        <h3 class="centered-text">
-            Try draw out the separator and normal vector given by (θ₁ = −1, and
-            θ₂ = 1) on the 2D plot, and make sense of the loss given in the 3D
-            plot.
-        </h3>
-        <div class="footer">
-            Built with ❤️ by&nbsp;
-            <a href="https://shenshen.mit.edu" target="_blank"> Shen²</a>
-        </div>
+          }
+        }
 
-        <script>
-            (function () {
-                // 2D Plot adjustments
-                const trace1 = {
-                    x: [1],
-                    y: [2],
-                    mode: "markers",
-                    type: "scatter",
-                    marker: {
-                        color: "red",
-                        size: 12,
-                        symbol: "cross",
-                    },
-                    name: "Positive",
-                };
+        const data3D = [
+          {
+            z: Z,
+            x: theta1,
+            y: theta2,
+            type: "surface",
+            contours: {
+              z: {
+                show: true,
+                usecolormap: true,
+                highlightcolor: "#42f462",
+                project: { z: true },
+              },
+            },
+            showscale: false, // This removes the color bar
+          },
+        ];
 
-                const trace2 = {
-                    x: [2],
-                    y: [1],
-                    mode: "markers",
-                    type: "scatter",
-                    marker: {
-                        color: "pink",
-                        size: 12,
-                        symbol: "-",
-                    },
-                    name: "Negative",
-                };
-                // Line where x2 = x1
-                const line = {
-                    x: [0, 2],
-                    y: [0, 2],
-                    mode: "lines",
-                    type: "scatter",
-                    name: "separator",
-                    line: {
-                        color: "blue",
-                        width: 2,
-                    },
-                };
-                const layout2D = {
-                    title: "Demo dataset", // Updated plot title
-                    xaxis: {
-                        title: "x1", // Updated axis name
-                        range: [0, 3],
-                    },
-                    yaxis: {
-                        title: "x2", // Updated axis name
-                        range: [0, 3],
-                    },
-                };
+        const layout3D = {
+          title: "0-1 loss (given by varying θ on the demo dataset)",
+          scene: {
+            xaxis: { title: "θ₁" }, // Updated axis name to use theta symbol and subscript
+            yaxis: { title: "θ₂" },
+            zaxis: { title: "J(θ)" },
+          },
+          autosize: true, // Ensure the plot resizes correctly
+        };
 
-                Plotly.newPlot("plot2D", [trace1, trace2], layout2D);
-
-                // 3D Plot adjustments
-                const theta1 = [...Array(400).keys()].map(
-                    (i) => -10 + (20 / 399) * i
-                );
-                const theta2 = [...Array(400).keys()].map(
-                    (i) => -10 + (20 / 399) * i
-                );
-                let Z = new Array(400);
-                for (let i = 0; i < 400; i++) {
-                    Z[i] = new Array(400).fill(0);
-                    for (let j = 0; j < 400; j++) {
-                        const theta1_val = theta1[i];
-                        const theta2_val = theta2[j];
-                        if (
-                            theta1_val + 2 * theta2_val < 0 &&
-                            2 * theta1_val + theta2_val > 0
-                        ) {
-                            Z[i][j] = 2;
-                        } else if (
-                            theta1_val + 2 * theta2_val > 0 &&
-                            2 * theta1_val + theta2_val > 0
-                        ) {
-                            Z[i][j] = 1;
-                        } else if (
-                            theta1_val + 2 * theta2_val < 0 &&
-                            2 * theta1_val + theta2_val < 0
-                        ) {
-                            Z[i][j] = 1;
-                        } else if (
-                            theta1_val + 2 * theta2_val > 0 &&
-                            2 * theta1_val + theta2_val < 0
-                        ) {
-                            Z[i][j] = 0;
-                        }
-                    }
-                }
-
-                const data3D = [
-                    {
-                        z: Z,
-                        x: theta1,
-                        y: theta2,
-                        type: "surface",
-                        contours: {
-                            z: {
-                                show: true,
-                                usecolormap: true,
-                                highlightcolor: "#42f462",
-                                project: { z: true },
-                            },
-                        },
-                        showscale: false, // This removes the color bar
-                    },
-                ];
-
-                const layout3D = {
-                    title: "0-1 loss (given by varying θ on the demo dataset)",
-                    scene: {
-                        xaxis: { title: "θ₁" }, // Updated axis name to use theta symbol and subscript
-                        yaxis: { title: "θ₂" },
-                        zaxis: { title: "J(θ)" },
-                    },
-                    autosize: false,
-                    width: 500,
-                    height: 500,
-                };
-
-                Plotly.newPlot("plot3D", data3D, layout3D);
-            })();
-        </script>
-    </body>
+        Plotly.newPlot("plot3D", data3D, layout3D);
+      })();
+    </script>
+  </body>
 </html>
