@@ -199,9 +199,13 @@
           let zRow = [];
           for (let j = -2; j <= 2; j += 0.1) {
             if (gridX2.length < (2 / 0.1) * 2 + 1) gridX2.push(j);
-            zRow.push(sigmoid3D(i, j, theta_1, theta_2, theta_0));
+            zRow.push(sigmoid3D(j, i, theta_1, theta_2, theta_0));
           }
+          // console.log("zRow");
+          // console.log(zRow);
           z.push(zRow);
+          // console.log("z");
+          // console.log(z);
         }
         return { x1: gridX1, x2: gridX2, z: z };
       }
@@ -225,7 +229,7 @@
 
       // Plot 3D sigmoid with axis labels and z=0.5 surface
       function createPlot3D() {
-        var data = generateSigmoidData3D(1, 1, 0); // Initial θ₁ = 1, θ₂ = 1, θ₀ = 0
+        var data = generateSigmoidData3D(5, 0, 0); // Initial θ₁ = 1, θ₂ = 1, θ₀ = 0
         var z0data = generateZ05SurfaceData(); // Generate the z=0.5 surface
         var layout = {
           title: "Sigmoid Function: sigmoid(θ₁x₁ + θ₂x₂ + θ₀)",
