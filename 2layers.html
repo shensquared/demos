@@ -30,6 +30,11 @@
       .plot-container {
         flex-grow: 1; /* Make the plot take up most of the available space */
       }
+      #plot_weighted {
+        display: flex;
+        justify-content: center; /* Horizontally center */
+        align-items: center; /* Vertically center */
+      }
       .slider-container {
         display: flex;
         justify-content: space-around;
@@ -93,7 +98,7 @@
             <span id="theta_12_value">0</span>
           </div>
           <div class="slider-group">
-            <label for="theta_10">θ₁₀θ₁₀:</label>
+            <label for="theta_10">θ₁₀:</label>
             <input
               type="range"
               id="theta_10"
@@ -277,7 +282,7 @@
         var data = generatez1_2(theta_11, theta_12, theta_10);
         z1Data = data.z; // Store for weighted plot
         var layout = {
-          title: "Sigmoid Function 1 (z₁)",
+          title: "z₁=σ(θ₁₁x₁ + θ₁₂x₂+θ₁₀)",
           scene: {
             xaxis: { title: "x₁", range: [-2, 2] },
             yaxis: { title: "x₂", range: [-2, 2] },
@@ -310,7 +315,7 @@
         var data = generatez2(theta_21, theta_22, theta_20);
         z2Data = data.z; // Store for weighted plot
         var layout = {
-          title: "Sigmoid Function 2 (z₂)",
+          title: "z₂ =  σ(θ₂₁x₁ + θ₂₂x₂+θ₂₀)",
           scene: {
             xaxis: { title: "x₁", range: [-2, 2] },
             yaxis: { title: "x₂", range: [-2, 2] },
@@ -356,7 +361,7 @@
 
         // Plot the weighted sum
         var layout = {
-          title: `Weighted Sum (w₁ * z₁ + w₂ * z₂ + w₀)`,
+          title: `w₁z₁ + w₂z₂ + w₀`,
           scene: {
             xaxis: { title: "x₁", range: [-2, 2] },
             yaxis: { title: "x₂", range: [-2, 2] },
