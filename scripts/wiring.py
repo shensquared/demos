@@ -158,31 +158,54 @@ def create_gif_or_svg(
 
         for i, connections in enumerate(connections_list):
             plot_circles_and_edges(ax, layers, connections)
-            svg_filename = f"svg_frames/frame_{i+1}.svg"
+            svg_filename = f"svg_frames/frame_{i+1}.png"
             # Save the current frame as an SVG with tight bounding box and no margins
-            fig.savefig(svg_filename, bbox_inches="tight", pad_inches=0, format="svg")
+            fig.savefig(svg_filename, bbox_inches="tight", pad_inches=0.2, format="png")
             print(f"Saved {svg_filename}")
 
         plt.close(fig)  # Close the figure after saving all frames
 
 
 # Example usage
-layers = [5, 4]  # Fixed number of circles in each vertical layer
+layers = [6, 4, 4, 3]  # Fixed number of circles in each vertical layer
 
 # Varying connections over time (frames), with 'fc' for full connection
-connection_list = [
-    "fc",  # Frame 1: Full connection between all layers
+fc_connect_list = [
     [
-        [[[1, "red"], [2, "blue"]], [], [], [], []],
-        ["fc", [], [], []],
-    ],  # Frame 2: Mixed full connection and custom connections
+        [[1], [1], [1], [1], [1]],
+    ],
     [
-        [[[1, "green"], [2, "blue"], [3, "orange"]], [], [], [], []],
-        [["fc"], [], [], []],
-    ],  # Frame 3: Mixed connections
+        [[1, 2], [1, 2], [1, 2], [1, 2], [1, 2]],
+    ],
+    [
+        [[1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3]],
+    ],
+    "fc",
 ]
 
+c_conncect_list = [
+    [
+        [[1], [1], [], [], []],
+    ],
+    [
+        [[1], [1, 2], [2], [], []],
+    ],
+    [
+        [[1], [1, 2], [2, 3], [3], []],
+    ],
+    [
+        [[1], [1, 2], [2, 3], [3, 4], [4]],
+    ],
+]
+
+max_pool = [
+    [
+        [[], [2], [2], [], []],
+    ],
+    [[1], [2], [3], [4]],
+    [[], [2], [2], []],
+]
 # Choose between creating a GIF or SVGs for each frame
 create_gif_or_svg(
-    layers, connection_list, output_filename="network_animation.gif", save_as_gif=False
+    layers, max_pool, output_filename="network_animation.gif", save_as_gif=False
 )
