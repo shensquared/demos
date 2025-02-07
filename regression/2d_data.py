@@ -3,20 +3,40 @@ import numpy as np
 import io
 import pyperclip
 from PIL import Image
+import argparse
 
+center = True
 # Generate random data for 5 points
 np.random.seed(0)  # Set seed for reproducibility
 x_1 = np.random.rand(5)
 y = np.random.rand(5)
 
 # Create a scatter plot
-plt.scatter(x_1, y, color="#3c78d8", marker="o")
+# plt.scatter(x_1, y, color="#3c78d8", marker="o")
 
 # Label the axes
-plt.xlabel("$x_1$")
-plt.ylabel("$y$")
+x_1_centered = x_1 - np.mean(x_1)
+y_centered = y - np.mean(y)
 
-# Add a title
+if center:
+    # Center the data
+    x_1_centered = x_1 - np.mean(x_1)
+    y_centered = y - np.mean(y)
+    # Create a new scatter plot with centered data
+    plt.scatter(x_1_centered, y_centered, color="#6aa84f", marker="o")
+    # Label the axes
+    plt.xlabel("$x_1$ (centered)")
+    plt.ylabel("$y$ (centered)")
+    # Add a title
+    # plt.title("Scatter plot of Centered Data")
+else:
+    # Create a scatter plot with original data
+    plt.scatter(x_1, y, color="#3c78d8", marker="o")
+    # Label the axes
+    plt.xlabel("$x_1$")
+    plt.ylabel("$y$")
+    # Add a title
+    # plt.title("Scatter plot of Original Data")
 
 # Label the axes
 plt.xlabel("")
@@ -41,19 +61,6 @@ plt.gca().xaxis.set_major_locator(plt.MaxNLocator(3))
 plt.gca().yaxis.set_major_locator(plt.MaxNLocator(3))
 plt.plot(1, 0, ">k", transform=plt.gca().get_yaxis_transform(), clip_on=False)
 plt.plot(0, 1, "^k", transform=plt.gca().get_xaxis_transform(), clip_on=False)
+
 # Display the plot
-
-# Save the plot to a BytesIO object
-# buf = io.BytesIO()
-# plt.savefig(buf, format="png")
-# buf.seek(0)
-
-# # Open the image with PIL and copy to clipboard
-# image = Image.open(buf)
-# output = io.BytesIO()
-# image.convert("RGB").save(output, "BMP")
-# data = output.getvalue()[14:]
-# output.close()
-# pyperclip.copy(data)
-
 plt.show()
