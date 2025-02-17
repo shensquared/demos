@@ -154,6 +154,7 @@
         [1, "red"],
       ];
 
+
       function generateSurfaceData(theta_1, theta_2, theta_0) {
         var a = [], b = [], z = [];
         // Create x and y grid arrays
@@ -171,7 +172,7 @@
           }
           z.push(zRow);
         }
-        // Map z values to color indices
+        // Map z values to color indices for pink (negative) and red (positive)
         var surfaceColor = z.map((row) =>
           row.map((value) => {
             if (value < 0) return 0;
@@ -179,30 +180,18 @@
             return 1;
           })
         );
-        // Add a contour on the z axis if desired (alternatively, see the boundary trace below)
         return {
           x: a,
           y: b,
           z: z,
           type: "surface",
           showscale: false,
+          opacity: 0.7, 
           colorscale: customColorscale,
           surfacecolor: surfaceColor,
-          // Optionally, you can use contours to highlight a level:
-          // contours: {
-          //   z: {
-          //     show: true,
-          //     start: 0,
-          //     end: 0,
-          //     size: 0.001,
-          //     color: "black",
-          //     width: 4,
-          //   }
-          // }
         };
       }
 
-      // Predefined scatter data for classification points
       var xValues = [
         -0.50183952461055,
         0.9279757672456204,
@@ -255,7 +244,6 @@
         return [scatterDataPositive, scatterDataNegative];
       }
 
-      // 2D scatter traces for the separate 2D plot remain unchanged
       function generateScatterTraces2D(theta_1, theta_2, theta_0) {
         var scatterDataPositive = {
           x: [],
@@ -294,13 +282,12 @@
         if (theta_2 !== 0) {
           // Create 100 points along x in [-2,2]
           x_boundary = Array.from({ length: 100 }, (_, i) => -2 + (4 * i) / 99);
-          // Compute y so that theta_2*x + theta_1*y + theta_0 = 0 => y = (-theta_0 - theta_2*x) / theta_1
-          // (or alternatively solve for y: y = (-theta_0 - theta_1*x)/theta_2)
+          // Compute y so that theta_2*x + theta_1*y + theta_0 = 0
           y_boundary = x_boundary.map(x => (-theta_0 - theta_1 * x) / theta_2);
           // For the decision boundary, z is fixed at 0
           z_boundary = new Array(x_boundary.length).fill(0);
         } else {
-          // If theta_2 is 0, then x is fixed: x = -theta_0/theta_1, and y can vary.
+          // If theta_2 is 0, then x is fixed and y varies
           let x_const = -theta_0 / theta_1;
           x_boundary = new Array(100).fill(x_const);
           y_boundary = Array.from({ length: 100 }, (_, i) => -2 + (4 * i) / 99);
@@ -317,7 +304,7 @@
         };
       }
 
-      // 2D plot update remains similar (with fixed axes and equal scaling)
+      // 2D plot update (with fixed axes and equal scaling)
       function update2DPlot(theta_1, theta_2, theta_0) {
         let separatorTrace;
         if (theta_2 === 0) {
@@ -444,7 +431,7 @@
         var scatter3dTraces = generateScatterTraces(theta_1, theta_2, theta_0);
         var z0trace = generateZ0SurfaceData(theta_1, theta_2, theta_0);
 
-        // Use Plotly.react to update the 3D plot with all traces:
+        // Update the 3D plot with the surface, boundary, z=0 plane, and scatter points.
         Plotly.react("plot", [surfaceTrace, boundaryTrace, z0trace].concat(scatter3dTraces), layout);
 
         update2DPlot(theta_1, theta_2, theta_0);
