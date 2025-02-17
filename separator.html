@@ -131,9 +131,9 @@
         title:
           "View of the feature space (x₁ and x₂) and decision helper (z)<br>z = θ₁x₁ + θ₂ x₂ + θ₀ ",
         scene: {
-          xaxis: { title: "x₁", range: [-2, 2] },
-          yaxis: { title: "x₂", range: [-2, 2] },
-          zaxis: { title: "z", range: [-6, 6] },
+          xaxis: { title: "x₁", range: [-2, 2], tickmode: "linear", dtick: 1},
+            yaxis: { title: "x₂", range: [-2, 2], tickmode: "linear", dtick: 1 },
+            zaxis: { title: "z", range: [-6, 6], tickvals: [-5, -3, -1, 0, 1, 3, 5] },
           aspectmode: "manual", // Fix the aspect ratio
           aspectratio: { x: 1, y: 1, z: 1 }, // Set the aspect ratio to 1:1:1
 
