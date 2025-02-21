@@ -253,19 +253,17 @@
       function updateRightPlotMarker() {
         let currentTheta1 = parseFloat(document.getElementById("theta_1").value);
         let currentTheta2 = parseFloat(document.getElementById("theta_2").value);
-        // Compute loss using the corrected rules:
+        // Compute loss using the rules:
         // For the positive point (1,2): misclassify if (θ₁ + 2·θ₂ <= 0)
         // For the negative point (2,1): misclassify if (2·θ₁ + θ₂ >= 0)
         let indicator1 = (currentTheta1 + 2 * currentTheta2 <= 0) ? 1 : 0;
         let indicator2 = (2 * currentTheta1 + currentTheta2 >= 0) ? 1 : 0;
         let currentLoss = (indicator1 + indicator2) / 2;
-        // Flip the loss so that 0 becomes 1 and 1 becomes 0
-        let flippedLoss = 1 - currentLoss;
-        // Update marker trace (assumed index 1) on 'plot3D'
+        // Use the computed loss directly (do not flip it)
         Plotly.restyle('plot3D', {
           x: [[currentTheta1]],
           y: [[currentTheta2]],
-          z: [[flippedLoss]]
+          z: [[currentLoss]]
         }, [1]);
       }
 
@@ -291,10 +289,10 @@
             const t1 = theta1_values[i];
             const t2 = theta2_values[j];
             let loss = 0;
-            // Using the corrected indicator functions:
+            // Using the indicator functions:
             loss += (t1 + 2 * t2 <= 0) ? 1 : 0;   // positive point (1,2)
             loss += (2 * t1 + t2 >= 0) ? 1 : 0;     // negative point (2,1)
-            row.push(loss / 2);
+            row.push(1 - (loss / 2));
           }
           Z.push(row);
         }
