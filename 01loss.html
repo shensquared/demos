@@ -119,7 +119,7 @@
         ],
       };
 
-      // Custom colorscale for the decision surface
+      // Custom colorscale for the decision surface (left plot)
       var customColorscale = [
         [0, "pink"],
         [0.49, "pink"],
@@ -259,8 +259,11 @@
       function updateRightPlotMarker() {
         let currentTheta1 = parseFloat(document.getElementById("theta_1").value);
         let currentTheta2 = parseFloat(document.getElementById("theta_2").value);
-        let indicator1 = (2 * currentTheta1 + currentTheta2 <= 0) ? 1 : 0;
-        let indicator2 = (currentTheta1 + 2 * currentTheta2 >= 0) ? 1 : 0;
+        // Compute loss using the proper rules:
+        // For the positive point (1,2): f = θ₁ + 2·θ₂ should be > 0.
+        // For the negative point (2,1): f = 2·θ₁ + θ₂ should be < 0.
+        let indicator1 = (currentTheta1 + 2 * currentTheta2 <= 0) ? 1 : 0;
+        let indicator2 = (2 * currentTheta1 + currentTheta2 >= 0) ? 1 : 0;
         let currentLoss = (indicator1 + indicator2) / 2;
         // Update marker trace (assumed index 1) on 'plot3D'
         Plotly.restyle('plot3D', {
@@ -292,29 +295,30 @@
             const t1 = theta1_values[i];
             const t2 = theta2_values[j];
             let loss = 0;
-            loss += (2 * t1 + t2 <= 0) ? 1 : 0;
-            loss += (t1 + 2 * t2 >= 0) ? 1 : 0;
+            // Using the corrected indicator functions:
+            loss += (t1 + 2 * t2 >= 0) ? 1 : 0;   // positive point (1,2)
+            loss += (2 * t1 + t2 <= 0) ? 1 : 0;     // negative point (2,1)
             row.push(loss / 2);
           }
           Z.push(row);
         }
         
-        const surfaceTrace = {
-          z: Z,
-          x: theta1_values,
-          y: theta2_values,
-          type: 'surface',
-          contours: {
-            z: {
-              show: true,
-              usecolormap: true,
-              highlightcolor: '#42f462',
-              project: { z: true }
-            }
-          },
-          showscale: false,
-          name: '0-1 Loss'
-        };
+      const surfaceTrace = {
+        z: Z,
+        x: theta1_values,
+        y: theta2_values,
+        type: 'surface',
+        colorscale: [[0, 'blue'], [1, 'red']],
+        contours: {
+          z: {
+            show: true,
+            usecolormap: true,
+            project: { z: true }
+          }
+        },
+        showscale: false,
+        name: '0-1 Loss'
+      };
         
         // Marker trace for the current (θ₁, θ₂, J(θ)) point.
         const markerTrace = {
