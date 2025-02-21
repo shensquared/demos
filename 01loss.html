@@ -1,8 +1,9 @@
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Demo dataset and 0-1 loss</title>
+    <title>Linear Separator with Average J(θ)</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
       body,
@@ -10,29 +11,36 @@
         margin: 0;
         padding: 0;
         height: 100%;
-        overflow: hidden; /* Prevent vertical scrolling */
+        overflow: hidden;
       }
-      /* Flexbox container to ensure the plots are aligned side by side */
-      .plot-container {
+      .plots-container {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        width: 100%;
-        height: 85vh; /* Overall height for the container */
+        height: 80vh;
       }
-
-      /* Ensure both 2D and 3D plots take up 50% of the container */
-      #plot2D {
-        width: 48%;
-        height: 100%; /* Full height */
+      /* Left plot: decision surface (mimicking Linear Separator demo) */
+      #plot {
+        flex-grow: 1;
+        width: 65%;
+        height: 100%;
       }
-
+      /* Right plot: Average 0-1 loss (J(θ)) */
       #plot3D {
-        width: 48%;
-        height: 100%; /* Full height */
+        width: 35%;
+        height: 100%;
       }
-
-      /* Footer styling */
+      .slider-container {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        height: 15vh;
+      }
+      .slider-group {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
       .footer {
         display: flex;
         justify-content: center;
@@ -41,167 +49,316 @@
         background-color: #f8f9fa;
         color: #6c757d;
         text-align: center;
-        padding: 10px 0;
-        margin-top: 20px;
-        margin-bottom: 5vh;
+        height: 5vh;
       }
-
       .footer a {
         color: #007bff;
         text-decoration: none;
       }
-
       .footer a:hover {
         text-decoration: underline;
-      }
-
-      .centered-text {
-        text-align: center;
-        margin-top: 20px;
-      }
-
-      /* For smaller screens, stack the plots vertically */
-      @media (max-width: 768px) {
-        .plot-container {
-          flex-direction: column;
-        }
-
-        #plot2D,
-        #plot3D {
-          width: 90%;
-          height: 50vh; /* Adjust the height to fit vertically */
-        }
       }
     </style>
   </head>
   <body>
-    <div class="plot-container">
-      <div id="plot2D"></div>
+    <div class="plots-container">
+      <!-- Left plot: 3D decision surface -->
+      <div id="plot"></div>
+      <!-- Right plot: Average 0-1 loss (J(θ)) with marker -->
       <div id="plot3D"></div>
     </div>
-
-    <h3 class="centered-text">
-      Try to draw the separator and normal vector given by (θ₁ = −1, and θ₂ = 1)
-      on the 2D plot, and make sense of the loss given in the 3D plot.
-    </h3>
-
-    <!-- Footer Section -->
+    <div class="slider-container">
+      <div class="slider-group">
+        <label for="theta_1">θ₁:</label>
+        <input type="range" id="theta_1" min="-2" max="2" value="0.5" step="0.1" oninput="updatePlot()">
+        <span id="theta_1_value">0.5</span>
+      </div>
+      <div class="slider-group">
+        <label for="theta_2">θ₂:</label>
+        <input type="range" id="theta_2" min="-2" max="2" value="0.5" step="0.1" oninput="updatePlot()">
+        <span id="theta_2_value">0.5</span>
+      </div>
+      <button id="toggleZ0">Toggle z=0 Surface</button>
+    </div>
     <div class="footer">
-      Built with ❤️ by&nbsp;<a href="https://shenshen.mit.edu" target="_blank"
-        >Shen²</a
-      >
+      Built with ❤️ by&nbsp;<a href="https://shenshen.mit.edu" target="_blank">Shen²</a>
       <span>&nbsp;|&nbsp;</span>
-      <a href="https://github.com/shensquared/demos" target="_blank"
-        >Report a Bug</a
-      >
+      <a href="https://github.com/shensquared/demos" target="_blank">Report a Bug</a>
     </div>
 
     <script>
-      (function () {
-        // 2D Plot adjustments (without the separator)
-        const trace1 = {
+      let z0SurfaceVisible = false; // Tracks if the z=0 surface is visible
+      
+      // Left plot (decision surface) camera and layout settings
+      var customCameraSettings = {
+        eye: { x: 0, y: -1, z: 2 },
+        up: { x: 0, y: 0, z: 1 },
+        center: { x: 0, y: 0, z: 0 },
+      };
+
+      var layout = {
+        title:
+          "View of the feature space (x₁ and x₂) and decision helper (z)<br>z = θ₁x₁ + θ₂x₂",
+        scene: {
+          xaxis: { title: "x₁", range: [-2, 2], tickmode: "linear", dtick: 1 },
+          yaxis: { title: "x₂", range: [-2, 2], tickmode: "linear", dtick: 1 },
+          zaxis: {
+            title: "z",
+            range: [-6, 6],
+            tickvals: [-5, -3, -1, 0, 1, 3, 5]
+          },
+          aspectmode: "manual",
+          aspectratio: { x: 1, y: 1, z: 1 },
+          camera: customCameraSettings,
+        },
+        showlegend: false,
+        // Only include sliders for θ₁ and θ₂ (θ₀ is fixed to 0)
+        sliders: [
+          { currentvalue: { prefix: "Theta 1: " }, pad: { t: 50 }, steps: [], len: 0.5 },
+          { currentvalue: { prefix: "Theta 2: " }, pad: { t: 50 }, steps: [], len: 0.5 },
+        ],
+      };
+
+      // Custom colorscale for the decision surface
+      var customColorscale = [
+        [0, "pink"],
+        [0.49, "pink"],
+        [0.5, "grey"],
+        [0.77, "pink"],
+        [1, "red"],
+      ];
+
+      // Generate the decision surface data over a fine grid.
+      // Equation: z = θ₂·x + θ₁·y (θ₀ is fixed to 0)
+      function generateSurfaceData(theta_1, theta_2) {
+        var a = [], b = [], z = [];
+        for (var i = -2; i <= 2; i += 0.01) {
+          a.push(i);
+        }
+        for (var j = -2; j <= 2; j += 0.01) {
+          b.push(j);
+        }
+        for (var i = 0; i < a.length; i++) {
+          var zRow = [];
+          for (var j = 0; j < b.length; j++) {
+            zRow.push(theta_2 * a[i] + theta_1 * b[j]); // θ₀ = 0
+          }
+          z.push(zRow);
+        }
+        var surfaceColor = z.map((row) =>
+          row.map((value) => {
+            if (value < 0) return 0;
+            if (value === 0) return 0.5;
+            return 1;
+          })
+        );
+        return {
+          x: a,
+          y: b,
+          z: z,
+          type: "surface",
+          showscale: false,
+          opacity: 0.7,
+          colorscale: customColorscale,
+          surfacecolor: surfaceColor,
+        };
+      }
+
+      // Generate fixed 3D scatter traces for the two labeled points.
+      function generateScatterTraces() {
+        var scatterDataPositive = {
           x: [1],
           y: [2],
+          z: [0],
           mode: "markers",
-          type: "scatter",
-          marker: {
-            color: "red",
-            size: 12,
-            symbol: "cross",
-          },
+          type: "scatter3d",
           name: "True Label: Positive",
+          marker: { size: 8, color: "red", symbol: "cross" },
         };
-
-        const trace2 = {
+        var scatterDataNegative = {
           x: [2],
           y: [1],
+          z: [0],
           mode: "markers",
-          type: "scatter",
-          marker: {
-            color: "pink",
-            size: 12,
-            symbol: "-",
-          },
+          type: "scatter3d",
           name: "True Label: Negative",
+          marker: { size: 8, color: "pink", symbol: "circle" },
         };
+        return [scatterDataPositive, scatterDataNegative];
+      }
 
-        const layout2D = {
-          title: "Demo dataset", // Updated plot title
-          xaxis: {
-            title: "x1", // Updated axis name
-            range: [0, 3],
-          },
-          yaxis: {
-            title: "x2", // Updated axis name
-            range: [0, 3],
-          },
+      // Generate a 3D trace for the decision boundary (where z = 0)
+      // Equation: θ₂·x + θ₁·y = 0 (θ₀ is 0)
+      function generateBoundaryTrace3D(theta_1, theta_2) {
+        var x_boundary = [], y_boundary = [], z_boundary = [];
+        if (theta_2 !== 0) {
+          x_boundary = Array.from({ length: 100 }, (_, i) => -2 + (4 * i) / 99);
+          y_boundary = x_boundary.map(x => (-theta_1 * x) / theta_2);
+          z_boundary = new Array(x_boundary.length).fill(0);
+        } else {
+          // When θ₂ is 0, the equation becomes θ₁·y = 0, so y must be 0.
+          x_boundary = Array.from({ length: 100 }, (_, i) => -2 + (4 * i) / 99);
+          y_boundary = new Array(100).fill(0);
+          z_boundary = new Array(100).fill(0);
+        }
+        return {
+          x: x_boundary,
+          y: y_boundary,
+          z: z_boundary,
+          mode: "lines",
+          type: "scatter3d",
+          line: { color: "black", width: 4 },
+          name: "Decision Boundary"
         };
+      }
 
-        Plotly.newPlot("plot2D", [trace1, trace2], layout2D);
+      // Generate a flat z = 0 surface trace for toggling.
+      function generateZ0SurfaceData() {
+        var x = [], y = [], z = [];
+        for (var i = -2; i <= 2; i += 1) { x.push(i); }
+        for (var j = -2; j <= 2; j += 1) { y.push(j); }
+        for (var i = 0; i < x.length; i++) {
+          var zRow = [];
+          for (var j = 0; j < y.length; j++) { zRow.push(0); }
+          z.push(zRow);
+        }
+        return {
+          x: x,
+          y: y,
+          z: z,
+          type: "surface",
+          showscale: false,
+          opacity: 0.5,
+          colorscale: [
+            [0, "rgba(128,128,128,0.5)"],
+            [1, "rgba(128,128,128,0.5)"],
+          ],
+          name: "z0Surface",
+          visible: false,
+        };
+      }
 
-        // 3D Plot adjustments
-        const theta1 = [...Array(400).keys()].map((i) => -10 + (20 / 399) * i);
-        const theta2 = [...Array(400).keys()].map((i) => -10 + (20 / 399) * i);
-        let Z = new Array(400);
+      // This function updates the left plot (decision surface)
+      // and then updates the marker on the right loss plot.
+      function updatePlot() {
+        var theta_1 = parseFloat(document.getElementById("theta_1").value);
+        var theta_2 = parseFloat(document.getElementById("theta_2").value);
+        document.getElementById("theta_1_value").textContent = theta_1.toFixed(1);
+        document.getElementById("theta_2_value").textContent = theta_2.toFixed(1);
+
+        var surfaceTrace = generateSurfaceData(theta_1, theta_2);
+        var boundaryTrace = generateBoundaryTrace3D(theta_1, theta_2);
+        var scatter3dTraces = generateScatterTraces();
+        var z0trace = generateZ0SurfaceData();
+
+        Plotly.react("plot", [surfaceTrace, boundaryTrace, z0trace].concat(scatter3dTraces), layout);
+        updateRightPlotMarker();
+      }
+
+      // Update the marker on the right plot based on current slider values.
+      function updateRightPlotMarker() {
+        let currentTheta1 = parseFloat(document.getElementById("theta_1").value);
+        let currentTheta2 = parseFloat(document.getElementById("theta_2").value);
+        let indicator1 = (2 * currentTheta1 + currentTheta2 <= 0) ? 1 : 0;
+        let indicator2 = (currentTheta1 + 2 * currentTheta2 >= 0) ? 1 : 0;
+        let currentLoss = (indicator1 + indicator2) / 2;
+        // Update marker trace (assumed index 1) on 'plot3D'
+        Plotly.restyle('plot3D', {
+          x: [[currentTheta1]],
+          y: [[currentTheta2]],
+          z: [[currentLoss]]
+        }, [1]);
+      }
+
+      // Toggle z=0 surface visibility on the left plot.
+      document.getElementById("toggleZ0").addEventListener("click", function () {
+        z0SurfaceVisible = !z0SurfaceVisible;
+        var visibilityState = z0SurfaceVisible ? true : "legendonly";
+        var traceIndex = findTraceIndexByName("plot", "z0Surface");
+        if (traceIndex !== -1) {
+          Plotly.restyle("plot", { visible: visibilityState }, [traceIndex]);
+        }
+      });
+
+      // Draw the right plot (Average 0–1 loss surface) with a zoomed-out camera
+      // and include a marker for the current (θ₁, θ₂, J(θ)) point.
+      (function () {
+        const theta1_values = Array.from({ length: 400 }, (_, i) => -10 + (20 / 399) * i);
+        const theta2_values = Array.from({ length: 400 }, (_, i) => -10 + (20 / 399) * i);
+        let Z = [];
         for (let i = 0; i < 400; i++) {
-          Z[i] = new Array(400).fill(0);
+          let row = [];
           for (let j = 0; j < 400; j++) {
-            const theta1_val = theta1[i];
-            const theta2_val = theta2[j];
-            if (
-              theta1_val + 2 * theta2_val < 0 &&
-              2 * theta1_val + theta2_val > 0
-            ) {
-              Z[i][j] = 2;
-            } else if (
-              theta1_val + 2 * theta2_val > 0 &&
-              2 * theta1_val + theta2_val > 0
-            ) {
-              Z[i][j] = 1;
-            } else if (
-              theta1_val + 2 * theta2_val < 0 &&
-              2 * theta1_val + theta2_val < 0
-            ) {
-              Z[i][j] = 1;
-            } else if (
-              theta1_val + 2 * theta2_val > 0 &&
-              2 * theta1_val + theta2_val < 0
-            ) {
-              Z[i][j] = 0;
+            const t1 = theta1_values[i];
+            const t2 = theta2_values[j];
+            let loss = 0;
+            loss += (2 * t1 + t2 <= 0) ? 1 : 0;
+            loss += (t1 + 2 * t2 >= 0) ? 1 : 0;
+            row.push(loss / 2);
+          }
+          Z.push(row);
+        }
+        
+        const surfaceTrace = {
+          z: Z,
+          x: theta1_values,
+          y: theta2_values,
+          type: 'surface',
+          contours: {
+            z: {
+              show: true,
+              usecolormap: true,
+              highlightcolor: '#42f462',
+              project: { z: true }
+            }
+          },
+          showscale: false,
+          name: '0-1 Loss'
+        };
+        
+        // Marker trace for the current (θ₁, θ₂, J(θ)) point.
+        const markerTrace = {
+          x: [parseFloat(document.getElementById("theta_1").value)],
+          y: [parseFloat(document.getElementById("theta_2").value)],
+          z: [0],
+          mode: 'markers',
+          type: 'scatter3d',
+          marker: { size: 6, color: 'gold' },
+          name: 'Current Loss'
+        };
+
+        const data3D = [surfaceTrace, markerTrace];
+        
+        const layout3D = {
+          title: 'Average 0-1 Loss (J(θ))',
+          scene: {
+            xaxis: { title: 'θ₁' },
+            yaxis: { title: 'θ₂' },
+            zaxis: { title: 'J(θ)' },
+            camera: { eye: { x: 3, y: -3, z: 3 } }
+          },
+          autosize: true
+        };
+        
+        Plotly.newPlot('plot3D', data3D, layout3D);
+      })();
+
+      // Now that the right plot is drawn, call updatePlot() so the left plot
+      // is drawn and the right marker is updated.
+      updatePlot();
+
+      // Utility: find the trace index by name.
+      function findTraceIndexByName(plotId, traceName) {
+        var plotElement = document.getElementById(plotId);
+        if (plotElement && plotElement.data) {
+          for (var i = 0; i < plotElement.data.length; i++) {
+            if (plotElement.data[i].name === traceName) {
+              return i;
             }
           }
         }
-
-        const data3D = [
-          {
-            z: Z,
-            x: theta1,
-            y: theta2,
-            type: "surface",
-            contours: {
-              z: {
-                show: true,
-                usecolormap: true,
-                highlightcolor: "#42f462",
-                project: { z: true },
-              },
-            },
-            showscale: false, // This removes the color bar
-          },
-        ];
-
-        const layout3D = {
-          title: "Sum of 0-1 loss (on the demo dataset on the left)",
-          scene: {
-            xaxis: { title: "θ₁" }, // Updated axis name to use theta symbol and subscript
-            yaxis: { title: "θ₂" },
-            zaxis: { title: "J(θ)" },
-          },
-          autosize: true, // Ensure the plot resizes correctly
-        };
-
-        Plotly.newPlot("plot3D", data3D, layout3D);
-      })();
+        return -1;
+      }
     </script>
   </body>
 </html>
