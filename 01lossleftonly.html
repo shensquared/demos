@@ -19,8 +19,9 @@
         align-items: center;
         height: 80vh;
       }
+      /* The plot div now occupies 100% of its container */
       #plot {
-        width: 80%;
+        width: 100%;
         height: 100%;
       }
       .slider-container {
@@ -77,16 +78,15 @@
     <script>
       let z0SurfaceVisible = false;
 
-      // Set the camera to a zoomed-in view.
+      // Use a camera view similar to the zoomed-in view.
       var customCameraSettings = {
         eye: { x: 2.5, y: -2.5, z: 2.5 },
         up: { x: 0, y: 0, z: 1 },
-        center: { x: 0, y: 0, z: 0 },
+        center: { x: 0, y: 0, z: 0 }
       };
 
+      // No title property is set in the layout.
       var layout = {
-        title:
-          "View of the feature space (x₁ and x₂) and decision helper (z)<br>z = θ₁x₁ + θ₂x₂",
         scene: {
           xaxis: { title: "x₁", range: [-2, 2], tickmode: "linear", dtick: 1 },
           yaxis: { title: "x₂", range: [-2, 2], tickmode: "linear", dtick: 1 },
@@ -97,33 +97,29 @@
           },
           aspectmode: "manual",
           aspectratio: { x: 1, y: 1, z: 1 },
-          camera: customCameraSettings,
+          camera: customCameraSettings
         },
         showlegend: false,
         sliders: [
           { currentvalue: { prefix: "Theta 1: " }, pad: { t: 50 }, steps: [], len: 0.5 },
-          { currentvalue: { prefix: "Theta 2: " }, pad: { t: 50 }, steps: [], len: 0.5 },
-        ],
+          { currentvalue: { prefix: "Theta 2: " }, pad: { t: 50 }, steps: [], len: 0.5 }
+        ]
       };
 
-      // Custom colorscale for the decision surface.
+      // Colorscale for the surface.
       var customColorscale = [
         [0, "pink"],
         [0.49, "pink"],
         [0.5, "grey"],
         [0.77, "pink"],
-        [1, "red"],
+        [1, "red"]
       ];
 
-      // Compute the decision surface: z = θ₂·x + θ₁·y with θ₀ fixed to 0.
+      // Generate the decision surface data (z = θ₂·x + θ₁·y, with θ₀ fixed to 0).
       function generateSurfaceData(theta_1, theta_2) {
         var a = [], b = [], z = [];
-        for (var i = -2; i <= 2; i += 0.01) {
-          a.push(i);
-        }
-        for (var j = -2; j <= 2; j += 0.01) {
-          b.push(j);
-        }
+        for (var i = -2; i <= 2; i += 0.01) { a.push(i); }
+        for (var j = -2; j <= 2; j += 0.01) { b.push(j); }
         for (var i = 0; i < a.length; i++) {
           var zRow = [];
           for (var j = 0; j < b.length; j++) {
@@ -146,7 +142,7 @@
           showscale: false,
           opacity: 0.7,
           colorscale: customColorscale,
-          surfacecolor: surfaceColor,
+          surfacecolor: surfaceColor
         };
       }
 
@@ -159,7 +155,7 @@
           mode: "markers",
           type: "scatter3d",
           name: "True Label: Positive",
-          marker: { size: 8, color: "red", symbol: "cross" },
+          marker: { size: 8, color: "red", symbol: "cross" }
         };
         var scatterDataNegative = {
           x: [2],
@@ -168,12 +164,12 @@
           mode: "markers",
           type: "scatter3d",
           name: "True Label: Negative",
-          marker: { size: 8, color: "pink", symbol: "circle" },
+          marker: { size: 8, color: "pink", symbol: "circle" }
         };
         return [scatterDataPositive, scatterDataNegative];
       }
 
-      // Generate the decision boundary (where z = 0) using: θ₂·x + θ₁·y = 0.
+      // Generate the decision boundary (θ₂·x + θ₁·y = 0).
       function generateBoundaryTrace3D(theta_1, theta_2) {
         var x_boundary = [], y_boundary = [], z_boundary = [];
         if (theta_2 !== 0) {
@@ -196,7 +192,7 @@
         };
       }
 
-      // Generate a flat z = 0 surface trace for toggling.
+      // Generate a flat z=0 surface for toggling.
       function generateZ0SurfaceData() {
         var x = [], y = [], z = [];
         for (var i = -2; i <= 2; i += 1) { x.push(i); }
@@ -215,14 +211,14 @@
           opacity: 0.5,
           colorscale: [
             [0, "rgba(128,128,128,0.5)"],
-            [1, "rgba(128,128,128,0.5)"],
+            [1, "rgba(128,128,128,0.5)"]
           ],
           name: "z0Surface",
-          visible: false,
+          visible: false
         };
       }
 
-      // Update the left plot based on slider values.
+      // Update the plot using the current slider values.
       function updatePlot() {
         var theta_1 = parseFloat(document.getElementById("theta_1").value);
         var theta_2 = parseFloat(document.getElementById("theta_2").value);
@@ -235,7 +231,7 @@
         Plotly.react("plot", [surfaceTrace, boundaryTrace, z0trace].concat(scatter3dTraces), layout);
       }
 
-      // Toggle z=0 surface visibility.
+      // Toggle the z=0 surface visibility.
       document.getElementById("toggleZ0").addEventListener("click", function () {
         z0SurfaceVisible = !z0SurfaceVisible;
         var visibilityState = z0SurfaceVisible ? true : "legendonly";
@@ -245,7 +241,7 @@
         }
       });
 
-      // Utility: find the trace index by name.
+      // Utility to find trace index by name.
       function findTraceIndexByName(plotId, traceName) {
         var plotElement = document.getElementById(plotId);
         if (plotElement && plotElement.data) {
