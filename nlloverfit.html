@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sigmoid and -log(sigmoid) Demo</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+      body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+      }
+      .plots-container {
+        display: flex;
+        height: 80vh;
+      }
+      /* Each plot occupies 50% of the window width */
+      #plot_left, #plot_right {
+        width: 50%;
+        height: 100%;
+      }
+      .slider-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 15vh;
+      }
+      .slider-group {
+        margin: 0 20px;
+        text-align: center;
+      }
+      .footer {
+        text-align: center;
+        padding: 10px 0;
+        background-color: #f8f9fa;
+        color: #6c757d;
+      }
+      .footer a {
+        color: #007bff;
+        text-decoration: none;
+      }
+      .footer a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="plots-container">
+      <div id="plot_left"></div>
+      <div id="plot_right"></div>
+    </div>
+    <div class="slider-container">
+      <div class="slider-group">
+        <label for="theta">θ:</label>
+        <input type="range" id="theta" min="-5" max="5" value="1" step="0.1" oninput="updateAll()">
+        <span id="theta_value">1.0</span>
+      </div>
+      <div class="slider-group">
+        <label for="theta_0">θ₀:</label>
+        <input type="range" id="theta_0" min="-5" max="5" value="0" step="0.1" oninput="updateAll()">
+        <span id="theta_0_value">0.0</span>
+      </div>
+    </div>
+    <div class="footer">
+      Built with ❤️ by <a href="https://shenshen.mit.edu" target="_blank">Shen²</a>
+    </div>
+    <script>
+      // Sigmoid function: g(x) = 1/(1+exp(-(θx+θ₀)))
+      function sigmoid(x, theta, theta0) {
+        return 1 / (1 + Math.exp( - (theta * x + theta0) ));
+      }
+      
+      // Generate data for the left plot (x vs. g(x))
+      function generateSigmoidData2D(theta, theta0) {
+        let x = [];
+        let y = [];
+        for (let i = -10; i <= 10; i += 0.1) {
+          x.push(i);
+          y.push(sigmoid(i, theta, theta0));
+        }
+        return { x: x, y: y };
+      }
+      
+      // Generate static data for the right plot: plot -log(g) vs. g, for g in (0,1)
+      function generateLossDataStatic() {
+        let g_vals = [];
+        let loss_vals = [];
+        for (let g = 0.001; g < 1; g += 0.001) {
+          g_vals.push(g);
+          loss_vals.push(-Math.log(g));
+        }
+        return { x: g_vals, y: loss_vals };
+      }
+      
+      // Update the left plot (which depends on theta and theta₀)
+      function updateLeftPlot() {
+        let theta = parseFloat(document.getElementById("theta").value);
+        let theta0 = parseFloat(document.getElementById("theta_0").value);
+        document.getElementById("theta_value").textContent = theta.toFixed(1);
+        document.getElementById("theta_0_value").textContent = theta0.toFixed(1);
+        
+        let data = generateSigmoidData2D(theta, theta0);
+        // Left plot layout: no title, a dashed vertical line at x=1, no legend.
+        let layoutLeft = {
+          margin: { l: 50, r: 10, t: 10, b: 50 },
+          xaxis: { title: "x", range: [-10, 10] },
+          yaxis: { title: "sigmoid(θx + θ₀)", range: [0, 1] },
+          showlegend: false,
+          shapes: [
+            {
+              type: 'line',
+              x0: 1,
+              y0: 0,
+              x1: 1,
+              y1: 1,
+              line: { dash: 'dash', color: 'black' }
+            }
+          ]
+        };
+
+        let traceSigmoid = {
+          x: data.x,
+          y: data.y,
+          mode: "lines",
+          type: "scatter"
+        };
+
+        // Square marker at (1, sigmoid(1, theta, theta₀)) with increased size.
+        let markerTrace = {
+          x: [1],
+          y: [sigmoid(1, theta, theta0)],
+          mode: "markers",
+          type: "scatter",
+          marker: { size: 15, symbol: "square", color: "black" }
+        };
+
+        Plotly.react("plot_left", [traceSigmoid, markerTrace], layoutLeft);
+      }
+      
+      // Create the static right plot (g vs. -log(g)) with an extra marker.
+      function createRightPlot() {
+        let dataStatic = generateLossDataStatic();
+        let layoutRight = {
+          margin: { l: 50, r: 10, t: 10, b: 50 },
+          xaxis: { title: "g (sigmoid output)", range: [0, 1] },
+          yaxis: { title: "-log(sigmoid(θx + θ₀))", range: [0, 10] },
+          showlegend: false
+        };
+
+        // Initial marker using default theta=1 and theta₀=0 at (g, -log(g)) where x=1.
+        let init_g = sigmoid(1, 1, 0);
+        let init_loss = -Math.log(init_g);
+        let markerTrace = {
+          x: [init_g],
+          y: [init_loss],
+          mode: "markers",
+          type: "scatter",
+          marker: { size: 15, symbol: "circle", color: "gold" }
+        };
+
+        Plotly.newPlot("plot_right", [
+          {
+            x: dataStatic.x,
+            y: dataStatic.y,
+            mode: "lines",
+            type: "scatter",
+            line: { color: "green" }
+          },
+          markerTrace
+        ], layoutRight);
+      }
+      
+      // Update only the marker on the right plot based on current theta and theta₀.
+      function updateRightMarker() {
+        let theta = parseFloat(document.getElementById("theta").value);
+        let theta0 = parseFloat(document.getElementById("theta_0").value);
+        let g_val = sigmoid(1, theta, theta0);
+        let loss_val = -Math.log(g_val);
+        // Update the marker trace on 'plot_right' (assumed trace index 1)
+        Plotly.restyle("plot_right", {
+          x: [[g_val]],
+          y: [[loss_val]]
+        }, [1]);
+      }
+      
+      function updateAll() {
+        updateLeftPlot();
+        updateRightMarker();
+      }
+      
+      // Initialize the plots.
+      updateLeftPlot();
+      createRightPlot();
+    </script>
+  </body>
+</html>
