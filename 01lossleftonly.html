@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Linear Separator with Average J(θ)</title>
+    <title>3D Decision Surface</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
       body,
@@ -15,13 +15,12 @@
       }
       .plots-container {
         display: flex;
-        justify-content: space-between;
+        justify-content: center;
         align-items: center;
         height: 80vh;
       }
-      /* Both plots are now roughly 50% width each */
-      #plot, #plot3D {
-        width: 50%;
+      #plot {
+        width: 80%;
         height: 100%;
       }
       .slider-container {
@@ -56,10 +55,7 @@
   </head>
   <body>
     <div class="plots-container">
-      <!-- Left plot: 3D decision surface -->
       <div id="plot"></div>
-      <!-- Right plot: Average 0-1 loss (J(θ)) with marker -->
-      <div id="plot3D"></div>
     </div>
     <div class="slider-container">
       <div class="slider-group">
@@ -75,17 +71,15 @@
       <button id="toggleZ0">Toggle z=0 Surface</button>
     </div>
     <div class="footer">
-      Built with ❤️ by&nbsp;<a href="https://shenshen.mit.edu" target="_blank">Shen²</a>
-      <span>&nbsp;|&nbsp;</span>
-      <a href="https://github.com/shensquared/demos" target="_blank">Report a Bug</a>
+      Built with ❤️ by <a href="https://shenshen.mit.edu" target="_blank">Shen²</a>
     </div>
 
     <script>
-      let z0SurfaceVisible = false; // Tracks if the z=0 surface is visible
-      
-      // Left plot (decision surface) camera and layout settings
+      let z0SurfaceVisible = false;
+
+      // Set the camera to a zoomed-in view.
       var customCameraSettings = {
-        eye: { x: 0, y: -1, z: 2 },
+        eye: { x: 2.5, y: -2.5, z: 2.5 },
         up: { x: 0, y: 0, z: 1 },
         center: { x: 0, y: 0, z: 0 },
       };
@@ -106,14 +100,13 @@
           camera: customCameraSettings,
         },
         showlegend: false,
-        // Only include sliders for θ₁ and θ₂ (θ₀ is fixed to 0)
         sliders: [
           { currentvalue: { prefix: "Theta 1: " }, pad: { t: 50 }, steps: [], len: 0.5 },
           { currentvalue: { prefix: "Theta 2: " }, pad: { t: 50 }, steps: [], len: 0.5 },
         ],
       };
 
-      // Custom colorscale for the decision surface (left plot)
+      // Custom colorscale for the decision surface.
       var customColorscale = [
         [0, "pink"],
         [0.49, "pink"],
@@ -122,8 +115,7 @@
         [1, "red"],
       ];
 
-      // Generate the decision surface data over a fine grid.
-      // Equation: z = θ₂·x + θ₁·y (θ₀ is fixed to 0)
+      // Compute the decision surface: z = θ₂·x + θ₁·y with θ₀ fixed to 0.
       function generateSurfaceData(theta_1, theta_2) {
         var a = [], b = [], z = [];
         for (var i = -2; i <= 2; i += 0.01) {
@@ -135,12 +127,12 @@
         for (var i = 0; i < a.length; i++) {
           var zRow = [];
           for (var j = 0; j < b.length; j++) {
-            zRow.push(theta_2 * a[i] + theta_1 * b[j]); // θ₀ = 0
+            zRow.push(theta_2 * a[i] + theta_1 * b[j]);
           }
           z.push(zRow);
         }
-        var surfaceColor = z.map((row) =>
-          row.map((value) => {
+        var surfaceColor = z.map(row =>
+          row.map(value => {
             if (value < 0) return 0;
             if (value === 0) return 0.5;
             return 1;
@@ -158,7 +150,7 @@
         };
       }
 
-      // Generate fixed 3D scatter traces for the two labeled points.
+      // Fixed scatter traces for the two labeled points.
       function generateScatterTraces() {
         var scatterDataPositive = {
           x: [1],
@@ -181,8 +173,7 @@
         return [scatterDataPositive, scatterDataNegative];
       }
 
-      // Generate a 3D trace for the decision boundary (where z = 0)
-      // Equation: θ₂·x + θ₁·y = 0 (θ₀ is 0)
+      // Generate the decision boundary (where z = 0) using: θ₂·x + θ₁·y = 0.
       function generateBoundaryTrace3D(theta_1, theta_2) {
         var x_boundary = [], y_boundary = [], z_boundary = [];
         if (theta_2 !== 0) {
@@ -190,7 +181,6 @@
           y_boundary = x_boundary.map(x => (-theta_1 * x) / theta_2);
           z_boundary = new Array(x_boundary.length).fill(0);
         } else {
-          // When θ₂ is 0, the equation becomes θ₁·y = 0, so y must be 0.
           x_boundary = Array.from({ length: 100 }, (_, i) => -2 + (4 * i) / 99);
           y_boundary = new Array(100).fill(0);
           z_boundary = new Array(100).fill(0);
@@ -232,44 +222,20 @@
         };
       }
 
-      // This function updates the left plot (decision surface)
-      // and then updates the marker on the right loss plot.
+      // Update the left plot based on slider values.
       function updatePlot() {
         var theta_1 = parseFloat(document.getElementById("theta_1").value);
         var theta_2 = parseFloat(document.getElementById("theta_2").value);
         document.getElementById("theta_1_value").textContent = theta_1.toFixed(1);
         document.getElementById("theta_2_value").textContent = theta_2.toFixed(1);
-
         var surfaceTrace = generateSurfaceData(theta_1, theta_2);
         var boundaryTrace = generateBoundaryTrace3D(theta_1, theta_2);
         var scatter3dTraces = generateScatterTraces();
         var z0trace = generateZ0SurfaceData();
-
         Plotly.react("plot", [surfaceTrace, boundaryTrace, z0trace].concat(scatter3dTraces), layout);
-        updateRightPlotMarker();
       }
 
-      // Update the marker on the right plot based on current slider values.
-      function updateRightPlotMarker() {
-        let currentTheta1 = parseFloat(document.getElementById("theta_1").value);
-        let currentTheta2 = parseFloat(document.getElementById("theta_2").value);
-        // Compute loss using the corrected rules:
-        // For the positive point (1,2): misclassify if (θ₁ + 2·θ₂ <= 0)
-        // For the negative point (2,1): misclassify if (2·θ₁ + θ₂ >= 0)
-        let indicator1 = (currentTheta1 + 2 * currentTheta2 <= 0) ? 1 : 0;
-        let indicator2 = (2 * currentTheta1 + currentTheta2 >= 0) ? 1 : 0;
-        let currentLoss = (indicator1 + indicator2) / 2;
-        // Flip the loss so that 0 becomes 1 and 1 becomes 0
-        let flippedLoss = 1 - currentLoss;
-        // Update marker trace (assumed index 1) on 'plot3D'
-        Plotly.restyle('plot3D', {
-          x: [[currentTheta1]],
-          y: [[currentTheta2]],
-          z: [[flippedLoss]]
-        }, [1]);
-      }
-
-      // Toggle z=0 surface visibility on the left plot.
+      // Toggle z=0 surface visibility.
       document.getElementById("toggleZ0").addEventListener("click", function () {
         z0SurfaceVisible = !z0SurfaceVisible;
         var visibilityState = z0SurfaceVisible ? true : "legendonly";
@@ -278,76 +244,6 @@
           Plotly.restyle("plot", { visible: visibilityState }, [traceIndex]);
         }
       });
-
-      // Draw the right plot (Average 0–1 loss surface) with a zoomed-in camera
-      // and include a marker for the current (θ₁, θ₂, J(θ)) point.
-      (function () {
-        const theta1_values = Array.from({ length: 400 }, (_, i) => -10 + (20 / 399) * i);
-        const theta2_values = Array.from({ length: 400 }, (_, i) => -10 + (20 / 399) * i);
-        let Z = [];
-        for (let i = 0; i < 400; i++) {
-          let row = [];
-          for (let j = 0; j < 400; j++) {
-            const t1 = theta1_values[i];
-            const t2 = theta2_values[j];
-            let loss = 0;
-            // Using the corrected indicator functions:
-            loss += (t1 + 2 * t2 <= 0) ? 1 : 0;   // positive point (1,2)
-            loss += (2 * t1 + t2 >= 0) ? 1 : 0;     // negative point (2,1)
-            row.push(loss / 2);
-          }
-          Z.push(row);
-        }
-        
-        const surfaceTrace = {
-          z: Z,
-          x: theta1_values,
-          y: theta2_values,
-          type: 'surface',
-          // Colorscale: 0 maps to blue, 1 maps to red.
-          colorscale: [[0, 'blue'], [1, 'red']],
-          contours: {
-            z: {
-              show: true,
-              usecolormap: true,
-              project: { z: true }
-            }
-          },
-          showscale: false,
-          name: '0-1 Loss'
-        };
-        
-        // Marker trace for the current (θ₁, θ₂, J(θ)) point.
-        const markerTrace = {
-          x: [parseFloat(document.getElementById("theta_1").value)],
-          y: [parseFloat(document.getElementById("theta_2").value)],
-          z: [0],
-          mode: 'markers',
-          type: 'scatter3d',
-          marker: { size: 6, color: 'gold' },
-          name: 'Current Loss'
-        };
-
-        const data3D = [surfaceTrace, markerTrace];
-        
-        const layout3D = {
-          title: 'Average 0-1 Loss (J(θ))',
-          scene: {
-            xaxis: { title: 'θ₁' },
-            yaxis: { title: 'θ₂' },
-            zaxis: { title: 'J(θ)' },
-            // Adjusted camera for a closer (zoomed-in) view:
-            camera: { eye: { x: 2.5, y: -2.5, z: 2.5 } }
-          },
-          autosize: true
-        };
-        
-        Plotly.newPlot('plot3D', data3D, layout3D);
-      })();
-
-      // Now that the right plot is drawn, call updatePlot() so the left plot
-      // is drawn and the right marker is updated.
-      updatePlot();
 
       // Utility: find the trace index by name.
       function findTraceIndexByName(plotId, traceName) {
@@ -361,6 +257,8 @@
         }
         return -1;
       }
+
+      updatePlot();
     </script>
   </body>
 </html>
