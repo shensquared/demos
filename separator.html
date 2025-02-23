@@ -7,18 +7,21 @@
     <!-- Include Plotly.js -->
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
-      body,
-      html {
+      html,
+      body {
         margin: 0;
         padding: 0;
         height: 100%;
-        overflow: hidden;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
       }
       .plots-container {
+        flex: 1;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        height: 80vh;
       }
       #plot {
         flex-grow: 1;
@@ -33,7 +36,7 @@
         display: flex;
         justify-content: space-around;
         align-items: center;
-        height: 15vh;
+        height: 15%;
       }
       .slider-group {
         display: flex;
@@ -48,7 +51,7 @@
         background-color: #f8f9fa;
         color: #6c757d;
         text-align: center;
-        height: 5vh;
+        height: 5%;
       }
       .footer a {
         color: #007bff;
@@ -76,7 +79,7 @@
           step="0.1"
           oninput="updatePlot()"
         />
-        <span id="theta_1_value">1.2</span>
+        <span id="theta_1_value">0.5</span>
       </div>
       <div class="slider-group">
         <label for="theta_2">θ₂:</label>
@@ -89,7 +92,7 @@
           step="0.1"
           oninput="updatePlot()"
         />
-        <span id="theta_2_value">-2</span>
+        <span id="theta_2_value">0.5</span>
       </div>
       <div class="slider-group">
         <label for="theta_0">θ₀:</label>
@@ -113,18 +116,21 @@
     </div>
 
     <script>
-      let z0SurfaceVisible = false; // Tracks if the z=0 surface is currently visible
+      let z0SurfaceVisible = false;
 
-      // Initialize the 3D plot layout with no legend
+      // Custom camera settings for the 3D plot
       var customCameraSettings = {
         eye: { x: 0, y: -1, z: 2 },
         up: { x: 0, y: 0, z: 1 },
         center: { x: 0, y: 0, z: 0 },
       };
 
+      // Global layout for the 3D plot with an adaptive title font.
       var layout = {
-        title:
-          "View of the feature space (x₁ and x₂) and decision helper (z)<br>z = θ₁x₁ + θ₂x₂ + θ₀ ",
+        title: {
+          text: "View of the feature space (x₁ and x₂) and decision helper (z)<br>z = θ₁x₁ + θ₂x₂ + θ₀ ",
+          font: { size: 18 } // placeholder, updated below
+        },
         scene: {
           xaxis: { title: "x₁", range: [-2, 2], tickmode: "linear", dtick: 1 },
           yaxis: { title: "x₂", range: [-2, 2], tickmode: "linear", dtick: 1 },
@@ -143,6 +149,7 @@
           { currentvalue: { prefix: "Theta 2: " }, pad: { t: 50 }, steps: [], len: 0.5 },
           { currentvalue: { prefix: "Theta 0: " }, pad: { t: 50 }, steps: [], len: 0.5 },
         ],
+        autosize: true
       };
 
       // Custom color scale for the surface
@@ -154,17 +161,26 @@
         [1, "red"],
       ];
 
+      // Helper function: calculate adaptive font size based on container width.
+      function getAdaptiveFontSize(containerId) {
+        var containerWidth = document.getElementById(containerId).clientWidth;
+        // Adjust divisor and limits as needed
+        return Math.max(Math.min(containerWidth / 30, 24), 14);
+      }
+
+      // Update the title font for the 3D plot layout
+      function updateTitleFont3D() {
+        layout.title.font.size = getAdaptiveFontSize("plot");
+      }
 
       function generateSurfaceData(theta_1, theta_2, theta_0) {
         var a = [], b = [], z = [];
-        // Create x and y grid arrays
         for (var i = -2; i <= 2; i += 0.01) {
           a.push(i);
         }
         for (var j = -2; j <= 2; j += 0.01) {
           b.push(j);
         }
-        // Compute z values over the grid
         for (var i = 0; i < a.length; i++) {
           var zRow = [];
           for (var j = 0; j < b.length; j++) {
@@ -172,7 +188,6 @@
           }
           z.push(zRow);
         }
-        // Map z values to color indices for pink (negative) and red (positive)
         var surfaceColor = z.map((row) =>
           row.map((value) => {
             if (value < 0) return 0;
@@ -276,18 +291,13 @@
         return [scatterDataPositive, scatterDataNegative];
       }
 
-      // New function: generate a 3D boundary trace for the decision boundary (z = 0)
       function generateBoundaryTrace3D(theta_1, theta_2, theta_0) {
         var x_boundary = [], y_boundary = [], z_boundary = [];
         if (theta_2 !== 0) {
-          // Create 100 points along x in [-2,2]
           x_boundary = Array.from({ length: 100 }, (_, i) => -2 + (4 * i) / 99);
-          // Compute y so that theta_2*x + theta_1*y + theta_0 = 0
           y_boundary = x_boundary.map(x => (-theta_0 - theta_1 * x) / theta_2);
-          // For the decision boundary, z is fixed at 0
           z_boundary = new Array(x_boundary.length).fill(0);
         } else {
-          // If theta_2 is 0, then x is fixed and y varies
           let x_const = -theta_0 / theta_1;
           x_boundary = new Array(100).fill(x_const);
           y_boundary = Array.from({ length: 100 }, (_, i) => -2 + (4 * i) / 99);
@@ -304,7 +314,7 @@
         };
       }
 
-      // 2D plot update (with fixed axes and equal scaling)
+      // Update 2D plot with adaptive title font
       function update2DPlot(theta_1, theta_2, theta_0) {
         let separatorTrace;
         if (theta_2 === 0) {
@@ -340,6 +350,9 @@
             name: "Separator",
           };
         }
+        // Adaptive font for the 2D title
+        var titleFontSize2D = getAdaptiveFontSize("plot2D");
+
         var legendEntryForVector = {
           x: [null],
           y: [null],
@@ -348,7 +361,10 @@
           line: { color: "red" },
         };
         var layout2D = {
-          title: "View of the feature space (x₁ and x₂)",
+          title: {
+            text: "View of the feature space (x₁ and x₂)",
+            font: { size: titleFontSize2D }
+          },
           xaxis: { title: "x₁", range: [-2, 2], autorange: false },
           yaxis: {
             title: "x₂",
@@ -389,7 +405,6 @@
         Plotly.newPlot("plot2D", [separatorTrace, legendEntryForVector], layout2D);
       }
 
-      // Generate a flat z=0 surface trace (for toggling)
       function generateZ0SurfaceData(theta_1, theta_2, theta_0) {
         var x = [], y = [], z = [];
         for (var i = -2; i <= 2; i += 1) { x.push(i); }
@@ -415,8 +430,7 @@
         };
       }
 
-      // Update both the 3D and 2D plots whenever the sliders change.
-      // In the 3D plot we now include the boundary trace.
+      // Update both plots when slider values change.
       function updatePlot() {
         var theta_1 = parseFloat(document.getElementById("theta_1").value);
         var theta_2 = parseFloat(document.getElementById("theta_2").value);
@@ -426,12 +440,14 @@
         document.getElementById("theta_2_value").textContent = theta_2.toFixed(1);
         document.getElementById("theta_0_value").textContent = theta_0.toFixed(1);
 
+        // Update the 3D title font size based on container width.
+        updateTitleFont3D();
+
         var surfaceTrace = generateSurfaceData(theta_1, theta_2, theta_0);
         var boundaryTrace = generateBoundaryTrace3D(theta_1, theta_2, theta_0);
         var scatter3dTraces = generateScatterTraces(theta_1, theta_2, theta_0);
         var z0trace = generateZ0SurfaceData(theta_1, theta_2, theta_0);
 
-        // Update the 3D plot with the surface, boundary, z=0 plane, and scatter points.
         Plotly.react("plot", [surfaceTrace, boundaryTrace, z0trace].concat(scatter3dTraces), layout);
 
         update2DPlot(theta_1, theta_2, theta_0);
@@ -459,6 +475,13 @@
         if (traceIndex !== -1) {
           Plotly.restyle("plot", { visible: visibilityState }, [traceIndex]);
         }
+      });
+
+      window.addEventListener("resize", function() {
+        Plotly.Plots.resize(document.getElementById("plot"));
+        Plotly.Plots.resize(document.getElementById("plot2D"));
+        // Also update title fonts on resize
+        updatePlot();
       });
     </script>
   </body>
