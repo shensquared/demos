@@ -16,24 +16,35 @@
       }
       .grid-container {
         display: grid;
+        /* Two columns and two rows */
         grid-template-columns: 50% 50%;
-        grid-template-rows: 50% 50%;
+        grid-template-rows: 1fr 1fr;
         width: 100vw;
         height: 95vh;
       }
       .grid-item {
         padding: 10px;
+      }
+      /* Left column items: the two sigmoid plots */
+      .left-column {
+        grid-column: 1;
+      }
+      /* First sigmoid plot in row 1 */
+      #cell-1 {
+        grid-row: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      /* Second sigmoid plot in row 2 */
+      #cell-2 {
+        grid-row: 2;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
       }
       .plot-container {
-        flex-grow: 1; /* Make the plot take up most of the available space */
-      }
-      #plot_weighted {
-        display: flex;
-        justify-content: center; /* Horizontally center */
-        align-items: center; /* Vertically center */
+        flex-grow: 1;
       }
       .slider-container {
         display: flex;
@@ -43,6 +54,15 @@
       .slider-group {
         display: flex;
         flex-direction: column;
+        align-items: center;
+      }
+      /* Right column item: the weighted plot, centered vertically */
+      .right-column {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
         align-items: center;
       }
       .footer {
@@ -67,8 +87,8 @@
   </head>
   <body>
     <div class="grid-container">
-      <!-- First row, first column: First sigmoid plot and sliders -->
-      <div class="grid-item">
+      <!-- Left column, first row: First sigmoid plot and sliders -->
+      <div id="cell-1" class="grid-item left-column">
         <div class="plot-container" id="plot3d"></div>
         <div class="slider-container">
           <div class="slider-group">
@@ -82,10 +102,10 @@
               step="0.1"
               oninput="updatez1()"
             />
-            <span id="theta_11_value">1</span>
+            <span id="theta_11_value">5</span>
           </div>
           <div class="slider-group">
-            <label for="theta_12">θ₁₂:</label>
+            <label for="theta_12">θ₁₂</label>
             <input
               type="range"
               id="theta_12"
@@ -95,10 +115,10 @@
               step="0.1"
               oninput="updatez1()"
             />
-            <span id="theta_12_value">0</span>
+            <span id="theta_12_value">5</span>
           </div>
           <div class="slider-group">
-            <label for="theta_10">θ₁₀:</label>
+            <label for="theta_10">θ₁₀</label>
             <input
               type="range"
               id="theta_10"
@@ -108,63 +128,17 @@
               step="0.1"
               oninput="updatez1()"
             />
-            <span id="theta_10_value">0</span>
+            <span id="theta_10_value">-1</span>
           </div>
         </div>
       </div>
 
-      <!-- First row, second column: Combined weighted plot -->
-      <div class="grid-item">
-        <div class="plot-container" id="plot_weighted"></div>
-        <div class="slider-container">
-          <div class="slider-group">
-            <label for="w1">w₁:</label>
-            <input
-              type="range"
-              id="w1"
-              min="-5"
-              max="5"
-              value="5"
-              step="0.1"
-              oninput="update_layer2()"
-            />
-            <span id="w1_value">0.5</span>
-          </div>
-          <div class="slider-group">
-            <label for="w2">w₂:</label>
-            <input
-              type="range"
-              id="w2"
-              min="-5"
-              max="5"
-              value="5"
-              step="0.1"
-              oninput="update_layer2()"
-            />
-            <span id="w2_value">0.5</span>
-          </div>
-          <div class="slider-group">
-            <label for="w0">w₀:</label>
-            <input
-              type="range"
-              id="w0"
-              min="-5"
-              max="5"
-              value="-4"
-              step="0.1"
-              oninput="update_layer2()"
-            />
-            <span id="w0_value">0</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Second row, first column: Second sigmoid plot and sliders -->
-      <div class="grid-item">
+      <!-- Left column, second row: Second sigmoid plot and sliders -->
+      <div id="cell-2" class="grid-item left-column">
         <div class="plot-container" id="plot3d_2"></div>
         <div class="slider-container">
           <div class="slider-group">
-            <label for="theta_21">θ₂₁:</label>
+            <label for="theta_21">θ₂₁</label>
             <input
               type="range"
               id="theta_21"
@@ -174,10 +148,10 @@
               step="0.1"
               oninput="updatez2()"
             />
-            <span id="theta_21_value">1</span>
+            <span id="theta_21_value">-5</span>
           </div>
           <div class="slider-group">
-            <label for="theta_22">θ₂₂:</label>
+            <label for="theta_22">θ₂₂</label>
             <input
               type="range"
               id="theta_22"
@@ -187,10 +161,10 @@
               step="0.1"
               oninput="updatez2()"
             />
-            <span id="theta_22_value">1</span>
+            <span id="theta_22_value">-5</span>
           </div>
           <div class="slider-group">
-            <label for="theta_20">θ₂₀:</label>
+            <label for="theta_20">θ₂₀</label>
             <input
               type="range"
               id="theta_20"
@@ -200,157 +174,114 @@
               step="0.1"
               oninput="updatez2()"
             />
-            <span id="theta_20_value">0</span>
+            <span id="theta_20_value">-1</span>
           </div>
         </div>
       </div>
 
-      <!-- Second row, second column: Placeholder for additional content -->
-      <div class="grid-item" id="cell-4">
-        <div class="plot-container" id="scatter_plot"></div>
+      <!-- Right column, spanning both rows: Combined weighted plot, centered vertically -->
+      <div class="grid-item right-column">
+        <div class="plot-container" id="plot_weighted"></div>
+        <div class="slider-container">
+          <div class="slider-group">
+            <label for="w1">w₁</label>
+            <input
+              type="range"
+              id="w1"
+              min="-5"
+              max="5"
+              value="5"
+              step="0.1"
+              oninput="update_layer2()"
+            />
+            <span id="w1_value">5</span>
+          </div>
+          <div class="slider-group">
+            <label for="w2">w₂</label>
+            <input
+              type="range"
+              id="w2"
+              min="-5"
+              max="5"
+              value="5"
+              step="0.1"
+              oninput="update_layer2()"
+            />
+            <span id="w2_value">5</span>
+          </div>
+          <div class="slider-group">
+            <label for="w0">w₀</label>
+            <input
+              type="range"
+              id="w0"
+              min="-5"
+              max="5"
+              value="-4"
+              step="0.1"
+              oninput="update_layer2()"
+            />
+            <span id="w0_value">-4</span>
+          </div>
+        </div>
       </div>
     </div>
 
     <div class="footer">
-      Built with ❤️ by&nbsp;<a href="https://shenshen.mit.edu" target="_blank"
-        >Shen²</a
-      >
+      Built with ❤️ by&nbsp;<a href="https://shenshen.mit.edu" target="_blank">Shen²</a>
       <span>&nbsp;|&nbsp;</span>
-      <a href="https://github.com/shensquared/demos" target="_blank"
-        >Report a Bug</a
-      >
+      <a href="https://github.com/shensquared/demos" target="_blank">Report a Bug</a>
     </div>
 
     <script>
-      // Define the fixed camera settings for all 3D plots
+      // Define fixed camera settings for all 3D plots
       const fixedCameraSettings = {
-        eye: { x: 1.5, y: 1.5, z: 1.5 }, // Position of the camera
-        center: { x: 0, y: 0, z: 0 }, // Where the camera looks at
-        up: { x: 0, y: 0, z: 1 }, // Orientation of the camera
+        eye: { x: 1.5, y: 1.5, z: 1.5 },
+        center: { x: 0, y: 0, z: 0 },
+        up: { x: 0, y: 0, z: 1 },
       };
 
-      // Define the constants for x1 and x2 grid points (ranging from -2 to 2 with step 0.1)
-      const x1Grid = Array.from({ length: 41 }, (_, i) => -2 + i * 0.1); // 41 points from -2 to 2
-      const x2Grid = Array.from({ length: 41 }, (_, i) => -2 + i * 0.1); // Same for x2
+      // Define grid points for x₁ and x₂ (from -2 to 2 with step 0.1)
+      const x1Grid = Array.from({ length: 41 }, (_, i) => -2 + i * 0.1);
+      const x2Grid = Array.from({ length: 41 }, (_, i) => -2 + i * 0.1);
 
-      let z1Data, z2Data; // Store z1 and z2 data for weighted plot
+      let z1Data, z2Data; // Store data for weighted plot
 
-      function sigmoid3D(x1, x2, theta_11, theta_12, theta_0) {
-        return 1 / (1 + Math.exp(-(theta_11 * x1 + theta_12 * x2 + theta_0)));
+      function sigmoid3D(x1, x2, theta1, theta2, theta0) {
+        return 1 / (1 + Math.exp(-(theta1 * x1 + theta2 * x2 + theta0)));
       }
 
-      // Generate data points for first sigmoid function (z₁)
+      // Generate data for the first sigmoid function (z₁)
       function generatez1_2(theta_11, theta_12, theta_10) {
         let z = [];
-
         for (let i = 0; i < x1Grid.length; i++) {
           let zRow = [];
           for (let j = 0; j < x2Grid.length; j++) {
-            zRow.push(
-              sigmoid3D(x1Grid[i], x2Grid[j], theta_11, theta_12, theta_10)
-            );
+            zRow.push(sigmoid3D(x1Grid[i], x2Grid[j], theta_11, theta_12, theta_10));
           }
           z.push(zRow);
         }
-
         return { x1: x1Grid, y: x2Grid, z: z, showscale: false };
       }
 
-      // Generate data points for the second sigmoid function (z₂)
+      // Generate data for the second sigmoid function (z₂)
       function generatez2(theta_21, theta_22, theta_20) {
         let z = [];
-
         for (let i = 0; i < x1Grid.length; i++) {
           let zRow = [];
           for (let j = 0; j < x2Grid.length; j++) {
-            zRow.push(
-              sigmoid3D(x1Grid[i], x2Grid[j], theta_21, theta_22, theta_20)
-            );
+            zRow.push(sigmoid3D(x1Grid[i], x2Grid[j], theta_21, theta_22, theta_20));
           }
           z.push(zRow);
         }
-
         return { x1: x1Grid, y: x2Grid, z: z, showscale: false };
       }
 
-      // Create the first 3D plot (z₁)
-      function createz1() {
-        var theta_11 = parseFloat(document.getElementById("theta_11").value);
-        var theta_12 = parseFloat(document.getElementById("theta_12").value);
-        var theta_10 = parseFloat(document.getElementById("theta_10").value);
-
-        var data = generatez1_2(theta_11, theta_12, theta_10);
-        z1Data = data.z; // Store for weighted plot
-        var layout = {
-          title: "z₁=σ(θ₁₁x₁ + θ₁₂x₂+θ₁₀)",
-          scene: {
-            xaxis: { title: "x₁", range: [-2, 2] },
-            yaxis: { title: "x₂", range: [-2, 2] },
-            zaxis: { title: "z₁", range: [0, 1] },
-            aspectmode: "cube", // Equal axis scaling
-            showscale: false,
-          },
-        };
-        Plotly.newPlot(
-          "plot3d",
-          [
-            {
-              x: x1Grid,
-              y: x2Grid,
-              z: data.z,
-              type: "surface",
-              showscale: false,
-            },
-          ],
-          layout
-        );
-      }
-
-      // Create the second 3D plot (z₂)
-      function createz2() {
-        var theta_21 = parseFloat(document.getElementById("theta_21").value);
-        var theta_22 = parseFloat(document.getElementById("theta_22").value);
-        var theta_20 = parseFloat(document.getElementById("theta_20").value);
-
-        var data = generatez2(theta_21, theta_22, theta_20);
-        z2Data = data.z; // Store for weighted plot
-        var layout = {
-          title: "z₂ =  σ(θ₂₁x₁ + θ₂₂x₂+θ₂₀)",
-          scene: {
-            xaxis: { title: "x₁", range: [-2, 2] },
-            yaxis: { title: "x₂", range: [-2, 2] },
-            zaxis: { title: "z₂", range: [0, 1] },
-            aspectmode: "cube", // Equal axis scaling
-            camera: fixedCameraSettings,
-          },
-        };
-        Plotly.newPlot(
-          "plot3d_2",
-          [
-            {
-              x: x1Grid,
-              y: x2Grid,
-              z: data.z,
-              type: "surface",
-              showscale: false,
-            },
-          ],
-          layout
-        );
-      }
-
-      // Create the weighted 3D plot (w₁ * z₁ + w₂ * z₂ + w₀)
-      function createlayer2() {
-        update_layer2();
-      }
-
-      // Update weighted 3D plot
+      // Create/update the weighted 3D plot (w₁z₁ + w₂z₂ + w₀)
       function update_layer2() {
         var w1 = parseFloat(document.getElementById("w1").value);
         var w2 = parseFloat(document.getElementById("w2").value);
         var w0 = parseFloat(document.getElementById("w0").value);
-        var zWeighted = [];
-        // Calculate w₁ * z₁ + w₂ * z₂ + w₀ for each point on the grid
+        let zWeighted = [];
         for (let i = 0; i < z1Data.length; i++) {
           let zRow = [];
           for (let j = 0; j < z1Data[i].length; j++) {
@@ -358,146 +289,153 @@
           }
           zWeighted.push(zRow);
         }
-
-        // Plot the weighted sum
         var layout = {
-          title: `w₁z₁ + w₂z₂ + w₀`,
+          title: "w₁z₁ + w₂z₂ + w₀",
           scene: {
             xaxis: { title: "x₁", range: [-2, 2] },
             yaxis: { title: "x₂", range: [-2, 2] },
-            zaxis: { title: `w₁ * z₁ + w₂ * z₂ + w₀`, range: [-5, 5] },
+            zaxis: { title: "w₁z₁ + w₂z₂ + w₀", range: [-5, 5] },
             aspectmode: "cube",
             camera: fixedCameraSettings,
           },
         };
-
-        // Use xGrid and yGrid for x and y
-        Plotly.react(
-          "plot_weighted",
-          [
-            {
-              x: x1Grid,
-              y: x2Grid,
-              z: zWeighted,
-              type: "surface",
-              showscale: false,
-            },
-          ],
-          layout
-        );
-
-        // Update slider values in the UI
+        Plotly.react("plot_weighted", [{
+          x: x1Grid,
+          y: x2Grid,
+          z: zWeighted,
+          type: "surface",
+          showscale: false,
+        }], layout);
         document.getElementById("w1_value").textContent = w1;
         document.getElementById("w2_value").textContent = w2;
         document.getElementById("w0_value").textContent = w0;
       }
 
-      // Update first 3D plot (z₁)
-      function updatez1() {
+      // Create the first 3D plot (z₁)
+      function createz1() {
         var theta_11 = parseFloat(document.getElementById("theta_11").value);
         var theta_12 = parseFloat(document.getElementById("theta_12").value);
         var theta_10 = parseFloat(document.getElementById("theta_10").value);
-
-        // Update displayed slider values
-        document.getElementById("theta_11_value").textContent = theta_11;
-        document.getElementById("theta_12_value").textContent = theta_12;
-        document.getElementById("theta_10_value").textContent = theta_10;
-
         var data = generatez1_2(theta_11, theta_12, theta_10);
-        z1Data = data.z; // Update z₁ data
-
+        z1Data = data.z;
         var layout = {
-          title: "z₁=σ(θ₁₁x₁ + θ₁₂x₂+θ₁₀)",
+          title: "z₁ = σ(θ₁₁x₁ + θ₁₂x₂ + θ₁₀)",
           scene: {
             xaxis: { title: "x₁", range: [-2, 2] },
             yaxis: { title: "x₂", range: [-2, 2] },
             zaxis: { title: "z₁", range: [0, 1] },
-            aspectmode: "cube", // Equal axis scaling
+            aspectmode: "cube",
             showscale: false,
           },
         };
-
-        Plotly.react(
-          "plot3d",
-          [
-            {
-              x: x1Grid,
-              y: x2Grid,
-              z: data.z,
-              type: "surface",
-              showscale: false,
-            },
-          ],
-          layout
-        );
-        update_layer2();
+        Plotly.newPlot("plot3d", [{
+          x: x1Grid,
+          y: x2Grid,
+          z: data.z,
+          type: "surface",
+          showscale: false,
+        }], layout);
       }
 
-      // Update second 3D plot (z₂)
-      function updatez2() {
+      // Create the second 3D plot (z₂)
+      function createz2() {
         var theta_21 = parseFloat(document.getElementById("theta_21").value);
         var theta_22 = parseFloat(document.getElementById("theta_22").value);
         var theta_20 = parseFloat(document.getElementById("theta_20").value);
-
-        // Update displayed slider values
-        document.getElementById("theta_21_value").textContent = theta_21;
-        document.getElementById("theta_22_value").textContent = theta_22;
-        document.getElementById("theta_20_value").textContent = theta_20;
-
         var data = generatez2(theta_21, theta_22, theta_20);
-        z2Data = data.z; // Update z₂ data
+        z2Data = data.z;
         var layout = {
-          title: "z₂ =  σ(θ₂₁x₁ + θ₂₂x₂+θ₂₀)",
+          title: "z₂ = σ(θ₂₁x₁ + θ₂₂x₂ + θ₂₀)",
           scene: {
             xaxis: { title: "x₁", range: [-2, 2] },
             yaxis: { title: "x₂", range: [-2, 2] },
             zaxis: { title: "z₂", range: [0, 1] },
-            aspectmode: "cube", // Equal axis scaling
+            aspectmode: "cube",
             camera: fixedCameraSettings,
           },
         };
-
-        Plotly.react(
-          "plot3d_2",
-          [
-            {
-              x: x1Grid,
-              y: x2Grid,
-              z: data.z,
-              type: "surface",
-              showscale: false,
-            },
-          ],
-          layout
-        );
-        update_layer2(); // Update weighted plot
+        Plotly.newPlot("plot3d_2", [{
+          x: x1Grid,
+          y: x2Grid,
+          z: data.z,
+          type: "surface",
+          showscale: false,
+        }], layout);
       }
 
-      // Initialize all plots on page load
-      window.onload = function () {
-        // Update slider values to match their default positions
-        document.getElementById("theta_11_value").textContent =
-          document.getElementById("theta_11").value;
-        document.getElementById("theta_12_value").textContent =
-          document.getElementById("theta_12").value;
-        document.getElementById("theta_10_value").textContent =
-          document.getElementById("theta_10").value;
-        document.getElementById("theta_21_value").textContent =
-          document.getElementById("theta_21").value;
-        document.getElementById("theta_22_value").textContent =
-          document.getElementById("theta_22").value;
-        document.getElementById("theta_20_value").textContent =
-          document.getElementById("theta_20").value;
-        document.getElementById("w1_value").textContent =
-          document.getElementById("w1").value;
-        document.getElementById("w2_value").textContent =
-          document.getElementById("w2").value;
-        document.getElementById("w0_value").textContent =
-          document.getElementById("w0").value;
+      // Update the first 3D plot (z₁)
+      function updatez1() {
+        var theta_11 = parseFloat(document.getElementById("theta_11").value);
+        var theta_12 = parseFloat(document.getElementById("theta_12").value);
+        var theta_10 = parseFloat(document.getElementById("theta_10").value);
+        document.getElementById("theta_11_value").textContent = theta_11;
+        document.getElementById("theta_12_value").textContent = theta_12;
+        document.getElementById("theta_10_value").textContent = theta_10;
+        var data = generatez1_2(theta_11, theta_12, theta_10);
+        z1Data = data.z;
+        var layout = {
+          title: "z₁ = σ(θ₁₁x₁ + θ₁₂x₂ + θ₁₀)",
+          scene: {
+            xaxis: { title: "x₁", range: [-2, 2] },
+            yaxis: { title: "x₂", range: [-2, 2] },
+            zaxis: { title: "z₁", range: [0, 1] },
+            aspectmode: "cube",
+            showscale: false,
+          },
+        };
+        Plotly.react("plot3d", [{
+          x: x1Grid,
+          y: x2Grid,
+          z: data.z,
+          type: "surface",
+          showscale: false,
+        }], layout);
+        update_layer2();
+      }
 
+      // Update the second 3D plot (z₂)
+      function updatez2() {
+        var theta_21 = parseFloat(document.getElementById("theta_21").value);
+        var theta_22 = parseFloat(document.getElementById("theta_22").value);
+        var theta_20 = parseFloat(document.getElementById("theta_20").value);
+        document.getElementById("theta_21_value").textContent = theta_21;
+        document.getElementById("theta_22_value").textContent = theta_22;
+        document.getElementById("theta_20_value").textContent = theta_20;
+        var data = generatez2(theta_21, theta_22, theta_20);
+        z2Data = data.z;
+        var layout = {
+          title: "z₂ = σ(θ₂₁x₁ + θ₂₂x₂ + θ₂₀)",
+          scene: {
+            xaxis: { title: "x₁", range: [-2, 2] },
+            yaxis: { title: "x₂", range: [-2, 2] },
+            zaxis: { title: "z₂", range: [0, 1] },
+            aspectmode: "cube",
+            camera: fixedCameraSettings,
+          },
+        };
+        Plotly.react("plot3d_2", [{
+          x: x1Grid,
+          y: x2Grid,
+          z: data.z,
+          type: "surface",
+          showscale: false,
+        }], layout);
+        update_layer2();
+      }
+
+      window.onload = function () {
+        document.getElementById("theta_11_value").textContent = document.getElementById("theta_11").value;
+        document.getElementById("theta_12_value").textContent = document.getElementById("theta_12").value;
+        document.getElementById("theta_10_value").textContent = document.getElementById("theta_10").value;
+        document.getElementById("theta_21_value").textContent = document.getElementById("theta_21").value;
+        document.getElementById("theta_22_value").textContent = document.getElementById("theta_22").value;
+        document.getElementById("theta_20_value").textContent = document.getElementById("theta_20").value;
+        document.getElementById("w1_value").textContent = document.getElementById("w1").value;
+        document.getElementById("w2_value").textContent = document.getElementById("w2").value;
+        document.getElementById("w0_value").textContent = document.getElementById("w0").value;
         createz1();
         createz2();
-        createlayer2();
+        update_layer2();
       };
     </script>
   </body>
