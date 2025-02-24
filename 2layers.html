@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sigmoid Function Demo with Weighted Plot</title>
+    <title>Activation Function Demo with Weighted Plot</title>
     <!-- Include Plotly.js -->
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
@@ -14,29 +14,36 @@
         height: 100%;
         overflow: hidden;
       }
+      /* Header at the top with dropdown */
+      .header {
+        width: 100vw;
+        text-align: center;
+        padding: 10px;
+        background-color: #ddd;
+        font-family: sans-serif;
+      }
       .grid-container {
         display: grid;
-        /* Two columns and two rows */
         grid-template-columns: 50% 50%;
         grid-template-rows: 1fr 1fr;
         width: 100vw;
-        height: 95vh;
+        height: 90vh; /* slightly less to accommodate header */
       }
       .grid-item {
         padding: 10px;
       }
-      /* Left column items: the two sigmoid plots */
+      /* Left column items: the two activation function plots (sigmoid or relu) */
       .left-column {
         grid-column: 1;
       }
-      /* First sigmoid plot in row 1 */
+      /* First plot on the left (cell 1) */
       #cell-1 {
         grid-row: 1;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
       }
-      /* Second sigmoid plot in row 2 */
+      /* Second plot on the left (cell 2) */
       #cell-2 {
         grid-row: 2;
         display: flex;
@@ -56,7 +63,7 @@
         flex-direction: column;
         align-items: center;
       }
-      /* Right column item: the weighted plot, centered vertically */
+      /* Right column: weighted plot centered vertically */
       .right-column {
         grid-column: 2;
         grid-row: 1 / span 2;
@@ -86,8 +93,17 @@
     </style>
   </head>
   <body>
+    <!-- Header with dropdown to select activation function -->
+    <div class="header">
+      <label for="activationSelect">Activation Function: </label>
+      <select id="activationSelect" onchange="changeActivation()">
+        <option value="sigmoid" selected>Sigmoid</option>
+        <option value="relu">ReLU</option>
+      </select>
+    </div>
+
     <div class="grid-container">
-      <!-- Left column, first row: First sigmoid plot and sliders -->
+      <!-- Left column, first row: First activation function plot and sliders -->
       <div id="cell-1" class="grid-item left-column">
         <div class="plot-container" id="plot3d"></div>
         <div class="slider-container">
@@ -133,7 +149,7 @@
         </div>
       </div>
 
-      <!-- Left column, second row: Second sigmoid plot and sliders -->
+      <!-- Left column, second row: Second activation function plot and sliders -->
       <div id="cell-2" class="grid-item left-column">
         <div class="plot-container" id="plot3d_2"></div>
         <div class="slider-container">
@@ -179,7 +195,7 @@
         </div>
       </div>
 
-      <!-- Right column, spanning both rows: Combined weighted plot, centered vertically -->
+      <!-- Right column, spanning both rows: Weighted plot, centered vertically -->
       <div class="grid-item right-column">
         <div class="plot-container" id="plot_weighted"></div>
         <div class="slider-container">
@@ -233,43 +249,61 @@
     </div>
 
     <script>
-      // Define fixed camera settings for all 3D plots
+      // Global variable for activation function
+      var activationFunction = "sigmoid";
+
+      // Change activation based on dropdown selection and update the plots
+      function changeActivation() {
+        activationFunction = document.getElementById("activationSelect").value;
+        updatez1();
+        updatez2();
+      }
+
+      // Fixed camera settings for 3D plots
       const fixedCameraSettings = {
         eye: { x: 1.5, y: 1.5, z: 1.5 },
         center: { x: 0, y: 0, z: 0 },
         up: { x: 0, y: 0, z: 1 },
       };
 
-      // Define grid points for x₁ and x₂ (from -2 to 2 with step 0.1)
-      const x1Grid = Array.from({ length: 41 }, (_, i) => -2 + i * 0.1);
-      const x2Grid = Array.from({ length: 41 }, (_, i) => -2 + i * 0.1);
+      // Increase grid resolution for a smoother surface
+      const gridStep = 0.05;
+      const numPoints = Math.floor(4 / gridStep) + 1;
+      const x1Grid = Array.from({ length: numPoints }, (_, i) => -2 + i * gridStep);
+      const x2Grid = Array.from({ length: numPoints }, (_, i) => -2 + i * gridStep);
 
       let z1Data, z2Data; // Store data for weighted plot
 
-      function sigmoid3D(x1, x2, theta1, theta2, theta0) {
-        return 1 / (1 + Math.exp(-(theta1 * x1 + theta2 * x2 + theta0)));
+      // Compute activation value based on the selected function
+      function computeActivation(x1, x2, theta1, theta2, theta0) {
+        const linear = theta1 * x1 + theta2 * x2 + theta0;
+        if (activationFunction === "sigmoid") {
+          return 1 / (1 + Math.exp(-linear));
+        } else if (activationFunction === "relu") {
+          return Math.max(0, linear);
+        }
       }
 
-      // Generate data for the first sigmoid function (z₁)
+      // Generate data for the first activation function plot (z₁)
       function generatez1_2(theta_11, theta_12, theta_10) {
         let z = [];
         for (let i = 0; i < x1Grid.length; i++) {
           let zRow = [];
           for (let j = 0; j < x2Grid.length; j++) {
-            zRow.push(sigmoid3D(x1Grid[i], x2Grid[j], theta_11, theta_12, theta_10));
+            zRow.push(computeActivation(x1Grid[i], x2Grid[j], theta_11, theta_12, theta_10));
           }
           z.push(zRow);
         }
         return { x1: x1Grid, y: x2Grid, z: z, showscale: false };
       }
 
-      // Generate data for the second sigmoid function (z₂)
+      // Generate data for the second activation function plot (z₂)
       function generatez2(theta_21, theta_22, theta_20) {
         let z = [];
         for (let i = 0; i < x1Grid.length; i++) {
           let zRow = [];
           for (let j = 0; j < x2Grid.length; j++) {
-            zRow.push(sigmoid3D(x1Grid[i], x2Grid[j], theta_21, theta_22, theta_20));
+            zRow.push(computeActivation(x1Grid[i], x2Grid[j], theta_21, theta_22, theta_20));
           }
           z.push(zRow);
         }
@@ -319,11 +353,11 @@
         var data = generatez1_2(theta_11, theta_12, theta_10);
         z1Data = data.z;
         var layout = {
-          title: "z₁ = σ(θ₁₁x₁ + θ₁₂x₂ + θ₁₀)",
+          title: "z₁ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") + "(θ₁₁x₁ + θ₁₂x₂ + θ₁₀)",
           scene: {
             xaxis: { title: "x₁", range: [-2, 2] },
             yaxis: { title: "x₂", range: [-2, 2] },
-            zaxis: { title: "z₁", range: [0, 1] },
+            zaxis: { title: "z₁", range: [0, activationFunction === "sigmoid" ? 1 : 10] },
             aspectmode: "cube",
             showscale: false,
           },
@@ -345,11 +379,11 @@
         var data = generatez2(theta_21, theta_22, theta_20);
         z2Data = data.z;
         var layout = {
-          title: "z₂ = σ(θ₂₁x₁ + θ₂₂x₂ + θ₂₀)",
+          title: "z₂ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") + "(θ₂₁x₁ + θ₂₂x₂ + θ₂₀)",
           scene: {
             xaxis: { title: "x₁", range: [-2, 2] },
             yaxis: { title: "x₂", range: [-2, 2] },
-            zaxis: { title: "z₂", range: [0, 1] },
+            zaxis: { title: "z₂", range: [0, activationFunction === "sigmoid" ? 1 : 10] },
             aspectmode: "cube",
             camera: fixedCameraSettings,
           },
@@ -374,11 +408,11 @@
         var data = generatez1_2(theta_11, theta_12, theta_10);
         z1Data = data.z;
         var layout = {
-          title: "z₁ = σ(θ₁₁x₁ + θ₁₂x₂ + θ₁₀)",
+          title: "z₁ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") + "(θ₁₁x₁ + θ₁₂x₂ + θ₁₀)",
           scene: {
             xaxis: { title: "x₁", range: [-2, 2] },
             yaxis: { title: "x₂", range: [-2, 2] },
-            zaxis: { title: "z₁", range: [0, 1] },
+            zaxis: { title: "z₁", range: [0, activationFunction === "sigmoid" ? 1 : 10] },
             aspectmode: "cube",
             showscale: false,
           },
@@ -404,11 +438,11 @@
         var data = generatez2(theta_21, theta_22, theta_20);
         z2Data = data.z;
         var layout = {
-          title: "z₂ = σ(θ₂₁x₁ + θ₂₂x₂ + θ₂₀)",
+          title: "z₂ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") + "(θ₂₁x₁ + θ₂₂x₂ + θ₂₀)",
           scene: {
             xaxis: { title: "x₁", range: [-2, 2] },
             yaxis: { title: "x₂", range: [-2, 2] },
-            zaxis: { title: "z₂", range: [0, 1] },
+            zaxis: { title: "z₂", range: [0, activationFunction === "sigmoid" ? 1 : 10] },
             aspectmode: "cube",
             camera: fixedCameraSettings,
           },
