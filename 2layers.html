@@ -52,6 +52,8 @@
       }
       .plot-container {
         flex-grow: 1;
+        width: 100%;
+        height: 100%;
       }
       .slider-container {
         display: flex;
@@ -324,14 +326,29 @@
           zWeighted.push(zRow);
         }
         var layout = {
-          // title: "w₁z₁ + w₂z₂ + w₀",
+          margin: { l: 0, r: 0, t: 0, b: 0 },
           scene: {
-            xaxis: { title: "x₁", range: [-2, 2] },
-            yaxis: { title: "x₂", range: [-2, 2] },
-            zaxis: { title: "w₁z₁ + w₂z₂ + w₀", range: [-5, 5] },
+            xaxis: { 
+              title: "x₁", 
+              range: [-2, 2],
+              tickmode: "array",
+              tickvals: [-1, 0, 1]
+            },
+            yaxis: { 
+              title: "x₂", 
+              range: [-2, 2],
+              tickmode: "array",
+              tickvals: [-1, 0, 1]
+            },
+            zaxis: { 
+              title: "w₁z₁ + w₂z₂ + w₀", 
+              range: [-5, 5],
+              tickmode: "array",
+              tickvals: [-1, 0, 1]
+            },
             aspectmode: "cube",
-            camera: fixedCameraSettings,
-          },
+            camera: fixedCameraSettings
+          }
         };
         Plotly.react("plot_weighted", [{
           x: x1Grid,
@@ -353,21 +370,37 @@
         var data = generatez1_2(theta_11, theta_12, theta_10);
         z1Data = data.z;
         var layout = {
-          // title: ,
+          margin: { l: 0, r: 0, t: 0, b: 0 },
           scene: {
-            xaxis: { title: "x₁", range: [-2, 2] },
-            yaxis: { title: "x₂", range: [-2, 2] },
-            zaxis: { title: "z₁ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") + "(θ₁₁x₁ + θ₁₂x₂ + θ₁₀)", range: [0, activationFunction === "sigmoid" ? 1 : 10] },
+            xaxis: { 
+              title: "x₁", 
+              range: [-2, 2],
+              tickmode: "array",
+              tickvals: [-1, 0, 1]
+            },
+            yaxis: { 
+              title: "x₂", 
+              range: [-2, 2],
+              tickmode: "array",
+              tickvals: [-1, 0, 1]
+            },
+            zaxis: { 
+              title: "z₁ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") +
+                     "(θ₁₁x₁ + θ₁₂x₂ + θ₁₀)", 
+              range: [0, activationFunction === "sigmoid" ? 1 : 10],
+              tickmode: "array",
+              tickvals: [-1, 0, 1]
+            },
             aspectmode: "cube",
-            showscale: false,
-          },
+            showscale: false
+          }
         };
         Plotly.newPlot("plot3d", [{
           x: x1Grid,
           y: x2Grid,
           z: data.z,
           type: "surface",
-          showscale: false,
+          showscale: false
         }], layout);
       }
 
@@ -379,21 +412,37 @@
         var data = generatez2(theta_21, theta_22, theta_20);
         z2Data = data.z;
         var layout = {
-          // title: "z₂ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") + "(θ₂₁x₁ + θ₂₂x₂ + θ₂₀)",
+          margin: { l: 0, r: 0, t: 0, b: 0 },
           scene: {
-            xaxis: { title: "x₁", range: [-2, 2] },
-            yaxis: { title: "x₂", range: [-2, 2] },
-            zaxis: { title: "z₂ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") + "(θ₂₁x₁ + θ₂₂x₂ + θ₂₀)", range: [0, activationFunction === "sigmoid" ? 1 : 10] },
+            xaxis: { 
+              title: "x₁", 
+              range: [-2, 2],
+              tickmode: "array",
+              tickvals: [-1, 0, 1]
+            },
+            yaxis: { 
+              title: "x₂", 
+              range: [-2, 2],
+              tickmode: "array",
+              tickvals: [-1, 0, 1]
+            },
+            zaxis: { 
+              title: "z₂ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") +
+                     "(θ₂₁x₁ + θ₂₂x₂ + θ₂₀)", 
+              range: [0, activationFunction === "sigmoid" ? 1 : 10],
+              tickmode: "array",
+              tickvals: [-1, 0, 1]
+            },
             aspectmode: "cube",
-            camera: fixedCameraSettings,
-          },
+            camera: fixedCameraSettings
+          }
         };
         Plotly.newPlot("plot3d_2", [{
           x: x1Grid,
           y: x2Grid,
           z: data.z,
           type: "surface",
-          showscale: false,
+          showscale: false
         }], layout);
       }
 
@@ -408,20 +457,37 @@
         var data = generatez1_2(theta_11, theta_12, theta_10);
         z1Data = data.z;
         var layout = {
+          margin: { l: 0, r: 0, t: 0, b: 0 },
           scene: {
-            xaxis: { title: "x₁", range: [-2, 2] },
-            yaxis: { title: "x₂", range: [-2, 2] },
-            zaxis: { title: "z₁ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") + "(θ₁₁x₁ + θ₁₂x₂ + θ₁₀)", range: [0, activationFunction === "sigmoid" ? 1 : 10] },
+            xaxis: { 
+              title: "x₁", 
+              range: [-2, 2],
+              tickmode: "array",
+              tickvals: [-1, 0, 1]
+            },
+            yaxis: { 
+              title: "x₂", 
+              range: [-2, 2],
+              tickmode: "array",
+              tickvals: [-1, 0, 1]
+            },
+            zaxis: { 
+              title: "z₁ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") +
+                     "(θ₁₁x₁ + θ₁₂x₂ + θ₁₀)", 
+              range: [0, activationFunction === "sigmoid" ? 1 : 10],
+              tickmode: "array",
+              tickvals: [-1, 0, 1]
+            },
             aspectmode: "cube",
-            showscale: false,
-          },
+            showscale: false
+          }
         };
         Plotly.react("plot3d", [{
           x: x1Grid,
           y: x2Grid,
           z: data.z,
           type: "surface",
-          showscale: false,
+          showscale: false
         }], layout);
         update_layer2();
       }
@@ -437,25 +503,42 @@
         var data = generatez2(theta_21, theta_22, theta_20);
         z2Data = data.z;
         var layout = {
-          // title: "z₂ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") + "(θ₂₁x₁ + θ₂₂x₂ + θ₂₀)",
+          margin: { l: 0, r: 0, t: 0, b: 0 },
           scene: {
-            xaxis: { title: "x₁", range: [-2, 2] },
-            yaxis: { title: "x₂", range: [-2, 2] },
-            zaxis: { title: "z₂ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") + "(θ₂₁x₁ + θ₂₂x₂ + θ₂₀)", range: [0, activationFunction === "sigmoid" ? 1 : 10] },
+            xaxis: { 
+              title: "x₁", 
+              range: [-2, 2],
+              tickmode: "array",
+              tickvals: [-1, 0, 1]
+            },
+            yaxis: { 
+              title: "x₂", 
+              range: [-2, 2],
+              tickmode: "array",
+              tickvals: [-1, 0, 1]
+            },
+            zaxis: { 
+              title: "z₂ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") +
+                     "(θ₂₁x₁ + θ₂₂x₂ + θ₂₀)", 
+              range: [0, activationFunction === "sigmoid" ? 1 : 10],
+              tickmode: "array",
+              tickvals: [-1, 0, 1]
+            },
             aspectmode: "cube",
-            camera: fixedCameraSettings,
-          },
+            camera: fixedCameraSettings
+          }
         };
         Plotly.react("plot3d_2", [{
           x: x1Grid,
           y: x2Grid,
           z: data.z,
           type: "surface",
-          showscale: false,
+          showscale: false
         }], layout);
         update_layer2();
       }
 
+      // Initialize the plots on window load
       window.onload = function () {
         document.getElementById("theta_11_value").textContent = document.getElementById("theta_11").value;
         document.getElementById("theta_12_value").textContent = document.getElementById("theta_12").value;
@@ -470,6 +553,13 @@
         createz2();
         update_layer2();
       };
+
+      // Optional: Resize plots on window resize
+      window.addEventListener("resize", function () {
+        Plotly.Plots.resize(document.getElementById("plot3d"));
+        Plotly.Plots.resize(document.getElementById("plot3d_2"));
+        Plotly.Plots.resize(document.getElementById("plot_weighted"));
+      });
     </script>
   </body>
 </html>
