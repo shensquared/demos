@@ -324,7 +324,7 @@
           zWeighted.push(zRow);
         }
         var layout = {
-          title: "w₁z₁ + w₂z₂ + w₀",
+          // title: "w₁z₁ + w₂z₂ + w₀",
           scene: {
             xaxis: { title: "x₁", range: [-2, 2] },
             yaxis: { title: "x₂", range: [-2, 2] },
@@ -353,11 +353,11 @@
         var data = generatez1_2(theta_11, theta_12, theta_10);
         z1Data = data.z;
         var layout = {
-          title: "z₁ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") + "(θ₁₁x₁ + θ₁₂x₂ + θ₁₀)",
+          // title: ,
           scene: {
             xaxis: { title: "x₁", range: [-2, 2] },
             yaxis: { title: "x₂", range: [-2, 2] },
-            zaxis: { title: "z₁", range: [0, activationFunction === "sigmoid" ? 1 : 10] },
+            zaxis: { title: "z₁ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") + "(θ₁₁x₁ + θ₁₂x₂ + θ₁₀)", range: [0, activationFunction === "sigmoid" ? 1 : 10] },
             aspectmode: "cube",
             showscale: false,
           },
@@ -379,11 +379,11 @@
         var data = generatez2(theta_21, theta_22, theta_20);
         z2Data = data.z;
         var layout = {
-          title: "z₂ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") + "(θ₂₁x₁ + θ₂₂x₂ + θ₂₀)",
+          // title: "z₂ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") + "(θ₂₁x₁ + θ₂₂x₂ + θ₂₀)",
           scene: {
             xaxis: { title: "x₁", range: [-2, 2] },
             yaxis: { title: "x₂", range: [-2, 2] },
-            zaxis: { title: "z₂", range: [0, activationFunction === "sigmoid" ? 1 : 10] },
+            zaxis: { title: "z₂ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") + "(θ₂₁x₁ + θ₂₂x₂ + θ₂₀)", range: [0, activationFunction === "sigmoid" ? 1 : 10] },
             aspectmode: "cube",
             camera: fixedCameraSettings,
           },
@@ -408,11 +408,10 @@
         var data = generatez1_2(theta_11, theta_12, theta_10);
         z1Data = data.z;
         var layout = {
-          title: "z₁ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") + "(θ₁₁x₁ + θ₁₂x₂ + θ₁₀)",
           scene: {
             xaxis: { title: "x₁", range: [-2, 2] },
             yaxis: { title: "x₂", range: [-2, 2] },
-            zaxis: { title: "z₁", range: [0, activationFunction === "sigmoid" ? 1 : 10] },
+            zaxis: { title: "z₁ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") + "(θ₁₁x₁ + θ₁₂x₂ + θ₁₀)", range: [0, activationFunction === "sigmoid" ? 1 : 10] },
             aspectmode: "cube",
             showscale: false,
           },
@@ -438,11 +437,11 @@
         var data = generatez2(theta_21, theta_22, theta_20);
         z2Data = data.z;
         var layout = {
-          title: "z₂ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") + "(θ₂₁x₁ + θ₂₂x₂ + θ₂₀)",
+          // title: "z₂ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") + "(θ₂₁x₁ + θ₂₂x₂ + θ₂₀)",
           scene: {
             xaxis: { title: "x₁", range: [-2, 2] },
             yaxis: { title: "x₂", range: [-2, 2] },
-            zaxis: { title: "z₂", range: [0, activationFunction === "sigmoid" ? 1 : 10] },
+            zaxis: { title: "z₂ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") + "(θ₂₁x₁ + θ₂₂x₂ + θ₂₀)", range: [0, activationFunction === "sigmoid" ? 1 : 10] },
             aspectmode: "cube",
             camera: fixedCameraSettings,
           },
