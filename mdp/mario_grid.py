@@ -209,7 +209,7 @@ def print_grid_triangles(values=None, cell_width=12):
     print(create_line(is_bottom=True))
 
 
-def plot_values(values=None, horizon=2, policy="optimal"):
+def plot_values(values=None, horizon=2, policy="optimal", color_scheme="bw"):
     """
     Plot the grid world with either Q-values or V-values using matplotlib.
     
@@ -219,6 +219,7 @@ def plot_values(values=None, horizon=2, policy="optimal"):
             - Dictionary mapping state -> value for V-values
         horizon: The planning horizon
         policy: String describing the policy ("optimal", "always_up", etc.)
+        color_scheme: Color scheme to use ("bw" for black and white, "color" for red/blue)
     """
     fig, ax = plt.subplots(figsize=(10, 10))
     
@@ -238,10 +239,13 @@ def plot_values(values=None, horizon=2, policy="optimal"):
     
     # Define colors for different value ranges
     def get_color(value):
-        if value > 0:
-            return plt.cm.Reds(min(1, value/10))
-        else:
-            return plt.cm.Blues(min(1, abs(value)/10))
+        if color_scheme == "color":
+            if value > 0:
+                return plt.cm.Reds(min(1, value/10))
+            else:
+                return plt.cm.Blues(min(1, abs(value)/10))
+        else:  # bw
+            return 'white'
     
     # Draw cells and add values
     for row in range(3):
@@ -349,11 +353,14 @@ if __name__ == "__main__":
     V_H = finite_horizon_value(mdp, H)
     V_up = always_up_policy_value(mdp, H)
     
-    # Plot Q-values
+    # Plot Q-values (black and white)
     plot_values(Q_H, horizon=H, policy="optimal")
     
-    # Plot V-values
+    # Plot V-values (black and white)
     plot_values(V_H, horizon=H, policy="optimal")
     
-    # Plot always-up policy values
+    # Plot always-up policy values (black and white)
     plot_values(V_up, horizon=H, policy="always_up")
+    
+    # Plot with colors
+    plot_values(Q_H, horizon=H, policy="optimal", color_scheme="color")
