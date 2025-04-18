@@ -209,7 +209,7 @@ def print_grid_triangles(values=None, cell_width=12):
     print(create_line(is_bottom=True))
 
 
-def plot_grid_q_values(values=None, horizon=2):
+def plot_values(values=None, horizon=2, policy="optimal"):
     """
     Plot the grid world with either Q-values or V-values using matplotlib.
     
@@ -218,6 +218,7 @@ def plot_grid_q_values(values=None, horizon=2):
             - Dictionary mapping (state, action) -> value for Q-values
             - Dictionary mapping state -> value for V-values
         horizon: The planning horizon
+        policy: String describing the policy ("optimal", "always_up", etc.)
     """
     fig, ax = plt.subplots(figsize=(10, 10))
     
@@ -299,10 +300,45 @@ def plot_grid_q_values(values=None, horizon=2):
     
     # Add title
     value_type = "Q-values" if is_q_values else "V-values"
-    ax.set_title(f"Mario World, {value_type}, horizon {horizon}")
+    ax.set_title(f"Mario World, {value_type}, {policy} policy, horizon {horizon}")
     
     plt.tight_layout()
     plt.show()
+
+
+def always_up_policy_value(mdp, horizon):
+    """
+    Compute the H‐step state values V_H(s) for the 'always up' policy.
+    This policy always chooses the 'up' action regardless of the state.
+
+    Args:
+        mdp: an object with
+            - mdp.states: iterable of states
+            - mdp.actions: iterable of actions
+            - mdp.P[(s,a)]: list of (probability, next_state) tuples
+            - mdp.R[(s,a)]: immediate reward for (s,a)
+            - mdp.gamma: discount factor
+        horizon: int, number of steps H
+
+    Returns:
+        dict mapping state -> V_H(state)
+    """
+    # V_0(s) = 0 for all s
+    V = {s: 0.0 for s in mdp.states}
+
+    # iterate t = 1…H
+    for t in range(1, horizon + 1):
+        V_next = {}
+        for s in mdp.states:
+            # For the 'always up' policy, we only consider the 'up' action
+            a = 'up'
+            # Compute V_t(s) = R(s,a) + γ * Σ_{s'} P(s,a,s') * V_{t-1}(s')
+            v = mdp.R[(s,a)]
+            v += mdp.gamma * sum(prob * V[s2] for prob, s2 in mdp.P[(s,a)])
+            V_next[s] = v
+        V = V_next
+
+    return V
 
 
 # Example usage
@@ -311,9 +347,13 @@ if __name__ == "__main__":
     H = 2
     Q_H = finite_horizon_q_value(mdp, H)
     V_H = finite_horizon_value(mdp, H)
+    V_up = always_up_policy_value(mdp, H)
     
     # Plot Q-values
-    plot_grid_q_values(Q_H, horizon=H)
+    plot_values(Q_H, horizon=H, policy="optimal")
     
     # Plot V-values
-    plot_grid_q_values(V_H, horizon=H)
+    plot_values(V_H, horizon=H, policy="optimal")
+    
+    # Plot always-up policy values
+    plot_values(V_up, horizon=H, policy="always_up")
