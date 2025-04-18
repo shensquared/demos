@@ -211,11 +211,13 @@ def print_grid_triangles(values=None, cell_width=12):
 
 def plot_grid_q_values(values=None, horizon=2):
     """
-    Plot the grid world with Q-values using matplotlib.
+    Plot the grid world with either Q-values or V-values using matplotlib.
     
     Args:
-        values: Optional dictionary mapping (state, action) -> value
-        title: Title for the plot
+        values: Either:
+            - Dictionary mapping (state, action) -> value for Q-values
+            - Dictionary mapping state -> value for V-values
+        horizon: The planning horizon
     """
     fig, ax = plt.subplots(figsize=(10, 10))
     
@@ -230,50 +232,59 @@ def plot_grid_q_values(values=None, horizon=2):
     ax.set_xticks([])
     ax.set_yticks([])
     
-    # Define colors for different Q-value ranges
+    # Check if values are Q-values or V-values
+    is_q_values = values and isinstance(next(iter(values)), tuple)
+    
+    # Define colors for different value ranges
     def get_color(value):
         if value > 0:
             return plt.cm.Reds(min(1, value/10))
         else:
             return plt.cm.Blues(min(1, abs(value)/10))
     
-    # Draw triangles and add Q-values
+    # Draw cells and add values
     for row in range(3):
         for col in range(3):
             state = row * 3 + col + 1
             x, y = col, 2-row  # Convert to matplotlib coordinates
             
             if values:
-                # Define the four triangles
-                triangles = [
-                    # Up triangle
-                    [(x, y+1), (x+1, y+1), (x+0.5, y+0.5)],
-                    # Right triangle
-                    [(x+1, y+1), (x+1, y), (x+0.5, y+0.5)],
-                    # Down triangle
-                    [(x+1, y), (x, y), (x+0.5, y+0.5)],
-                    # Left triangle
-                    [(x, y), (x, y+1), (x+0.5, y+0.5)]
-                ]
-                
-                # Get Q-values
-                q_values = {
-                    'up': values.get((state, 'up'), 0),
-                    'right': values.get((state, 'right'), 0),
-                    'down': values.get((state, 'down'), 0),
-                    'left': values.get((state, 'left'), 0)
-                }
-                
-                # Draw each triangle
-                for i, (triangle, (action, value)) in enumerate(zip(triangles, q_values.items())):
-                    color = get_color(value)
-                    polygon = Polygon(triangle, facecolor=color, edgecolor='black', linestyle='--', linewidth=1)
-                    ax.add_patch(polygon)
+                if is_q_values:
+                    # Q-values: draw triangles
+                    triangles = [
+                        # Up triangle
+                        [(x, y+1), (x+1, y+1), (x+0.5, y+0.5)],
+                        # Right triangle
+                        [(x+1, y+1), (x+1, y), (x+0.5, y+0.5)],
+                        # Down triangle
+                        [(x+1, y), (x, y), (x+0.5, y+0.5)],
+                        # Left triangle
+                        [(x, y), (x, y+1), (x+0.5, y+0.5)]
+                    ]
                     
-                    # Add Q-value text
-                    center_x = sum(p[0] for p in triangle) / 3
-                    center_y = sum(p[1] for p in triangle) / 3
-                    ax.text(center_x, center_y, f"{value:.2f}", 
+                    q_values = {
+                        'up': values.get((state, 'up'), 0),
+                        'right': values.get((state, 'right'), 0),
+                        'down': values.get((state, 'down'), 0),
+                        'left': values.get((state, 'left'), 0)
+                    }
+                    
+                    for i, (triangle, (action, value)) in enumerate(zip(triangles, q_values.items())):
+                        color = get_color(value)
+                        polygon = Polygon(triangle, facecolor=color, edgecolor='black', linestyle='--', linewidth=1)
+                        ax.add_patch(polygon)
+                        
+                        center_x = sum(p[0] for p in triangle) / 3
+                        center_y = sum(p[1] for p in triangle) / 3
+                        ax.text(center_x, center_y, f"{value:.2f}", 
+                               ha='center', va='center', fontsize=19)
+                else:
+                    # V-values: just show the value in the center
+                    value = values.get(state, 0)
+                    color = get_color(value)
+                    rect = plt.Rectangle((x, y), 1, 1, facecolor=color, edgecolor='black')
+                    ax.add_patch(rect)
+                    ax.text(x+0.5, y+0.5, f"{value:.2f}", 
                            ha='center', va='center', fontsize=19)
             else:
                 # Just show state number
@@ -286,12 +297,9 @@ def plot_grid_q_values(values=None, horizon=2):
                 ax.plot([x, x+1], [y+1, y], 'k--', linewidth=1)  # Top-right to bottom-left
                 ax.plot([x, x+1], [y, y+1], 'k--', linewidth=1)  # Bottom-right to top-left
     
-    # Add title and action labels
-    ax.set_title("Mario World, Q-values, horizon " + str(horizon))
-    # ax.text(0.5, 3.1, "Up", ha='center', va='center')
-    # ax.text(3.1, 0.5, "Right", ha='center', va='center', rotation=90)
-    # ax.text(0.5, -0.1, "Down", ha='center', va='center')
-    # ax.text(-0.1, 0.5, "Left", ha='center', va='center', rotation=90)
+    # Add title
+    value_type = "Q-values" if is_q_values else "V-values"
+    ax.set_title(f"Mario World, {value_type}, horizon {horizon}")
     
     plt.tight_layout()
     plt.show()
@@ -302,5 +310,10 @@ if __name__ == "__main__":
     mdp = GridMDP()
     H = 2
     Q_H = finite_horizon_q_value(mdp, H)
-    # Plot using matplotlib
-    plot_grid_q_values(Q_H, horizon=H)  # With Q-values
+    V_H = finite_horizon_value(mdp, H)
+    
+    # Plot Q-values
+    plot_grid_q_values(Q_H, horizon=H)
+    
+    # Plot V-values
+    plot_grid_q_values(V_H, horizon=H)
