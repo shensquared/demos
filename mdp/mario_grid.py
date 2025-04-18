@@ -308,7 +308,7 @@ def plot_values(values=None, horizon=2, policy="optimal", color_scheme="bw", sav
                         center_x = sum(p[0] for p in triangle) / 3
                         center_y = sum(p[1] for p in triangle) / 3
                         ax.text(center_x, center_y, f"{value:.2f}", 
-                               ha='center', va='center', fontsize=19)
+                               ha='center', va='center', fontsize=25)
                 else:
                     # V-values: just show the value in the center
                     value = values.get(state, 0)
@@ -316,7 +316,7 @@ def plot_values(values=None, horizon=2, policy="optimal", color_scheme="bw", sav
                     rect = plt.Rectangle((x, y), 1, 1, facecolor=color, edgecolor='black')
                     ax.add_patch(rect)
                     ax.text(x+0.5, y+0.5, f"{value:.2f}", 
-                           ha='center', va='center', fontsize=19)
+                           ha='center', va='center', fontsize=40)  # Increased font size for V-values
             else:
                 # Just show state number
                 ax.text(x+0.5, y+0.5, str(state), 
