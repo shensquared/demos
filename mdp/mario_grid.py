@@ -82,10 +82,13 @@ def finite_horizon_value(mdp, horizon):
     """
     # V_0(s) = 0 for all s
     V = {s: 0.0 for s in mdp.states}
+    convergence_threshold = 1e-6
 
     # iterate t = 1…H
     for t in range(1, horizon + 1):
         V_next = {}
+        max_diff = 0.0
+        
         for s in mdp.states:
             # for each action, compute Q_t(s,a) = R(s,a) + γ * Σ_{s'} P(s,a,s') * V_{t-1}(s')
             q_values = []
@@ -95,7 +98,14 @@ def finite_horizon_value(mdp, horizon):
                 q_values.append(q)
             # optimal value is max over actions
             V_next[s] = max(q_values)
+            max_diff = max(max_diff, abs(V_next[s] - V[s]))
+            
         V = V_next
+        
+        # Check for convergence
+        if max_diff < convergence_threshold:
+            print(f"Value iteration converged at step {t}")
+            break
 
     return V
 
@@ -118,10 +128,13 @@ def finite_horizon_q_value(mdp, horizon):
     """
     # Q_0(s,a) = 0 for all s,a
     Q = {(s,a): 0.0 for s in mdp.states for a in mdp.actions}
+    convergence_threshold = 1e-6
 
     # iterate t = 1…H
     for t in range(1, horizon + 1):
         Q_next = {}
+        max_diff = 0.0
+        
         for s in mdp.states:
             for a in mdp.actions:
                 # Q_t(s,a) = R(s,a) + γ * Σ_{s'} P(s,a,s') * max_{a'} Q_{t-1}(s',a')
@@ -131,7 +144,14 @@ def finite_horizon_q_value(mdp, horizon):
                     for prob, s2 in mdp.P[(s,a)]
                 )
                 Q_next[(s,a)] = q
+                max_diff = max(max_diff, abs(Q_next[(s,a)] - Q[(s,a)]))
+                
         Q = Q_next
+        
+        # Check for convergence
+        if max_diff < convergence_threshold:
+            print(f"Q-value iteration converged at step {t}")
+            break
 
     return Q
 
@@ -360,7 +380,7 @@ if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.abspath(__file__))
     
     mdp = GridMDP()
-    H = 10
+    H = 100
     
     # Plot Q-values for different horizons
     for h in range(1, H):
