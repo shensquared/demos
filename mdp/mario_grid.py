@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
+import os
 
 class GridMDP:
     def __init__(self):
@@ -209,7 +210,7 @@ def print_grid_triangles(values=None, cell_width=12):
     print(create_line(is_bottom=True))
 
 
-def plot_values(values=None, horizon=2, policy="optimal", color_scheme="bw"):
+def plot_values(values=None, horizon=2, policy="optimal", color_scheme="bw", save_path=None):
     """
     Plot the grid world with either Q-values or V-values using matplotlib.
     
@@ -220,6 +221,7 @@ def plot_values(values=None, horizon=2, policy="optimal", color_scheme="bw"):
         horizon: The planning horizon
         policy: String describing the policy ("optimal", "always_up", etc.)
         color_scheme: Color scheme to use ("bw" for black and white, "color" for red/blue)
+        save_path: Optional path to save the plot
     """
     fig, ax = plt.subplots(figsize=(10, 10))
     
@@ -233,6 +235,9 @@ def plot_values(values=None, horizon=2, policy="optimal", color_scheme="bw"):
     ax.set_ylim(0, 3)
     ax.set_xticks([])
     ax.set_yticks([])
+    
+    # Remove all margins and padding
+    plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
     
     # Check if values are Q-values or V-values
     is_q_values = values and isinstance(next(iter(values)), tuple)
@@ -303,10 +308,15 @@ def plot_values(values=None, horizon=2, policy="optimal", color_scheme="bw"):
     
     # Add title
     value_type = "Q-values" if is_q_values else "V-values"
-    ax.set_title(f"Mario World, {value_type}, {policy} policy, horizon {horizon}")
+    # ax.set_title(f"Mario World, {value_type}, {policy} policy, horizon {horizon}")
     
-    plt.tight_layout()
-    plt.show()
+    if save_path:
+        # Create directory if it doesn't exist
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, bbox_inches='tight', pad_inches=0.05)
+        plt.close()
+    else:
+        plt.show()
 
 
 def always_up_policy_value(mdp, horizon):
@@ -346,20 +356,30 @@ def always_up_policy_value(mdp, horizon):
 
 # Example usage
 if __name__ == "__main__":
+    # Get the directory where this script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    
     mdp = GridMDP()
-    H = 2
-    Q_H = finite_horizon_q_value(mdp, H)
-    V_H = finite_horizon_value(mdp, H)
-    V_up = always_up_policy_value(mdp, H)
+    H = 10
     
-    # Plot Q-values (black and white)
-    plot_values(Q_H, horizon=H, policy="optimal")
+    # Plot Q-values for different horizons
+    for h in range(1, H):
+        Q_H = finite_horizon_q_value(mdp, h)
+        folder = os.path.join(script_dir, f"qvalues_optimal")
+        plot_values(Q_H, horizon=h, policy="optimal", 
+                  save_path=os.path.join(folder, f"horizon_{h}.png"))
     
-    # Plot V-values (black and white)
-    plot_values(V_H, horizon=H, policy="optimal")
+    # Plot V-values for different horizons
+    for h in range(1, H):
+        V_H = finite_horizon_value(mdp, h)
+        folder = os.path.join(script_dir, f"vvalues_optimal")
+        plot_values(V_H, horizon=h, policy="optimal", 
+                  save_path=os.path.join(folder, f"horizon_{h}.png"))
     
-    # Plot always-up policy values (black and white)
-    plot_values(V_up, horizon=H, policy="always_up")
-    
-    # Plot with colors
-    plot_values(Q_H, horizon=H, policy="optimal", color_scheme="color")
+    # Plot always-up policy values for different horizons
+    for h in range(1, H):
+        V_up = always_up_policy_value(mdp, h)
+        folder = os.path.join(script_dir, f"vvalues_alwaysup")
+        plot_values(V_up, horizon=h, policy="always_up", 
+                  save_path=os.path.join(folder, f"horizon_{h}.png"))
+        
