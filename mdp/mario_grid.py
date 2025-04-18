@@ -276,7 +276,8 @@ def plot_values(values=None, horizon=2, policy="optimal", color_scheme="bw"):
                     
                     for i, (triangle, (action, value)) in enumerate(zip(triangles, q_values.items())):
                         color = get_color(value)
-                        polygon = Polygon(triangle, facecolor=color, edgecolor='black', linestyle='--', linewidth=1)
+                        polygon = Polygon(triangle, facecolor=color, edgecolor='black', 
+                                        linestyle=(0, (3, 5)), linewidth=1)  # More narrow dashed lines
                         ax.add_patch(polygon)
                         
                         center_x = sum(p[0] for p in triangle) / 3
@@ -296,11 +297,9 @@ def plot_values(values=None, horizon=2, policy="optimal", color_scheme="bw"):
                 ax.text(x+0.5, y+0.5, str(state), 
                        ha='center', va='center', fontsize=12)
                 
-                # Draw dashed lines for empty grid
-                center = (x+0.5, y+0.5)
-                # Draw diagonal lines
-                ax.plot([x, x+1], [y+1, y], 'k--', linewidth=1)  # Top-right to bottom-left
-                ax.plot([x, x+1], [y, y+1], 'k--', linewidth=1)  # Bottom-right to top-left
+                # Draw dashed lines for empty grid with more narrow spacing
+                ax.plot([x, x+1], [y+1, y], 'k', linestyle=(0, (3, 5)), linewidth=1)  # Top-right to bottom-left
+                ax.plot([x, x+1], [y, y+1], 'k', linestyle=(0, (3, 5)), linewidth=1)  # Bottom-right to top-left
     
     # Add title
     value_type = "Q-values" if is_q_values else "V-values"
