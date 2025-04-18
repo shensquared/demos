@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon
 
 class GridMDP:
     def __init__(self):
@@ -131,6 +133,81 @@ def finite_horizon_q_value(mdp, horizon):
         Q = Q_next
 
     return Q
+
+
+def print_grid_triangles(values=None, cell_width=12):
+    """
+    Print a 3x3 grid with each cell divided into 4 triangles showing Q-values.
+    
+    Args:
+        values: Optional dictionary mapping (state, action) -> value
+        cell_width: Width of each cell in characters
+    """
+    # Define the characters for drawing the grid
+    horizontal = '─' * cell_width
+    vertical = '│'
+    corner = '┼'
+    top_corner = '┬'
+    bottom_corner = '┴'
+    left_corner = '├'
+    right_corner = '┤'
+    top_left = '┌'
+    top_right = '┐'
+    bottom_left = '└'
+    bottom_right = '┘'
+    diagonal = '/'
+    back_diagonal = '\\'
+    
+    # Create the grid lines
+    def create_line(is_top=False, is_bottom=False):
+        line = []
+        for i in range(3):
+            if i == 0:
+                line.append(top_left if is_top else bottom_left if is_bottom else left_corner)
+            line.append(horizontal)
+            if i < 2:
+                line.append(top_corner if is_top else bottom_corner if is_bottom else corner)
+        line.append(top_right if is_top else bottom_right if is_bottom else right_corner)
+        return ''.join(line)
+    
+    # Print the grid
+    print(create_line(is_top=True))
+    for row in range(3):
+        # Print the main cell content
+        for sub_row in range(3):  # 3 rows to properly show the triangles
+            line = []
+            for col in range(3):
+                state = row * 3 + col + 1
+                if values:
+                    up_val = f"{values.get((state, 'up'), 0):.2f}"
+                    right_val = f"{values.get((state, 'right'), 0):.2f}"
+                    left_val = f"{values.get((state, 'left'), 0):.2f}"
+                    down_val = f"{values.get((state, 'down'), 0):.2f}"
+                    
+                    if sub_row == 0:
+                        # Top row with up and right triangles
+                        content = f"{up_val:^{cell_width//2}}{back_diagonal}{right_val:^{cell_width//2}}"
+                    elif sub_row == 1:
+                        # Middle row with diagonals
+                        content = f"{left_val:^{cell_width//2}}{diagonal}{right_val:^{cell_width//2}}"
+                    else:
+                        # Bottom row with left and down triangles
+                        content = f"{left_val:^{cell_width//2}}{back_diagonal}{down_val:^{cell_width//2}}"
+                else:
+                    if sub_row == 0:
+                        content = f"{state:^{cell_width//2}}{back_diagonal}{' ':^{cell_width//2}}"
+                    elif sub_row == 1:
+                        content = f"{' ':^{cell_width//2}}{diagonal}{' ':^{cell_width//2}}"
+                    else:
+                        content = f"{' ':^{cell_width//2}}{back_diagonal}{' ':^{cell_width//2}}"
+                
+                line.append(vertical + content)
+            line.append(vertical)
+            print(''.join(line))
+        if row < 2:
+            print(create_line())
+    print(create_line(is_bottom=True))
+
 
 
 # Example usage
