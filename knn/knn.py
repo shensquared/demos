@@ -95,8 +95,8 @@ def update(frame):
         
         # Save frame with just training points and test point
         plt.tight_layout()
-        plt.savefig(f'knn/frame_{frame:03d}_1testpoint.png', dpi=100)
-        print(f'Saved frame_{frame:03d}_1testpoint.png')
+        plt.savefig(f'knn/k{args.k}_frame_{frame:03d}_1testpoint.png', dpi=100)
+        print(f'Saved k{args.k}_frame_{frame:03d}_1testpoint.png')
         
         # Find all distances and nearest neighbors
         distances, indices = tree.query(test_points[frame-1], k=num_points)
@@ -116,8 +116,8 @@ def update(frame):
         
         # Save frame with all gray dashed lines
         plt.tight_layout()
-        plt.savefig(f'knn/frame_{frame:03d}_2alllines.png', dpi=100)
-        print(f'Saved frame_{frame:03d}_2alllines.png')
+        plt.savefig(f'knn/k{args.k}_frame_{frame:03d}_2alllines.png', dpi=100)
+        print(f'Saved k{args.k}_frame_{frame:03d}_2alllines.png')
         
         # Now highlight k nearest neighbors
         k_indices = set(indices[:args.k])  # Convert to set for faster lookup
@@ -155,15 +155,15 @@ def update(frame):
         
         # Save the frame with green test point
         plt.tight_layout()
-        plt.savefig(f'knn/frame_{frame:03d}_3knearest.png', dpi=100)
-        print(f'Saved frame {frame:03d}_3knearest.png')
+        plt.savefig(f'knn/k{args.k}_frame_{frame:03d}_3knearest.png', dpi=100)
+        print(f'Saved k{args.k}_frame_{frame:03d}_3knearest.png')
         
         # Update test point color and save prediction frame
         test_point.set_color(predicted_color)
         # Update legend with predicted color
         legend = create_legend(predicted_color)
-        plt.savefig(f'knn/frame_{frame:03d}_4prediction.png', dpi=100)
-        print(f'Saved frame_{frame:03d}_4prediction.png')
+        plt.savefig(f'knn/k{args.k}_frame_{frame:03d}_4prediction.png', dpi=100)
+        print(f'Saved k{args.k}_frame_{frame:03d}_4prediction.png')
         
         # Reset test point color to green for next frame
         test_point.set_color('green')
