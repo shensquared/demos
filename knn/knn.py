@@ -59,7 +59,7 @@ ax.set_xlabel('x₁')
 ax.set_ylabel('x₂')
 ax.grid(True, alpha=0.3)
 
-# Plot the training points again
+# Plot the training points
 blue_points = ax.scatter(x[colors == 0], y[colors == 0], color='blue', label='Class 0')
 red_points = ax.scatter(x[colors == 1], y[colors == 1], color='red', label='Class 1')
 
@@ -67,6 +67,17 @@ red_points = ax.scatter(x[colors == 1], y[colors == 1], color='red', label='Clas
 test_point = ax.scatter([], [], color='green', marker='*', s=150, label='Test Point')
 # Create lines for all distances
 all_lines = [ax.plot([], [], 'k-', alpha=0.3, linewidth=.5)[0] for _ in range(num_points)]
+
+def create_legend(test_point_color='green'):
+    legend_elements = [
+        plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='blue', markersize=10, label='Class 0'),
+        plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='red', markersize=10, label='Class 1'),
+        plt.Line2D([0], [0], marker='*', color='w', markerfacecolor=test_point_color, markersize=15, label='Test Point')
+    ]
+    return ax.legend(handles=legend_elements)
+
+# Create initial legend
+legend = create_legend()
 
 def update(frame):
     if frame == 0:
@@ -149,14 +160,17 @@ def update(frame):
         
         # Update test point color and save prediction frame
         test_point.set_color(predicted_color)
+        # Update legend with predicted color
+        legend = create_legend(predicted_color)
         plt.savefig(f'knn/frame_{frame:03d}_4prediction.png', dpi=100)
         print(f'Saved frame_{frame:03d}_4prediction.png')
         
         # Reset test point color to green for next frame
         test_point.set_color('green')
+        # Reset legend to green
+        legend = create_legend('green')
     
-    # Add legend
-    ax.legend()
+    return [test_point] + all_lines
 
 # Generate and save all frames
 for frame in range(num_test_points + 1):  # +1 for the training points frame
