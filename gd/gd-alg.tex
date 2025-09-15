@@ -1,0 +1,22 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{nopageno}
+
+\begin{document}
+
+\begin{algorithm*}
+\caption{Gradient-Descent($\theta_{\text{init}}, \eta, J, \nabla_\theta J, \epsilon$)}
+\label{alg:gradient-descent}
+\begin{algorithmic}[1]
+\STATE Initialize $\theta^{(0)} = \theta_{\text{init}}$
+\STATE Initialize $t = 0$
+\REPEAT
+  \STATE $t = t + 1$
+  \STATE $\theta^{(t)} = \theta^{(t-1)} - \eta \nabla_\theta J(\theta^{(t-1)})$
+\UNTIL{$\left| J(\theta^{(t)}) - J(\theta^{(t-1)}) \right| < \epsilon$}
+\RETURN $\theta^{(t)}$
+\end{algorithmic}
+\end{algorithm*}
+\end{document}
