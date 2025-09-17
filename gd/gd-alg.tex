@@ -9,7 +9,7 @@
 % ---------------------------
 % Full-batch Gradient Descent
 % ---------------------------
-\begin{algorithm*}
+\begin{algorithm}
 \caption{Gradient Descent($\theta_{\text{init}}, \eta, J, \nabla_\theta J, \epsilon$)}
 \label{alg:gradient-descent}
 \begin{algorithmic}[1]
@@ -21,12 +21,12 @@
 \UNTIL{$\left| J(\theta^{(t)}) - J(\theta^{(t-1)}) \right| < \epsilon$}
 \RETURN $\theta^{(t)}$
 \end{algorithmic}
-\end{algorithm*}
+\end{algorithm}
 
 % ---------------------------
 % Stochastic Gradient Descent
 % ---------------------------
-\begin{algorithm*}
+\begin{algorithm}
 \caption{Stochastic Gradient Descent($\theta_{\text{init}}, \eta, J, \nabla_\theta J, \epsilon$)}
 \label{alg:stochastic-gradient-descent}
 \begin{algorithmic}[1]
@@ -39,12 +39,12 @@
 \UNTIL{$\left| J(\theta^{(t)}) - J(\theta^{(t-1)}) \right| < \epsilon$}
 \RETURN $\theta^{(t)}$
 \end{algorithmic}
-\end{algorithm*}
+\end{algorithm}
 
 % ---------------------------
 % Mini-batch Gradient Descent
 % ---------------------------
-\begin{algorithm*}
+\begin{algorithm}
 \caption{Mini-batch Gradient Descent($\theta_{\text{init}}, \eta, b, J, \nabla_\theta J, \epsilon$)}
 \label{alg:mini-batch-gradient-descent}
 \begin{algorithmic}[1]
@@ -53,10 +53,10 @@
 \REPEAT
   \STATE $t = t + 1$
   \STATE $B = \text{random mini-batch of size } b \text{ from } \{1, \ldots, n\}$
-  \STATE $\theta^{(t)} = \theta^{(t-1)} - \eta \nabla_\theta J_B(\theta^{(t-1)})$
+  \STATE $\theta^{(t)} = \theta^{(t-1)} - \eta \left[\frac{1}{b} \sum_{i=1}^b \nabla_\theta J_i\big(\theta^{(t-1)}\big)\right]$
 \UNTIL{$\left| J(\theta^{(t)}) - J(\theta^{(t-1)}) \right| < \epsilon$}
 \RETURN $\theta^{(t)}$
 \end{algorithmic}
-\end{algorithm*}
+\end{algorithm}
 
 \end{document}
