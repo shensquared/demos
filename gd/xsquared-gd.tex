@@ -42,22 +42,22 @@
     
     % Calculate gradient descent step
     % At x=9, gradient = dJ/dx = 2x = 18
-    % New x = x - learning_rate * gradient = 9 - 0.05 * 18 = 9 - 0.9 = 8.1
-    % New J = (8.1)^2 = 65.61
+    % New x = x - learning_rate * gradient = 9 - 0.1 * 18 = 9 - 1.8 = 7.2
+    % New J = (7.2)^2 = 51.84
     
     % End point after gradient descent
-    \addplot[only marks, mark=*, mark options={scale=2.5, fill=endcolor}] coordinates {(8.1,65.61)};
+    \addplot[only marks, mark=*, mark options={scale=2.5, fill=endcolor}] coordinates {(7.2,51.84)};
     
     % Draw arrow from start to end point
-    \addplot[->, ultra thick, color=black, shorten >=2pt, shorten <=2pt] coordinates {(9,81) (8.1,65.61)};
+    \addplot[->, ultra thick, color=black, shorten >=2pt, shorten <=2pt] coordinates {(9,81) (7.2,51.84)};
     
     % Add labels for the points
-    \node[above right, color=startcolor, font=\large] at (axis cs:9,81) {Start: $\theta=9$};
+    \node[above left, color=startcolor, font=\large] at (axis cs:9,81) {Start: $\theta=9$};
     
     % Add legend box with function notation and learning rate
     \node[draw=black, fill=white, rounded corners=3pt, inner sep=8pt, font=\normalsize, align=center] at (axis cs:8.5,20) {
       $J(\theta) = \theta^2$ \\
-      $\eta = 0.05$
+      $\eta = 0.1$
     };
     
   \end{axis}
