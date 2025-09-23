@@ -329,13 +329,13 @@
         const data3D = [surfaceTrace, markerTrace];
         
         const layout3D = {
-          title: 'Average 0-1 Loss (J(θ))',
+          title: 'J(θ): average 0/1 loss',
           scene: {
             xaxis: { title: 'θ₁' },
             yaxis: { title: 'θ₂' },
             zaxis: { title: 'J(θ)' },
-            // Adjusted camera for a closer (zoomed-in) view:
-            camera: { eye: { x: 2.5, y: -2.5, z: 2.5 } }
+            // Adjusted camera for a much closer (zoomed-in) view:
+            camera: { eye: { x: 1.5, y: -1.5, z: 1.5 } }
           },
           autosize: true
         };
