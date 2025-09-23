@@ -82,11 +82,11 @@
             id="theta"
             min="-5"
             max="5"
-            value="1"
+            value="-3"
             step="0.1"
             oninput="updatePlot2D()"
           />
-          <span id="theta_value">1</span>
+          <span id="theta_value">-3</span>
         </div>
         <div class="slider-group">
           <label for="theta_0">θ₀:</label>
@@ -110,11 +110,11 @@
             id="theta_1"
             min="-5"
             max="5"
-            value="1"
+            value="-3"
             step="0.1"
             oninput="updatePlot3D()"
           />
-          <span id="theta_1_value">1</span>
+          <span id="theta_1_value">-3</span>
         </div>
         <div class="slider-group">
           <label for="theta_2">θ₂:</label>
@@ -212,7 +212,7 @@
 
       // Plot 2D sigmoid with axis labels
       function createPlot2D() {
-        var data = generateSigmoidData2D(1, 0); // Initial θ = 1, θ₀ = 0
+        var data = generateSigmoidData2D(-3, 0); // Initial θ = -3, θ₀ = 0
         var layout = {
           title: "Sigmoid Function: sigmoid(θx + θ₀)",
           xaxis: { title: "x", range: [-10, 10] },
@@ -229,7 +229,7 @@
 
       // Plot 3D sigmoid with axis labels and z=0.5 surface
       function createPlot3D() {
-        var data = generateSigmoidData3D(1, 1, 0); // Initial θ₁ = 1, θ₂ = 1, θ₀ = 0
+        var data = generateSigmoidData3D(-3, 1, 0); // Initial θ₁ = -3, θ₂ = 1, θ₀ = 0
         var z0data = generateZ05SurfaceData(); // Generate the z=0.5 surface
         var layout = {
           title: "Sigmoid Function: sigmoid(θ₁x₁ + θ₂x₂ + θ₀)",
@@ -307,7 +307,7 @@
         var layout = {
           title: "Sigmoid Function: sigmoid(θx + θ₀)",
           xaxis: { title: "x" },
-          yaxis: { title: "sigmoid(θx + θ₀)" },
+          yaxis: { title: "sigmoid(θx + θ₀)", range: [0, 1] },
           margin: { l: 50, r: 10, t: 50, b: 50 },
         };
 
