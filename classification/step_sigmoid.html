@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Step vs Sigmoid Function Demo</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+      }
+      .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 90vh;
+      }
+      .plots-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 80vh;
+        width: 100%;
+      }
+      .plot-container {
+        width: 50%;
+        min-width: 0; /* 👈 Important fix */
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        box-sizing: border-box;
+      }
+      .plot-title {
+        font-size: 16px;
+        font-weight: bold;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+      #plot-step,
+      #plot-sigmoid {
+        width: 100%;
+        height: calc(100% - 30px);
+      }
+      .slider-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 20px;
+      }
+      .slider-group {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-right: 20px;
+      }
+      .footer {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        background-color: #f8f9fa;
+        color: #6c757d;
+        text-align: center;
+        padding: 10px 0;
+        margin-top: 20px;
+        margin-bottom: 5vh;
+      }
+      .footer a {
+        color: #007bff;
+        text-decoration: none;
+      }
+      .footer a:hover {
+        text-decoration: underline;
+      }
+      .dropdown-container {
+        margin-bottom: 20px;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="dropdown-container">
+        <label for="plot-selector">Choose dimension:</label>
+        <select id="plot-selector" onchange="switchPlot()">
+          <option value="2d">1D feature: step(θx + θ₀) vs sigmoid(θx + θ₀)</option>
+          <option value="3d">2D features: step(θ₁x₁ + θ₂x₂ + θ₀) vs sigmoid(θ₁x₁ + θ₂x₂ + θ₀)</option>
+        </select>
+      </div>
+
+      <div class="plots-container">
+        <div class="plot-container">
+          <div class="plot-title">Step Function</div>
+          <div id="plot-step"></div>
+        </div>
+        <div class="plot-container">
+          <div class="plot-title">Sigmoid Function</div>
+          <div id="plot-sigmoid"></div>
+        </div>
+      </div>
+
+      <!-- Sliders for 2D -->
+      <div id="sliders-2d" class="slider-container">
+        <div class="slider-group">
+          <label for="theta">θ:</label>
+          <input type="range" id="theta" min="-5" max="5" value="-3" step="0.1" oninput="updatePlots()" />
+          <span id="theta_value">-3</span>
+        </div>
+        <div class="slider-group">
+          <label for="theta_0">θ₀:</label>
+          <input type="range" id="theta_0" min="-5" max="5" value="0" step="0.1" oninput="updatePlots()" />
+          <span id="theta_0_value">0</span>
+        </div>
+      </div>
+
+      <!-- Sliders for 3D -->
+      <div id="sliders-3d" class="slider-container" style="display: none">
+        <div class="slider-group">
+          <label for="theta_1">θ₁:</label>
+          <input type="range" id="theta_1" min="-5" max="5" value="-3" step="0.1" oninput="updatePlots()" />
+          <span id="theta_1_value">-3</span>
+        </div>
+        <div class="slider-group">
+          <label for="theta_2">θ₂:</label>
+          <input type="range" id="theta_2" min="-5" max="5" value="1" step="0.1" oninput="updatePlots()" />
+          <span id="theta_2_value">1</span>
+        </div>
+        <div class="slider-group">
+          <label for="theta_0_3d">θ₀:</label>
+          <input type="range" id="theta_0_3d" min="-1" max="1" value="0" step="0.1" oninput="updatePlots()" />
+          <span id="theta_0_3d_value">0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      Built with ❤️ by&nbsp;<a href="https://shenshen.mit.edu" target="_blank">Shen²</a>
+      <span>&nbsp;|&nbsp;</span>
+      <a href="https://github.com/shensquared/demos" target="_blank">Report a Bug</a>
+    </div>
+
+    <script>
+      const fixedCameraSettings = {
+        eye: { x: 1.5, y: 1.5, z: 1.5 },
+        center: { x: 0, y: 0, z: 0 },
+        up: { x: 0, y: 0, z: 1 },
+      };
+
+      const step = (x, theta, theta_0) => (theta * x + theta_0 >= 0 ? 1 : 0);
+      const sigmoid = (x, theta, theta_0) => 1 / (1 + Math.exp(-(theta * x + theta_0)));
+      const step3D = (x1, x2, theta_1, theta_2, theta_0) => (theta_1 * x1 + theta_2 * x2 + theta_0 >= 0 ? 1 : 0);
+      const sigmoid3D = (x1, x2, theta_1, theta_2, theta_0) => 1 / (1 + Math.exp(-(theta_1 * x1 + theta_2 * x2 + theta_0)));
+
+      function generateStepData2D(theta, theta_0) {
+        let x = [], y = [];
+        for (let i = -10; i <= 8; i += 0.00025) {
+          x.push(i);
+          y.push(step(i, theta, theta_0));
+        }
+        return { x, y };
+      }
+
+      function generateSigmoidData2D(theta, theta_0) {
+        let x = [], y = [];
+        for (let i = -10; i <= 8; i += 0.01) {
+          x.push(i);
+          y.push(sigmoid(i, theta, theta_0));
+        }
+        return { x, y };
+      }
+
+      function generateVerticalLines2D(theta, theta_0) {
+        if (theta === 0) return [];
+        let jump = -theta_0 / theta;
+        if (jump < -10 || jump > 8) return [];
+        return [{
+          x: [jump, jump],
+          y: [0, 1],
+          mode: "lines",
+          type: "scatter",
+          line: { color: "black", width: 2, dash: "dash" },
+          showlegend: false
+        }];
+      }
+
+      function generateStepData3D(theta_1, theta_2, theta_0) {
+        let z = [], gridX1 = [], gridX2 = [];
+        for (let i = -2; i <= 2; i += 0.0125) {
+          gridX1.push(i);
+          let row = [];
+          for (let j = -2; j <= 2; j += 0.0125) {
+            if (gridX2.length < 321) gridX2.push(j);
+            row.push(step3D(j, i, theta_1, theta_2, theta_0));
+          }
+          z.push(row);
+        }
+        return { x1: gridX1, x2: gridX2, z };
+      }
+
+      function generateSigmoidData3D(theta_1, theta_2, theta_0) {
+        let z = [], gridX1 = [], gridX2 = [];
+        for (let i = -2; i <= 2; i += 0.1) {
+          gridX1.push(i);
+          let row = [];
+          for (let j = -2; j <= 2; j += 0.1) {
+            if (gridX2.length < 41) gridX2.push(j);
+            row.push(sigmoid3D(j, i, theta_1, theta_2, theta_0));
+          }
+          z.push(row);
+        }
+        return { x1: gridX1, x2: gridX2, z };
+      }
+
+      function createPlots2D() {
+        const theta = parseFloat(document.getElementById("theta").value);
+        const theta_0 = parseFloat(document.getElementById("theta_0").value);
+
+        const stepData = generateStepData2D(theta, theta_0);
+        const verticals = generateVerticalLines2D(theta, theta_0);
+        const sigmoidData = generateSigmoidData2D(theta, theta_0);
+
+        const layout = {
+          xaxis: { title: "x", range: [-10, 8] },
+          yaxis: { title: "", range: [0, 1] },
+          margin: { l: 50, r: 50, t: 50, b: 50 },
+          showlegend: false,
+          autosize: true
+        };
+
+        Plotly.newPlot("plot-step", [
+          { x: stepData.x, y: stepData.y, mode: "lines", line: { width: 2 } },
+          ...verticals
+        ], { ...layout, title: "step(θx + θ₀)" }, { responsive: true });
+
+        Plotly.newPlot("plot-sigmoid", [
+          { x: sigmoidData.x, y: sigmoidData.y, mode: "lines", line: { width: 2 } }
+        ], { ...layout, title: "sigmoid(θx + θ₀)" }, { responsive: true });
+
+        Plotly.Plots.resize(document.getElementById("plot-step"));
+        Plotly.Plots.resize(document.getElementById("plot-sigmoid"));
+      }
+
+      function createPlots3D() {
+        const theta_1 = parseFloat(document.getElementById("theta_1").value);
+        const theta_2 = parseFloat(document.getElementById("theta_2").value);
+        const theta_0 = parseFloat(document.getElementById("theta_0_3d").value);
+
+        const stepData = generateStepData3D(theta_1, theta_2, theta_0);
+        const sigmoidData = generateSigmoidData3D(theta_1, theta_2, theta_0);
+
+        const layout = (title) => ({
+          title,
+          scene: {
+            xaxis: { title: "x₁", range: [-2, 2] },
+            yaxis: { title: "x₂", range: [-2, 2] },
+            zaxis: { title, range: [0, 1] },
+            aspectmode: "cube",
+            camera: fixedCameraSettings
+          },
+          margin: { l: 0, r: 0, t: 50, b: 0 }
+        });
+
+        const surface = (data) => ({
+          x: data.x1,
+          y: data.x2,
+          z: data.z,
+          type: "surface",
+          colorscale: [[0, "rgb(0, 0, 255)"], [1, "rgb(255, 0, 0)"]],
+          showscale: false
+        });
+
+        Plotly.newPlot("plot-step", [surface(stepData)], layout("step(θ₁x₁ + θ₂x₂ + θ₀)"), { responsive: true });
+        Plotly.newPlot("plot-sigmoid", [surface(sigmoidData)], layout("sigmoid(θ₁x₁ + θ₂x₂ + θ₀)"), { responsive: true });
+
+        Plotly.Plots.resize(document.getElementById("plot-step"));
+        Plotly.Plots.resize(document.getElementById("plot-sigmoid"));
+      }
+
+      function updatePlots() {
+        const mode = document.getElementById("plot-selector").value;
+        if (mode === "2d") createPlots2D();
+        else createPlots3D();
+      }
+
+      function switchPlot() {
+        const mode = document.getElementById("plot-selector").value;
+        document.getElementById("sliders-2d").style.display = mode === "2d" ? "flex" : "none";
+        document.getElementById("sliders-3d").style.display = mode === "3d" ? "flex" : "none";
+        updatePlots();
+      }
+
+      window.onresize = () => {
+        Plotly.Plots.resize(document.getElementById("plot-step"));
+        Plotly.Plots.resize(document.getElementById("plot-sigmoid"));
+      };
+
+      window.onload = switchPlot;
+    </script>
+  </body>
+</html>
