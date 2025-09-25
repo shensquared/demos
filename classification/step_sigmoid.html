@@ -121,12 +121,12 @@
         </div>
         <div class="slider-group">
           <label for="theta">θ:</label>
-          <input type="range" id="theta" min="-5" max="5" value="-3" step="0.1" oninput="updatePlots()" />
+          <input type="range" id="theta" min="-10" max="10" value="-3" step="0.1" oninput="updatePlots()" />
           <span id="theta_value">-3</span>
         </div>
         <div class="slider-group">
           <label for="theta_0">θ₀:</label>
-          <input type="range" id="theta_0" min="-5" max="5" value="0" step="0.1" oninput="updatePlots()" />
+          <input type="range" id="theta_0" min="-10" max="10" value="0" step="0.1" oninput="updatePlots()" />
           <span id="theta_0_value">0</span>
         </div>
       </div>
@@ -142,17 +142,17 @@
         </div>
         <div class="slider-group">
           <label for="theta_1">θ₁:</label>
-          <input type="range" id="theta_1" min="-5" max="5" value="-3" step="0.1" oninput="updatePlots()" />
+          <input type="range" id="theta_1" min="-10" max="10" value="-3" step="0.1" oninput="updatePlots()" />
           <span id="theta_1_value">-3</span>
         </div>
         <div class="slider-group">
           <label for="theta_2">θ₂:</label>
-          <input type="range" id="theta_2" min="-5" max="5" value="1" step="0.1" oninput="updatePlots()" />
+          <input type="range" id="theta_2" min="-10" max="10" value="1" step="0.1" oninput="updatePlots()" />
           <span id="theta_2_value">1</span>
         </div>
         <div class="slider-group">
           <label for="theta_0_3d">θ₀:</label>
-          <input type="range" id="theta_0_3d" min="-1" max="1" value="0" step="0.1" oninput="updatePlots()" />
+          <input type="range" id="theta_0_3d" min="-10" max="10" value="0" step="0.1" oninput="updatePlots()" />
           <span id="theta_0_3d_value">0</span>
         </div>
       </div>
@@ -243,6 +243,10 @@
         if (mode === "2d") {
           const theta = parseFloat(document.getElementById("theta").value);
           const theta_0 = parseFloat(document.getElementById("theta_0").value);
+          
+          // Update displayed values
+          document.getElementById("theta_value").textContent = theta;
+          document.getElementById("theta_0_value").textContent = theta_0;
 
           const stepData = generateStepData2D(theta, theta_0);
           const verticals = generateVerticalLines2D(theta, theta_0);
@@ -285,6 +289,11 @@
         const t1 = parseFloat(document.getElementById("theta_1").value);
         const t2 = parseFloat(document.getElementById("theta_2").value);
         const t0 = parseFloat(document.getElementById("theta_0_3d").value);
+        
+        // Update displayed values
+        document.getElementById("theta_1_value").textContent = t1;
+        document.getElementById("theta_2_value").textContent = t2;
+        document.getElementById("theta_0_3d_value").textContent = t0;
 
         const stepData = generateStepData3D(t1, t2, t0);
         const sigmoidData = generateSigmoidData3D(t1, t2, t0);
