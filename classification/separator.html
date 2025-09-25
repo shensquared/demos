@@ -207,20 +207,8 @@
         };
       }
 
-      var xValues = [
-        -0.50183952461055,
-        0.9279757672456204,
-        0.3946339367881464,
-        -1.3760219186551894,
-        -1.7676655513272022,
-      ];
-      var yValues = [
-        1.4647045830997407,
-        0.4044600469728352,
-        0.832290311184182,
-        -1.9176620228167902,
-        1.8796394086479773,
-      ];
+      var xValues = [1.0];
+      var yValues = [1.0];
 
       function generateScatterTraces(theta_1, theta_2, theta_0) {
         var scatterDataPositive = {
@@ -241,11 +229,11 @@
           name: "Prediction: Negative",
           marker: { size: 5, color: "pink" },
         };
-        for (var i = 0; i < 5; i++) {
+        for (var i = 0; i < 1; i++) {
           var x = xValues[i];
           var y = yValues[i];
-          var z = 0;
-          var value = theta_2 * y + theta_1 * x + theta_0;
+          var z = theta_2 * y + theta_1 * x + theta_0; // Place on function surface
+          var value = z;
           if (value > 0) {
             scatterDataPositive.x.push(x);
             scatterDataPositive.y.push(y);
@@ -276,7 +264,7 @@
           name: "Prediction: Negative",
           marker: { size: 8, color: "pink" },
         };
-        for (var i = 0; i < 5; i++) {
+        for (var i = 0; i < 1; i++) {
           var x = xValues[i];
           var y = yValues[i];
           var value = theta_2 * y + theta_1 * x + theta_0;
