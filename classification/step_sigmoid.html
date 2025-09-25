@@ -80,25 +80,16 @@
         text-decoration: underline;
       }
       .dropdown-container {
-        position: absolute;
-        top: 80vh;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 10;
         margin: 0 20px;
         text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <div class="dropdown-container">
-        <label for="plot-selector">Choose dimension:</label>
-        <select id="plot-selector" onchange="switchPlot()">
-          <option value="2d">1D feature: step(θx + θ₀) vs sigmoid(θx + θ₀)</option>
-          <option value="3d">2D features: step(θ₁x₁ + θ₂x₂ + θ₀) vs sigmoid(θ₁x₁ + θ₂x₂ + θ₀)</option>
-        </select>
-      </div>
 
       <div class="plots-container">
         <div class="plot-container">
@@ -113,6 +104,13 @@
 
       <!-- Sliders for 2D -->
       <div id="sliders-2d" class="slider-container">
+        <div class="dropdown-container">
+          <label for="plot-selector">Choose dimension:</label>
+          <select id="plot-selector" onchange="switchPlot()">
+            <option value="2d">1d feature</option>
+            <option value="3d">2d feature</option>
+          </select>
+        </div>
         <div class="slider-group">
           <label for="theta">θ:</label>
           <input type="range" id="theta" min="-5" max="5" value="-3" step="0.1" oninput="updatePlots()" />
@@ -127,6 +125,13 @@
 
       <!-- Sliders for 3D -->
       <div id="sliders-3d" class="slider-container" style="display: none">
+        <div class="dropdown-container">
+          <label for="plot-selector">Choose dimension:</label>
+          <select id="plot-selector" onchange="switchPlot()">
+            <option value="2d">1d feature</option>
+            <option value="3d">2d feature</option>
+          </select>
+        </div>
         <div class="slider-group">
           <label for="theta_1">θ₁:</label>
           <input type="range" id="theta_1" min="-5" max="5" value="-3" step="0.1" oninput="updatePlots()" />
