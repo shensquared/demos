@@ -35,7 +35,7 @@ ax.set_yticks(np.arange(-3, 4, 1))
 ax.set_aspect('equal')
 
 plt.tight_layout()
-plt.savefig('features/absolute-feature-2d.png', dpi=600, bbox_inches='tight')
+plt.savefig('features/absolute-feature-2d.png', dpi=300, bbox_inches='tight')
 print("2D plot saved as 'features/absolute-feature-2d.png'")
 
 # Create 3D surface plot
@@ -75,7 +75,7 @@ ax.grid(False)
 ax.view_init(elev=20, azim=75)
 
 plt.tight_layout()
-plt.savefig('features/absolute-feature-3d-level-3d.png', dpi=600, bbox_inches='tight')
+plt.savefig('features/absolute-feature-3d-level-3d.png', dpi=300, bbox_inches='tight')
 print("3D plot with level plane saved as 'features/absolute-feature-3d-level-3d.png'")
 
 # Create 3D surface plot without level plane
@@ -96,7 +96,7 @@ ax.grid(False)
 ax.view_init(elev=20, azim=75)
 
 plt.tight_layout()
-plt.savefig('features/absolute-feature-3d.png', dpi=600, bbox_inches='tight')
+plt.savefig('features/absolute-feature-3d.png', dpi=300, bbox_inches='tight')
 print("3D plot without level plane saved as 'features/absolute-feature-3d.png'")
 
 print("All plots generated successfully!")
