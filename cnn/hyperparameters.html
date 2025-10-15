@@ -93,6 +93,7 @@
             gap: 12px;
             flex: 1;
             justify-content: center;
+            min-width: 0;
         }
 
         /* Responsive breakpoints */
@@ -313,7 +314,7 @@
 
                     <div class="annotation">
                         <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjUiIGhlaWdodD0iMjUiIHZpZXdCb3g9IjAgMCAyNSAyNSIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyLjUgMkM2Ljk3IDEuOTk5IDIuNDk5IDYuNDcgMi40OTkgMTJTMi45NyAyMi4wMDEgOC41IDIyLjAwMUMxNC4wMyAyMi4wMDEgMTguNTAxIDE3LjUzIDE4LjUwMSAxMlMxNC4wMyAxLjk5OSAxMi41IDJaIiBmaWxsPSIjNjY2Ii8+CjxwYXRoIGQ9Ik0xMi41IDYuNUMxMy4zMjggNi41IDE0IDcuMTcyIDE0IDhTMTMuMzI4IDkuNSAxMi41IDkuNUMxMS42NzIgOS41IDExIDguODI4IDExIDhTMTEuNjcyIDYuNSAxMi41IDYuNVoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0xMi41IDExQzEzLjMyOCAxMSAxNCAxMS42NzIgMTQgMTIuNVYxNkMxNCAxNi44MjggMTMuMzI4IDE3LjUgMTIuNSAxNy41UzExIDE2LjgyOCAxMSAxNlYxMi41QzExIDExLjY3MiAxMS42NzIgMTEgMTIuNSAxMVoiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo=" alt="pointer icon" width="25px">
-                        <span><strong>Hover over</strong> to change focus.</span>
+                        <span><strong>Hover over</strong> to change focus. <strong>Click outside</strong> to resume.</span>
                     </div>
                 </div>
 
@@ -446,6 +447,15 @@
             updateVisualization();
         });
 
+        // Handle window resize
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                updateVisualization();
+            }, 250);
+        });
+
         function setupEventListeners() {
             // Input size controls
             document.getElementById('inputSize').addEventListener('input', (e) => {
@@ -515,6 +525,25 @@
                     icon.className = 'fas fa-play-circle play-icon';
                 } else {
                     icon.className = 'fas fa-pause-circle';
+                    resumeAnimation();
+                }
+            });
+
+            // Click outside matrices to resume animation
+            document.addEventListener('click', (e) => {
+                const inputSvg = document.getElementById('inputSvg');
+                const outputSvg = document.getElementById('outputSvg');
+                const pauseButton = document.getElementById('pauseButton');
+                
+                // Check if click is outside both SVGs and not on pause button
+                if (!inputSvg.contains(e.target) && 
+                    !outputSvg.contains(e.target) && 
+                    !pauseButton.contains(e.target) &&
+                    state.isPaused) {
+                    state.isPaused = false;
+                    const icon = document.querySelector('#pauseButton i');
+                    icon.className = 'fas fa-pause-circle';
+                    resumeAnimation();
                 }
             });
         }
@@ -564,10 +593,20 @@
             document.getElementById('outputDim').textContent = output.length;
             document.getElementById('outputDim2').textContent = output.length;
 
+            // Calculate SVG size based on available space
+            const centerViz = document.querySelector('.center-visualization');
+            const matricesRow = document.querySelector('.matrices-row');
+            const availableWidth = centerViz.clientWidth;
+            const svgSize = Math.min(Math.floor((availableWidth - 60) / 2), 400); // 60px for gap between matrices
+            
+            // Update SVG dimensions
+            document.getElementById('inputSvg').setAttribute('width', svgSize);
+            document.getElementById('inputSvg').setAttribute('height', svgSize);
+            document.getElementById('outputSvg').setAttribute('width', svgSize);
+            document.getElementById('outputSvg').setAttribute('height', svgSize);
+
             // Calculate consistent cell size based on the larger matrix
             const maxDim = Math.max(input.length, output.length);
-            const svgElement = document.getElementById('inputSvg');
-            const svgSize = parseInt(svgElement.getAttribute('width'));
             const cellSize = svgSize / maxDim;
 
             // Draw grids with consistent cell size
@@ -633,6 +672,34 @@
                 
                 const outputMappings = generateOutputMappings(state.stride, output, kernel.length, input.length, 1);
                 state.inputHighlights = compute_input_multiplies_with_weight(animatedH, animatedW, input.length, kernel.length, outputMappings, kernel.length);
+                
+                updateHighlights();
+                state.counter++;
+            }, 1000);
+        }
+
+        function resumeAnimation() {
+            if (state.interval) clearInterval(state.interval);
+            if (!state.input || !state.kernel || !state.output || !state.isStrideValid) return;
+            
+            // Find current focus position from outputHighlights
+            let currentIndex = state.outputHighlights.findIndex(h => h === true);
+            if (currentIndex === -1) currentIndex = 0;
+            
+            // Set counter to current position
+            state.counter = currentIndex;
+            
+            state.interval = setInterval(() => {
+                if (state.isPaused || !state.isStrideValid) return;
+                
+                const flat_animated = state.counter % (state.output.length * state.output.length);
+                state.outputHighlights = array1d(state.output.length * state.output.length, (i) => false);
+                const animatedH = Math.floor(flat_animated / state.output.length);
+                const animatedW = flat_animated % state.output.length;
+                state.outputHighlights[animatedH * state.output.length + animatedW] = true;
+                
+                const outputMappings = generateOutputMappings(state.stride, state.output, state.kernel.length, state.input.length, 1);
+                state.inputHighlights = compute_input_multiplies_with_weight(animatedH, animatedW, state.input.length, state.kernel.length, outputMappings, state.kernel.length);
                 
                 updateHighlights();
                 state.counter++;
