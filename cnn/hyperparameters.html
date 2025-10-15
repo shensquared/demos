@@ -6,9 +6,7 @@
     <title>hyperparameters</title>
     
     <!-- External Dependencies -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
     <script src="https://d3js.org/d3.v5.js"></script>
-    <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
     
     <style>
         * {
@@ -27,24 +25,6 @@
             min-height: 100vh;
         }
 
-        .header {
-            text-align: center;
-            padding: 20px;
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #e8eaeb;
-        }
-
-        .header h1 {
-            font-size: 28px;
-            color: #333;
-            margin-bottom: 8px;
-        }
-
-        .header p {
-            color: #666;
-            font-size: 16px;
-        }
-        
         .main-content {
             position: relative;
             padding: 10px;
@@ -55,19 +35,6 @@
             flex-direction: column;
         }
 
-        .control-button {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            color: gray;
-            font-size: 22px;
-            opacity: 0.4;
-            cursor: pointer;
-        }
-
-        .control-button:hover {
-            opacity: 0.8;
-        }
 
         .content-container {
             display: flex;
@@ -251,26 +218,6 @@
         .annotation img {
             width: 18px;
         }
-        
-        .explanation {
-            margin-top: 30px;
-            padding: 20px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .explanation h3 {
-            margin-bottom: 10px;
-            color: #333;
-        }
-
-        .explanation p {
-            color: #666;
-            line-height: 1.6;
-        }
 
         .is-danger {
             border-color: #f14668 !important;
@@ -281,10 +228,6 @@
 <body>
     <div class="container">
         <div class="main-content">
-            <div class="control-button" id="pauseButton">
-                <i class="fas fa-pause-circle"></i>
-            </div>
-
             <div class="content-container">
                 <div class="left-controls">
                     <div class="control-group">
@@ -517,32 +460,16 @@
                 updateVisualization();
             });
 
-            // Pause button
-            document.getElementById('pauseButton').addEventListener('click', () => {
-                state.isPaused = !state.isPaused;
-                const icon = document.querySelector('#pauseButton i');
-                if (state.isPaused) {
-                    icon.className = 'fas fa-play-circle play-icon';
-                } else {
-                    icon.className = 'fas fa-pause-circle';
-                    resumeAnimation();
-                }
-            });
-
             // Click outside matrices to resume animation
             document.addEventListener('click', (e) => {
                 const inputSvg = document.getElementById('inputSvg');
                 const outputSvg = document.getElementById('outputSvg');
-                const pauseButton = document.getElementById('pauseButton');
                 
-                // Check if click is outside both SVGs and not on pause button
+                // Check if click is outside both SVGs
                 if (!inputSvg.contains(e.target) && 
-                    !outputSvg.contains(e.target) && 
-                    !pauseButton.contains(e.target) &&
+                    !outputSvg.contains(e.target) &&
                     state.isPaused) {
                     state.isPaused = false;
-                    const icon = document.querySelector('#pauseButton i');
-                    icon.className = 'fas fa-pause-circle';
                     resumeAnimation();
                 }
             });
@@ -715,8 +642,6 @@
             state.inputHighlights = compute_input_multiplies_with_weight(hoverH, hoverW, matrix.length, state.kernel.length, outputMappings, state.kernel.length);
             
             state.isPaused = true;
-            const icon = document.querySelector('#pauseButton i');
-            icon.className = 'fas fa-play-circle play-icon';
             
             updateHighlights();
         }
