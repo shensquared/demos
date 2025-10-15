@@ -4,6 +4,3 @@
 [submodule "nn/playground"]
 	path = nn/playground
 	url = https://github.com/shensquared/playground
-[submodule "cnn"]
-	path = cnn
-	url = git@github.com:shensquared/cnn-explainer.git
