@@ -114,16 +114,12 @@
 <body>
     <div class="container">
         <div class="panel">
-            <h3>Feature Space (d=2)</h3>
+            <h3>Feature (d=2) and Label</h3>
             <div class="subtitle">Data point: (2, 3) → 4</div>
             <div id="feature-plot" class="plot"></div>
-            <div class="info">
-                <strong>n=1, d=2</strong>: One equation, two unknowns<br>
-                Infinitely many planes pass through this point
-            </div>
         </div>
         <div class="panel">
-            <h3>Loss Surface J(θ₁, θ₂)</h3>
+            <h3>Training error J(θ₁, θ₂)</h3>
             <div class="subtitle">Half-pipe with valley of optimal solutions</div>
             <div id="loss-plot" class="plot"></div>
             <div class="slider-container">
@@ -177,7 +173,7 @@
         for (let j = 0; j < t2Range.length; j++) {
             const row = [];
             for (let i = 0; i < t1Range.length; i++) {
-                row.push(Math.min(loss(t1Range[i], t2Range[j]), 8));
+                row.push(loss(t1Range[i], t2Range[j]));
             }
             lossZ.push(row);
         }
@@ -229,7 +225,7 @@
             scene: {
                 xaxis: { title: 'θ₁', range: [-1, 3] },
                 yaxis: { title: 'θ₂', range: [-1, 3] },
-                zaxis: { title: 'J(θ)', range: [0, 8] },
+                zaxis: { title: 'J(θ)' },
                 camera: { eye: { x: 1.6, y: 1.6, z: 1.0 } },
                 aspectmode: 'cube'
             },
@@ -343,7 +339,7 @@
             Plotly.restyle('loss-plot', {
                 x: [[theta1]],
                 y: [[theta2]],
-                z: [[Math.min(j, 8) + 0.15]]
+                z: [[j + 0.15]]
             }, 2);
 
             // Update feature plot
