@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>n > d but Collinear: Valley of Solutions</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 15px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fafafa;
+        }
+        .top-bar {
+            margin-bottom: 10px;
+        }
+        .container {
+            display: flex;
+            gap: 15px;
+            height: calc(100vh - 100px);
+        }
+        .panel {
+            flex: 1;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        .panel h3 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+            color: #333;
+        }
+        .panel .subtitle {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+        .plot {
+            flex: 1;
+        }
+        .slider-container {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            padding: 10px 15px;
+            background: #f0f0f0;
+            border-radius: 8px;
+        }
+        .slider-col {
+            flex: 1;
+        }
+        .slider-label {
+            font-size: 13px;
+            color: #333;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .slider {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #ddd;
+            border-radius: 3px;
+            outline: none;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #666;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #666;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            border: none;
+        }
+        .slider.valley {
+            background: linear-gradient(to right, #b4a7d6, #674ea7);
+        }
+        .slider.valley::-webkit-slider-thumb { background: #674ea7; }
+        .slider.valley::-moz-range-thumb { background: #674ea7; }
+        .theta-display {
+            font-family: 'Times New Roman', serif;
+            font-size: 18px;
+            padding: 8px 0;
+            text-align: center;
+            margin-top: 5px;
+        }
+        .theta-display .theta-val {
+            color: #674ea7;
+        }
+        .theta-display .j-val {
+            color: #cc8800;
+        }
+        .col-vec {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0 4px;
+            margin: 0 6px;
+            line-height: 1.2;
+            font-size: 18px;
+            position: relative;
+        }
+        .col-vec::before {
+            content: '[';
+            position: absolute;
+            left: -9px;
+            top: 50%;
+            transform: translateY(-50%) scaleY(2.2);
+            font-size: 20px;
+        }
+        .col-vec::after {
+            content: ']';
+            position: absolute;
+            right: -9px;
+            top: 50%;
+            transform: translateY(-50%) scaleY(2.2);
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <div class="slider-container">
+            <div class="slider-col">
+                <div class="slider-label">
+                    <span>θ₁</span>
+                    <span id="theta1-val">1.00</span>
+                </div>
+                <input type="range" id="theta1-slider" class="slider theta1" min="-1" max="3" step="0.02" value="1">
+            </div>
+            <div class="slider-col">
+                <div class="slider-label">
+                    <span>θ₂</span>
+                    <span id="theta2-val">0.67</span>
+                </div>
+                <input type="range" id="theta2-slider" class="slider theta2" min="-1" max="3" step="0.02" value="0.67">
+            </div>
+            <div class="slider-col">
+                <div class="slider-label">
+                    <span>Valley</span>
+                </div>
+                <input type="range" id="valley-slider" class="slider valley" min="-0.5" max="2.5" step="0.02" value="1">
+            </div>
+        </div>
+        <div class="theta-display" id="theta-display"><span class="theta-val">θ = [1.00, 0.67]<sup>T</sup></span> &nbsp; <span class="j-val">J(θ) = 0.00</span></div>
+    </div>
+    <div class="container">
+        <div class="panel">
+            <h3>Feature (d=2) and Label</h3>
+            <div class="subtitle"><span style="color: #3c78d8; display: inline-flex; align-items: center; gap: 25px;">
+                    <span style="display: inline-flex; align-items: center;">(&#160;<span class="col-vec"><span>2</span><span>3</span></span>&#160;, 4)</span>
+                    <span style="display: inline-flex; align-items: center;">(&#160;<span class="col-vec"><span>4</span><span>6</span></span>&#160;, 8)</span>
+                    <span style="display: inline-flex; align-items: center;">(&#160;<span class="col-vec"><span>6</span><span>9</span></span>&#160;, 12)</span>
+                </span><br><span id="hypothesis-text" style="color: #888888;">hypothesis h = θ₁x₁ + θ₂x₂</span></div>
+            <div id="feature-plot" class="plot"></div>
+        </div>
+        <div class="panel">
+            <h3>Training error J(θ₁, θ₂)</h3>
+            <div class="subtitle">J(θ) = (2θ₁+3θ₂−4)² + (4θ₁+6θ₂−8)² + (6θ₁+9θ₂−12)²</div>
+            <div id="loss-plot" class="plot"></div>
+        </div>
+    </div>
+
+    <script>
+        // Collinear data points: (2,3)->4, (4,6)->8, (6,9)->12
+        // These lie on line x2 = 1.5*x1 in feature space
+        // y values are proportional to x1, so plane through origin fits perfectly
+        const dataPoints = [
+            { x1: 2, x2: 3, y: 4 },
+            { x1: 4, x2: 6, y: 8 },
+            { x1: 6, x2: 9, y: 12 }
+        ];
+
+        // Valley constraint: 2θ₁ + 3θ₂ = 4 (same as n<d demo)
+        function getTheta2(t1) {
+            return (4 - 2 * t1) / 3;
+        }
+
+        // Current theta
+        let theta1 = 1;
+        let theta2 = getTheta2(theta1);
+
+        // Loss function: J(θ) = Σ(θ1*x1 + θ2*x2 - y)²
+        function loss(t1, t2) {
+            let sum = 0;
+            for (const pt of dataPoints) {
+                const pred = t1 * pt.x1 + t2 * pt.x2;
+                sum += Math.pow(pred - pt.y, 2);
+            }
+            return sum;
+        }
+
+        // Find minimum loss along valley
+        function minLoss() {
+            let minJ = Infinity;
+            for (let t1 = -1; t1 <= 3; t1 += 0.01) {
+                const t2 = getTheta2(t1);
+                const j = loss(t1, t2);
+                if (j < minJ) minJ = j;
+            }
+            return minJ;
+        }
+        const valleyMinLoss = minLoss();
+
+        // Create loss surface data
+        const gridSize = 40;
+        const t1Range = [], t2Range = [];
+        for (let i = 0; i <= gridSize; i++) {
+            t1Range.push(-1 + i * 4 / gridSize);
+            t2Range.push(-1 + i * 4 / gridSize);
+        }
+
+        const lossZ = [];
+        for (let j = 0; j < t2Range.length; j++) {
+            const row = [];
+            for (let i = 0; i < t1Range.length; i++) {
+                row.push(loss(t1Range[i], t2Range[j]));
+            }
+            lossZ.push(row);
+        }
+
+        // Valley line points
+        const valleyT1 = [], valleyT2 = [], valleyZ = [];
+        for (let t1 = -0.5; t1 <= 2.5; t1 += 0.05) {
+            const t2 = getTheta2(t1);
+            if (t2 >= -1 && t2 <= 3) {
+                valleyT1.push(t1);
+                valleyT2.push(t2);
+                valleyZ.push(loss(t1, t2) + 0.05);
+            }
+        }
+
+        // Loss plot traces
+        const lossSurface = {
+            type: 'surface',
+            x: t1Range,
+            y: t2Range,
+            z: lossZ,
+            colorscale: [[0, '#ffd966'], [0.3, '#f6b26b'], [1, '#cc4125']],
+            opacity: 0.8,
+            showscale: false,
+            hoverinfo: 'skip'
+        };
+
+        const valleyLine = {
+            type: 'scatter3d',
+            mode: 'lines',
+            x: valleyT1,
+            y: valleyT2,
+            z: valleyZ,
+            line: { color: '#674ea7', width: 8 },
+            hoverinfo: 'skip'
+        };
+
+        const currentPoint = {
+            type: 'scatter3d',
+            mode: 'markers',
+            x: [theta1],
+            y: [theta2],
+            z: [0.15],
+            marker: { size: 12, color: '#3c78d8', symbol: 'diamond' },
+            hoverinfo: 'skip'
+        };
+
+        const axisStyle = {
+            titlefont: { size: 16, family: 'Arial Bold, Arial', color: '#333' },
+            tickfont: { size: 11, color: '#999' },
+            nticks: 5,
+            gridcolor: '#ddd'
+        };
+
+        const lossLayout = {
+            scene: {
+                xaxis: { title: 'θ₁', range: [-1, 3], ...axisStyle },
+                yaxis: { title: 'θ₂', range: [-1, 3], ...axisStyle },
+                zaxis: { title: 'J(θ)', ...axisStyle },
+                camera: { eye: { x: 1.6, y: 1.6, z: 1.0 } },
+                aspectmode: 'cube'
+            },
+            margin: { l: 0, r: 0, t: 0, b: 0 },
+            showlegend: false
+        };
+
+        Plotly.newPlot('loss-plot', [lossSurface, valleyLine, currentPoint], lossLayout, {
+            responsive: true,
+            displayModeBar: false
+        });
+
+
+        // Feature plot
+        function createFeaturePlot() {
+            const pGridSize = 10;
+            const px1 = [], px2 = [];
+            for (let i = 0; i <= pGridSize; i++) {
+                px1.push(-1 + i * 10 / pGridSize);
+                px2.push(-1 + i * 12 / pGridSize);
+            }
+
+            const planeZ = [];
+            for (let j = 0; j < px2.length; j++) {
+                const row = [];
+                for (let i = 0; i < px1.length; i++) {
+                    row.push(theta1 * px1[i] + theta2 * px2[j]);
+                }
+                planeZ.push(row);
+            }
+
+            // Check if on valley (optimal for this constraint)
+            const j = loss(theta1, theta2);
+            const isOptimal = Math.abs(j - valleyMinLoss) < 0.1;
+            const planeColor = isOptimal ? [[0, '#b4a7d6'], [1, '#674ea7']] : [[0, '#cccccc'], [1, '#888888']];
+
+            const plane = {
+                type: 'surface',
+                x: px1,
+                y: px2,
+                z: planeZ,
+                colorscale: planeColor,
+                opacity: 0.7,
+                showscale: false,
+                hoverinfo: 'skip'
+            };
+
+            const traces = [plane];
+
+            // Add deviation lines and points for each data point
+            for (const pt of dataPoints) {
+                const prediction = theta1 * pt.x1 + theta2 * pt.x2;
+
+                // Vertical deviation line
+                traces.push({
+                    type: 'scatter3d',
+                    mode: 'lines',
+                    x: [pt.x1, pt.x1],
+                    y: [pt.x2, pt.x2],
+                    z: [prediction, pt.y],
+                    line: { color: isOptimal ? '#674ea7' : '#cc4125', width: 5, dash: 'dash' },
+                    hoverinfo: 'skip'
+                });
+
+                // Point on plane
+                traces.push({
+                    type: 'scatter3d',
+                    mode: 'markers',
+                    x: [pt.x1],
+                    y: [pt.x2],
+                    z: [prediction],
+                    marker: { size: 6, color: isOptimal ? '#674ea7' : '#888888', symbol: 'diamond' },
+                    hoverinfo: 'skip'
+                });
+
+                // Actual data point
+                traces.push({
+                    type: 'scatter3d',
+                    mode: 'markers',
+                    x: [pt.x1],
+                    y: [pt.x2],
+                    z: [pt.y],
+                    marker: { size: 10, color: '#3c78d8', line: { color: '#1a4a8a', width: 2 } },
+                    hoverinfo: 'skip'
+                });
+            }
+
+            return traces;
+        }
+
+        const featureLayout = {
+            scene: {
+                xaxis: { title: 'x₁', range: [0, 8], ...axisStyle },
+                yaxis: { title: 'x₂', range: [0, 11], ...axisStyle },
+                zaxis: { title: 'y', range: [0, 14], ...axisStyle },
+                camera: { eye: { x: 1.8, y: 1.8, z: 1.0 } },
+                aspectmode: 'cube'
+            },
+            margin: { l: 0, r: 0, t: 0, b: 0 },
+            showlegend: false
+        };
+
+        Plotly.newPlot('feature-plot', createFeaturePlot(), featureLayout, {
+            responsive: true,
+            displayModeBar: false
+        });
+
+        // Slider interaction
+        const theta1Slider = document.getElementById('theta1-slider');
+        const theta2Slider = document.getElementById('theta2-slider');
+        const valleySlider = document.getElementById('valley-slider');
+
+        function updateDisplay() {
+            const j = loss(theta1, theta2);
+            const isOptimal = Math.abs(j - valleyMinLoss) < 0.1;
+            document.getElementById('theta1-val').textContent = theta1.toFixed(2);
+            document.getElementById('theta2-val').textContent = theta2.toFixed(2);
+            const thetaColor = isOptimal ? '#674ea7' : '#888888';
+            document.getElementById('theta-display').innerHTML =
+                `<span class="theta-val" style="color: ${thetaColor}">θ = [${theta1.toFixed(2)}, ${theta2.toFixed(2)}]<sup>T</sup></span> &nbsp; <span class="j-val">J(θ) = ${j.toFixed(2)}</span>`;
+
+            // Update hypothesis text color
+            document.getElementById('hypothesis-text').style.color = thetaColor;
+
+            // Update point on loss plot
+            Plotly.restyle('loss-plot', {
+                x: [[theta1]],
+                y: [[theta2]],
+                z: [[j + 0.15]]
+            }, 2);
+
+            // Update feature plot
+            Plotly.react('feature-plot', createFeaturePlot(), featureLayout);
+        }
+
+        theta1Slider.addEventListener('input', function() {
+            theta1 = parseFloat(this.value);
+            updateDisplay();
+        });
+
+        theta2Slider.addEventListener('input', function() {
+            theta2 = parseFloat(this.value);
+            updateDisplay();
+        });
+
+        valleySlider.addEventListener('input', function() {
+            theta1 = parseFloat(this.value);
+            theta2 = getTheta2(theta1);
+            theta1Slider.value = theta1;
+            theta2Slider.value = theta2;
+            updateDisplay();
+        });
+
+        // Initialize
+        updateDisplay();
+    </script>
+</body>
+</html>
