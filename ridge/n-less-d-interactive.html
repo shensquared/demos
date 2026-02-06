@@ -35,9 +35,10 @@
             color: #333;
         }
         .panel .subtitle {
-            font-size: 15px;
+            font-size: 18px;
             color: #666;
             margin-bottom: 10px;
+            line-height: 1.6;
         }
         .plot {
             flex: 1;
@@ -241,11 +242,18 @@
             hoverinfo: 'skip'
         };
 
+        const axisStyle = {
+            titlefont: { size: 16, family: 'Arial Bold, Arial', color: '#333' },
+            tickfont: { size: 11, color: '#999' },
+            nticks: 5,
+            gridcolor: '#ddd'
+        };
+
         const lossLayout = {
             scene: {
-                xaxis: { title: 'θ₁', range: [-1, 3] },
-                yaxis: { title: 'θ₂', range: [-1, 3] },
-                zaxis: { title: 'J(θ)' },
+                xaxis: { title: 'θ₁', range: [-1, 3], ...axisStyle },
+                yaxis: { title: 'θ₂', range: [-1, 3], ...axisStyle },
+                zaxis: { title: 'J(θ)', ...axisStyle },
                 camera: { eye: { x: 1.6, y: 1.6, z: 1.0 } },
                 aspectmode: 'cube'
             },
@@ -333,9 +341,9 @@
 
         const featureLayout = {
             scene: {
-                xaxis: { title: 'x₁', range: [-0.5, 4] },
-                yaxis: { title: 'x₂', range: [-0.5, 4] },
-                zaxis: { title: 'y', range: [-2, 8] },
+                xaxis: { title: 'x₁', range: [-0.5, 4], ...axisStyle },
+                yaxis: { title: 'x₂', range: [-0.5, 4], ...axisStyle },
+                zaxis: { title: 'y', range: [-2, 8], ...axisStyle },
                 camera: { eye: { x: 1.8, y: 1.8, z: 1.0 } },
                 aspectmode: 'cube'
             },
