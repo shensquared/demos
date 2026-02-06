@@ -12,10 +12,13 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #fafafa;
         }
+        .top-bar {
+            margin-bottom: 10px;
+        }
         .container {
             display: flex;
             gap: 15px;
-            height: calc(100vh - 30px);
+            height: calc(100vh - 100px);
         }
         .panel {
             flex: 1;
@@ -32,7 +35,7 @@
             color: #333;
         }
         .panel .subtitle {
-            font-size: 12px;
+            font-size: 15px;
             color: #666;
             margin-bottom: 10px;
         }
@@ -47,10 +50,15 @@
             margin-top: 10px;
         }
         .slider-container {
-            margin-top: 15px;
-            padding: 10px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            padding: 10px 15px;
             background: #f0f0f0;
             border-radius: 8px;
+        }
+        .slider-col {
+            flex: 1;
         }
         .slider-label {
             font-size: 13px;
@@ -96,11 +104,15 @@
         .theta-display {
             font-family: 'Times New Roman', serif;
             font-size: 18px;
-            background: #b4a7d6;
-            padding: 10px 15px;
-            border-radius: 5px;
-            margin-top: 10px;
+            padding: 8px 0;
             text-align: center;
+            margin-top: 5px;
+        }
+        .theta-display .theta-val {
+            color: #674ea7;
+        }
+        .theta-display .j-val {
+            color: #cc8800;
         }
         .optimal-note {
             font-size: 12px;
@@ -112,33 +124,41 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="panel">
-            <h3>Feature (d=2) and Label</h3>
-            <div class="subtitle">Data point: (2, 3) → 4</div>
-            <div id="feature-plot" class="plot"></div>
-        </div>
-        <div class="panel">
-            <h3>Training error J(θ₁, θ₂)</h3>
-            <div class="subtitle">Half-pipe with valley of optimal solutions</div>
-            <div id="loss-plot" class="plot"></div>
-            <div class="slider-container">
+    <div class="top-bar">
+        <div class="slider-container">
+            <div class="slider-col">
                 <div class="slider-label">
                     <span>θ₁</span>
                     <span id="theta1-val">1.00</span>
                 </div>
                 <input type="range" id="theta1-slider" class="slider theta1" min="-1" max="3" step="0.02" value="1">
-                <div class="slider-label" style="margin-top: 12px;">
+            </div>
+            <div class="slider-col">
+                <div class="slider-label">
                     <span>θ₂</span>
                     <span id="theta2-val">0.67</span>
                 </div>
                 <input type="range" id="theta2-slider" class="slider theta2" min="-1" max="3" step="0.02" value="0.67">
-                <div class="slider-label" style="margin-top: 12px;">
-                    <span>Valley (J=0)</span>
+            </div>
+            <div class="slider-col">
+                <div class="slider-label">
+                    <span>Valley</span>
                 </div>
                 <input type="range" id="valley-slider" class="slider valley" min="-0.5" max="2.5" step="0.02" value="1">
             </div>
-            <div class="theta-display" id="theta-display">θ = [1.00, 0.67]<sup>T</sup> &nbsp; J = 0.00</div>
+        </div>
+        <div class="theta-display" id="theta-display"><span class="theta-val">θ = [1.00, 0.67]<sup>T</sup></span> &nbsp; <span class="j-val">J(θ) = 0.00</span></div>
+    </div>
+    <div class="container">
+        <div class="panel">
+            <h3>Feature (d=2) and Label</h3>
+            <div class="subtitle"><span style="color: #3c78d8;">Data point: (2, 3) → 4</span><br><span id="hypothesis-text" style="color: #888888;">hypothesis h = θ₁x₁ + θ₂x₂</span></div>
+            <div id="feature-plot" class="plot"></div>
+        </div>
+        <div class="panel">
+            <h3>Training error J(θ₁, θ₂)</h3>
+            <div class="subtitle">J(θ) = (2θ₁ + 3θ₂ − 4)²</div>
+            <div id="loss-plot" class="plot"></div>
         </div>
     </div>
 
@@ -155,10 +175,10 @@
         let theta1 = 1;
         let theta2 = getTheta2(theta1);
 
-        // Loss function: J(θ) = (1/2)(θ1*x1 + θ2*x2 - y)²
+        // Loss function: J(θ) = (θ1*x1 + θ2*x2 - y)²
         function loss(t1, t2) {
             const pred = t1 * x1 + t2 * x2;
-            return 0.5 * Math.pow(pred - y, 2);
+            return Math.pow(pred - y, 2);
         }
 
         // Create loss surface data
@@ -257,12 +277,17 @@
                 planeZ.push(row);
             }
 
+            // Check if optimal (J ≈ 0)
+            const isOptimal = loss(theta1, theta2) < 0.01;
+            const planeColor = isOptimal ? [[0, '#b4a7d6'], [1, '#674ea7']] : [[0, '#cccccc'], [1, '#888888']];
+            const lineColor = isOptimal ? '#674ea7' : '#888888';
+
             const plane = {
                 type: 'surface',
                 x: px1,
                 y: px2,
                 z: planeZ,
-                colorscale: [[0, '#b4a7d6'], [1, '#674ea7']],
+                colorscale: planeColor,
                 opacity: 0.7,
                 showscale: false,
                 hoverinfo: 'skip'
@@ -278,7 +303,7 @@
                 x: [x1, x1],
                 y: [x2, x2],
                 z: [prediction, y],
-                line: { color: '#cc4125', width: 6, dash: 'dash' },
+                line: { color: isOptimal ? '#674ea7' : '#cc4125', width: 6, dash: 'dash' },
                 hoverinfo: 'skip'
             };
 
@@ -299,7 +324,7 @@
                 x: [x1],
                 y: [x2],
                 z: [prediction],
-                marker: { size: 8, color: '#674ea7', symbol: 'diamond' },
+                marker: { size: 8, color: lineColor, symbol: 'diamond' },
                 hoverinfo: 'skip'
             };
 
@@ -330,10 +355,15 @@
 
         function updateDisplay() {
             const j = loss(theta1, theta2);
+            const isOptimal = j < 0.01;
             document.getElementById('theta1-val').textContent = theta1.toFixed(2);
             document.getElementById('theta2-val').textContent = theta2.toFixed(2);
+            const thetaColor = isOptimal ? '#674ea7' : '#888888';
             document.getElementById('theta-display').innerHTML =
-                `θ = [${theta1.toFixed(2)}, ${theta2.toFixed(2)}]<sup>T</sup> &nbsp; J = ${j.toFixed(2)}`;
+                `<span class="theta-val" style="color: ${thetaColor}">θ = [${theta1.toFixed(2)}, ${theta2.toFixed(2)}]<sup>T</sup></span> &nbsp; <span class="j-val">J(θ) = ${j.toFixed(2)}</span>`;
+
+            // Update hypothesis text color
+            document.getElementById('hypothesis-text').style.color = thetaColor;
 
             // Update point on loss plot
             Plotly.restyle('loss-plot', {
