@@ -134,6 +134,65 @@
             transform: translateY(-50%) scaleY(2.2);
             font-size: 20px;
         }
+
+        /* Embed mode styles for 1280x720 slides */
+        body.embed {
+            padding: 0;
+            background: white;
+            overflow: hidden;
+        }
+        body.embed .top-bar {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            margin: 0;
+            width: auto;
+        }
+        body.embed .slider-container {
+            padding: 6px 20px;
+            background: rgba(255,255,255,0.95);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            gap: 15px;
+        }
+        body.embed .slider-col {
+            min-width: 120px;
+        }
+        body.embed .slider-label {
+            margin-bottom: 4px;
+            font-size: 12px;
+        }
+        body.embed .theta-display {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.95);
+            padding: 5px 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            margin: 0;
+            font-size: 16px;
+            z-index: 100;
+        }
+        body.embed .container {
+            height: 100vh;
+            gap: 0;
+            padding: 0;
+        }
+        body.embed .panel {
+            border-radius: 0;
+            box-shadow: none;
+            padding: 5px;
+        }
+        body.embed .panel h3,
+        body.embed .panel .subtitle {
+            display: none;
+        }
+        body.embed .plot {
+            height: 100%;
+        }
     </style>
 </head>
 <body>
@@ -180,6 +239,11 @@
     </div>
 
     <script>
+        // Detect embed mode
+        if (new URLSearchParams(window.location.search).has('embed')) {
+            document.body.classList.add('embed');
+        }
+
         // Collinear data points: (2,3)->4, (4,6)->8, (6,9)->12
         // These lie on line x2 = 1.5*x1 in feature space
         // y values are proportional to x1, so plane through origin fits perfectly
