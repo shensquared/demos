@@ -31,11 +31,11 @@
         }
         .panel h3 {
             margin: 0 0 5px 0;
-            font-size: 16px;
+            font-size: 24px;
             color: #333;
         }
         .panel .subtitle {
-            font-size: 18px;
+            font-size: 27px;
             color: #666;
             margin-bottom: 10px;
             line-height: 1.6;
@@ -55,7 +55,7 @@
             flex: 1;
         }
         .slider-label {
-            font-size: 13px;
+            font-size: 20px;
             color: #333;
             margin-bottom: 8px;
             display: flex;
@@ -97,7 +97,7 @@
         .slider.valley::-moz-range-thumb { background: #674ea7; }
         .theta-display {
             font-family: 'Times New Roman', serif;
-            font-size: 18px;
+            font-size: 27px;
             padding: 8px 0;
             text-align: center;
             margin-top: 5px;
@@ -112,66 +112,35 @@
             display: inline-flex;
             flex-direction: column;
             align-items: center;
-            padding: 0 4px;
-            margin: 0 6px;
+            padding: 0 6px;
+            margin: 0 9px;
             line-height: 1.2;
-            font-size: 18px;
+            font-size: 27px;
             position: relative;
         }
         .col-vec::before {
             content: '[';
             position: absolute;
-            left: -9px;
+            left: -12px;
             top: 50%;
             transform: translateY(-50%) scaleY(2.2);
-            font-size: 20px;
+            font-size: 30px;
         }
         .col-vec::after {
             content: ']';
             position: absolute;
-            right: -9px;
+            right: -12px;
             top: 50%;
             transform: translateY(-50%) scaleY(2.2);
-            font-size: 20px;
+            font-size: 30px;
         }
 
-        /* Embed mode styles for 1280x720 slides */
+        /* Embed mode: only shrink plots to fit 720px */
         body.embed {
-            padding: 8px;
-            background: #fafafa;
             overflow: hidden;
         }
-        body.embed .top-bar {
-            margin-bottom: 6px;
-        }
-        body.embed .slider-container {
-            padding: 5px 15px;
-            gap: 12px;
-        }
-        body.embed .slider-label {
-            font-size: 12px;
-            margin-bottom: 4px;
-        }
-        body.embed .theta-display {
-            font-size: 15px;
-            padding: 4px 0;
-            margin-top: 3px;
-        }
         body.embed .container {
-            height: calc(100vh - 75px);
-            gap: 10px;
-        }
-        body.embed .panel {
-            padding: 8px;
-        }
-        body.embed .panel h3 {
-            font-size: 14px;
-            margin-bottom: 3px;
-        }
-        body.embed .panel .subtitle {
-            font-size: 15px;
-            margin-bottom: 6px;
-            line-height: 1.4;
+            height: calc(100vh - 130px);
         }
     </style>
 </head>
