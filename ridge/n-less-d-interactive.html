@@ -151,61 +151,41 @@
 
         /* Embed mode styles for 1280x720 slides */
         body.embed {
-            padding: 0;
-            background: white;
+            padding: 8px;
+            background: #fafafa;
             overflow: hidden;
         }
         body.embed .top-bar {
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
-            margin: 0;
-            width: auto;
+            margin-bottom: 6px;
         }
         body.embed .slider-container {
-            padding: 6px 20px;
-            background: rgba(255,255,255,0.95);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            gap: 15px;
-        }
-        body.embed .slider-col {
-            min-width: 120px;
+            padding: 5px 15px;
+            gap: 12px;
         }
         body.embed .slider-label {
-            margin-bottom: 4px;
             font-size: 12px;
+            margin-bottom: 4px;
         }
         body.embed .theta-display {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255,255,255,0.95);
-            padding: 5px 15px;
-            border-radius: 6px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            margin: 0;
-            font-size: 16px;
-            z-index: 100;
+            font-size: 15px;
+            padding: 4px 0;
+            margin-top: 3px;
         }
         body.embed .container {
-            height: 100vh;
-            gap: 0;
-            padding: 0;
+            height: calc(100vh - 75px);
+            gap: 10px;
         }
         body.embed .panel {
-            border-radius: 0;
-            box-shadow: none;
-            padding: 5px;
+            padding: 8px;
         }
-        body.embed .panel h3,
+        body.embed .panel h3 {
+            font-size: 14px;
+            margin-bottom: 3px;
+        }
         body.embed .panel .subtitle {
-            display: none;
-        }
-        body.embed .plot {
-            height: 100%;
+            font-size: 15px;
+            margin-bottom: 6px;
+            line-height: 1.4;
         }
     </style>
 </head>
