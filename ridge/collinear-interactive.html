@@ -213,7 +213,7 @@
         </div>
         <div class="panel">
             <h3>Training error J(θ₁, θ₂)</h3>
-            <div class="subtitle">J(θ) = (2θ₁+3θ₂−4)² + (4θ₁+6θ₂−8)² + (6θ₁+9θ₂−12)²</div>
+            <div class="subtitle">J(θ) = ⅓[(2θ₁+3θ₂−4)² + (4θ₁+6θ₂−8)² + (6θ₁+9θ₂−12)²]</div>
             <div id="loss-plot" class="plot"></div>
         </div>
     </div>
@@ -242,14 +242,14 @@
         let theta1 = 1;
         let theta2 = getTheta2(theta1);
 
-        // Loss function: J(θ) = Σ(θ1*x1 + θ2*x2 - y)²
+        // Loss function: J(θ) = (1/n) Σ(θ1*x1 + θ2*x2 - y)²
         function loss(t1, t2) {
             let sum = 0;
             for (const pt of dataPoints) {
                 const pred = t1 * pt.x1 + t2 * pt.x2;
                 sum += Math.pow(pred - pt.y, 2);
             }
-            return sum;
+            return sum / dataPoints.length;
         }
 
         // Find minimum loss along valley
