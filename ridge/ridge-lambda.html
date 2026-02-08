@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Ridge Regression: Effect of λ</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 15px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fafafa;
+        }
+        .top-bar {
+            margin-bottom: 10px;
+        }
+        .container {
+            display: flex;
+            gap: 15px;
+            height: calc(100vh - 120px);
+        }
+        .panel {
+            flex: 1;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        .panel h3 {
+            margin: 0 0 5px 0;
+            font-size: 22px;
+            color: #333;
+        }
+        .panel .subtitle {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+        .plot {
+            flex: 1;
+        }
+        .slider-container {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            padding: 10px 15px;
+            background: #f0f0f0;
+            border-radius: 8px;
+        }
+        .slider-col {
+            flex: 1;
+        }
+        .slider-label {
+            font-size: 22px;
+            color: #333;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .slider-label .hint {
+            font-size: 14px;
+            color: #999;
+        }
+        .slider {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: linear-gradient(to right, #b4a7d6, #674ea7);
+            border-radius: 3px;
+            outline: none;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #674ea7;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #674ea7;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            border: none;
+        }
+        .theta-display {
+            font-family: 'Times New Roman', serif;
+            font-size: 22px;
+            padding: 8px 0;
+            text-align: center;
+            margin-top: 5px;
+        }
+        .theta-display .theta-val {
+            color: #674ea7;
+        }
+        .theta-display .j-val {
+            color: #cc8800;
+        }
+        .theta-display .norm-val {
+            color: #3c78d8;
+        }
+        .col-vec {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0 6px;
+            margin: 0 9px;
+            line-height: 1.2;
+            font-size: 22px;
+            position: relative;
+        }
+        .col-vec::before {
+            content: '[';
+            position: absolute;
+            left: -12px;
+            top: 50%;
+            transform: translateY(-50%) scaleY(2.2);
+            font-size: 24px;
+        }
+        .col-vec::after {
+            content: ']';
+            position: absolute;
+            right: -12px;
+            top: 50%;
+            transform: translateY(-50%) scaleY(2.2);
+            font-size: 24px;
+        }
+        .legend-swatch {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            vertical-align: middle;
+            margin-right: 4px;
+        }
+
+        /* Embed mode */
+        body.embed {
+            overflow: hidden;
+        }
+        body.embed .container {
+            height: calc(100vh - 130px);
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <div class="slider-container">
+            <div class="slider-col">
+                <div class="slider-label">
+                    <span class="hint">← OLS</span>
+                    <span>λ = <span id="lambda-val">0.0</span></span>
+                    <span class="hint">underfits →</span>
+                </div>
+                <input type="range" id="lambda-slider" class="slider" min="0" max="100" step="0.5" value="0">
+            </div>
+        </div>
+        <div class="theta-display" id="theta-display">
+            <span class="theta-val">θ*<sub>ridge</sub> = [0.549, 0.824]</span> &nbsp;
+            <span class="norm-val">‖θ*‖ = 0.990</span> &nbsp;
+            <span class="j-val">MSE = 5.14</span>
+        </div>
+    </div>
+    <div class="container">
+        <div class="panel">
+            <h3>Data &amp; Hypothesis</h3>
+            <div class="subtitle">
+                <span style="color: #3c78d8; display: inline-flex; align-items: center; gap: 18px;">
+                    <span style="display: inline-flex; align-items: center;">(&#160;<span class="col-vec"><span>2</span><span>3</span></span>&#160;, 7)</span>
+                    <span style="display: inline-flex; align-items: center;">(&#160;<span class="col-vec"><span>4</span><span>6</span></span>&#160;, 8)</span>
+                    <span style="display: inline-flex; align-items: center;">(&#160;<span class="col-vec"><span>6</span><span>9</span></span>&#160;, 9)</span>
+                </span>
+            </div>
+            <div id="data-plot" class="plot"></div>
+        </div>
+        <div class="panel">
+            <h3>Objective in θ-space</h3>
+            <div class="subtitle">
+                <span class="legend-swatch" style="background: #bbb;"></span>MSE &nbsp;
+                <span class="legend-swatch" style="background: #ffd966;"></span>Ridge (MSE + λ‖θ‖²) &nbsp;
+                <span style="color: #3c78d8;">◆</span> θ*<sub>ridge</sub>
+            </div>
+            <div id="obj-plot" class="plot"></div>
+        </div>
+    </div>
+
+    <script>
+        // Detect embed mode
+        if (new URLSearchParams(window.location.search).has('embed')) {
+            document.body.classList.add('embed');
+        }
+
+        // Collinear data: x2 = 1.5*x1 (same as lecture slides)
+        const dataPoints = [
+            { x1: 2, x2: 3, y: 7 },
+            { x1: 4, x2: 6, y: 8 },
+            { x1: 6, x2: 9, y: 9 }
+        ];
+        const n = dataPoints.length;
+
+        // MSE loss function
+        function mse(t1, t2) {
+            let sum = 0;
+            for (const pt of dataPoints) {
+                sum += Math.pow(t1 * pt.x1 + t2 * pt.x2 - pt.y, 2);
+            }
+            return sum / n;
+        }
+
+        // Ridge cost = MSE + lambda * ||theta||^2
+        function ridgeCost(t1, t2, lambda) {
+            return mse(t1, t2) + lambda * (t1 * t1 + t2 * t2);
+        }
+
+        // Solve ridge analytically: theta* = (X^TX + n*lambda*I)^{-1} X^T Y
+        function solveRidge(lambda) {
+            const lam = Math.max(lambda, 0.001);
+            let a11 = 0, a12 = 0, a22 = 0, b1 = 0, b2 = 0;
+            for (const pt of dataPoints) {
+                a11 += pt.x1 * pt.x1;
+                a12 += pt.x1 * pt.x2;
+                a22 += pt.x2 * pt.x2;
+                b1 += pt.x1 * pt.y;
+                b2 += pt.x2 * pt.y;
+            }
+            a11 += n * lam;
+            a22 += n * lam;
+            const det = a11 * a22 - a12 * a12;
+            return {
+                t1: (a22 * b1 - a12 * b2) / det,
+                t2: (a11 * b2 - a12 * b1) / det
+            };
+        }
+
+        // ==================== Precompute grids ====================
+        const gridSize = 50;
+        const tMin = -0.5, tMax = 2.5;
+        const t1Range = [], t2Range = [];
+        for (let i = 0; i <= gridSize; i++) {
+            t1Range.push(tMin + i * (tMax - tMin) / gridSize);
+            t2Range.push(tMin + i * (tMax - tMin) / gridSize);
+        }
+
+        const mseGrid = [];
+        const penaltyGrid = [];
+        for (let j = 0; j <= gridSize; j++) {
+            const mseRow = [], penRow = [];
+            for (let i = 0; i <= gridSize; i++) {
+                mseRow.push(mse(t1Range[i], t2Range[j]));
+                penRow.push(t1Range[i] * t1Range[i] + t2Range[j] * t2Range[j]);
+            }
+            mseGrid.push(mseRow);
+            penaltyGrid.push(penRow);
+        }
+
+        // Fixed z-axis range based on MSE so grey surface never rescales
+        let maxMSE = 0;
+        for (const row of mseGrid) {
+            for (const v of row) {
+                if (v > maxMSE) maxMSE = v;
+            }
+        }
+
+        // Valley line: theta1 + 1.5*theta2 = beta* where beta* = 100/56
+        const betaStar = 100 / 56;
+        const valleyT1 = [], valleyT2 = [], valleyMseZ = [];
+        for (let t1 = tMin; t1 <= tMax; t1 += 0.05) {
+            const t2 = (betaStar - t1) / 1.5;
+            if (t2 >= tMin && t2 <= tMax) {
+                valleyT1.push(t1);
+                valleyT2.push(t2);
+                valleyMseZ.push(mse(t1, t2) + 0.3);
+            }
+        }
+
+        // ==================== Common styling ====================
+        const axisStyle = {
+            titlefont: { size: 16, family: 'Arial Bold, Arial', color: '#333' },
+            tickfont: { size: 11, color: '#999' },
+            nticks: 5,
+            gridcolor: '#ddd'
+        };
+
+        // ==================== Data Plot (Left) ====================
+        const initMin = solveRidge(0);
+        let theta1 = initMin.t1;
+        let theta2 = initMin.t2;
+
+        function createDataPlot() {
+            const pGridSize = 10;
+            const px1 = [], px2 = [];
+            for (let i = 0; i <= pGridSize; i++) {
+                px1.push(-1 + i * 10 / pGridSize);
+                px2.push(-1 + i * 12 / pGridSize);
+            }
+
+            const planeZ = [];
+            for (let j = 0; j < px2.length; j++) {
+                const row = [];
+                for (let i = 0; i < px1.length; i++) {
+                    row.push(theta1 * px1[i] + theta2 * px2[j]);
+                }
+                planeZ.push(row);
+            }
+
+            const plane = {
+                type: 'surface',
+                x: px1,
+                y: px2,
+                z: planeZ,
+                colorscale: [[0, '#b4a7d6'], [1, '#674ea7']],
+                opacity: 0.7,
+                showscale: false,
+                hoverinfo: 'skip'
+            };
+
+            const traces = [plane];
+
+            // Deviation lines and data points
+            for (const pt of dataPoints) {
+                const prediction = theta1 * pt.x1 + theta2 * pt.x2;
+
+                // Vertical deviation line
+                traces.push({
+                    type: 'scatter3d',
+                    mode: 'lines',
+                    x: [pt.x1, pt.x1],
+                    y: [pt.x2, pt.x2],
+                    z: [prediction, pt.y],
+                    line: { color: '#674ea7', width: 5, dash: 'dash' },
+                    hoverinfo: 'skip'
+                });
+
+                // Point on plane
+                traces.push({
+                    type: 'scatter3d',
+                    mode: 'markers',
+                    x: [pt.x1],
+                    y: [pt.x2],
+                    z: [prediction],
+                    marker: { size: 6, color: '#674ea7', symbol: 'diamond' },
+                    hoverinfo: 'skip'
+                });
+
+                // Actual data point
+                traces.push({
+                    type: 'scatter3d',
+                    mode: 'markers',
+                    x: [pt.x1],
+                    y: [pt.x2],
+                    z: [pt.y],
+                    marker: { size: 10, color: '#3c78d8', line: { color: '#1a4a8a', width: 2 } },
+                    hoverinfo: 'skip'
+                });
+            }
+
+            return traces;
+        }
+
+        const dataLayout = {
+            scene: {
+                xaxis: { title: 'x₁', range: [0, 8], ...axisStyle },
+                yaxis: { title: 'x₂', range: [0, 11], ...axisStyle },
+                zaxis: { title: 'y', range: [0, 14], ...axisStyle },
+                camera: { eye: { x: 1.29, y: 1.60, z: 1.81 } },
+                aspectmode: 'cube'
+            },
+            margin: { l: 0, r: 0, t: 0, b: 0 },
+            showlegend: false
+        };
+
+        Plotly.newPlot('data-plot', createDataPlot(), dataLayout, {
+            responsive: true,
+            displayModeBar: false
+        });
+
+        // ==================== Objective Plot (Right) ====================
+        // MSE surface (grey, fixed)
+        const mseSurface = {
+            type: 'surface',
+            x: t1Range,
+            y: t2Range,
+            z: mseGrid,
+            colorscale: [[0, '#e0e0e0'], [1, '#999999']],
+            opacity: 0.5,
+            showscale: false,
+            hoverinfo: 'skip'
+        };
+
+        // Valley line on MSE
+        const valleyLine = {
+            type: 'scatter3d',
+            mode: 'lines',
+            x: valleyT1,
+            y: valleyT2,
+            z: valleyMseZ,
+            line: { color: '#888', width: 6 },
+            hoverinfo: 'skip'
+        };
+
+        // Ridge surface (yellow, varies with lambda)
+        const ridgeSurface = {
+            type: 'surface',
+            x: t1Range,
+            y: t2Range,
+            z: getRidgeGrid(0),
+            colorscale: [[0, '#fff2cc'], [0.3, '#ffd966'], [1, '#f6b26b']],
+            opacity: 0.7,
+            showscale: false,
+            hoverinfo: 'skip'
+        };
+
+        // Origin marker lines (θ₁=0 and θ₂=0 axes on the floor)
+        const originLineT1 = {
+            type: 'scatter3d',
+            mode: 'lines',
+            x: [0, 0],
+            y: [tMin, tMax],
+            z: [0, 0],
+            line: { color: '#333', width: 3 },
+            hoverinfo: 'skip'
+        };
+        const originLineT2 = {
+            type: 'scatter3d',
+            mode: 'lines',
+            x: [tMin, tMax],
+            y: [0, 0],
+            z: [0, 0],
+            line: { color: '#333', width: 3 },
+            hoverinfo: 'skip'
+        };
+        const originDot = {
+            type: 'scatter3d',
+            mode: 'markers',
+            x: [0],
+            y: [0],
+            z: [0],
+            marker: { size: 6, color: '#333', symbol: 'circle' },
+            hoverinfo: 'skip'
+        };
+
+        // Ridge minimum marker
+        const ridgeMinMarker = {
+            type: 'scatter3d',
+            mode: 'markers',
+            x: [initMin.t1],
+            y: [initMin.t2],
+            z: [ridgeCost(initMin.t1, initMin.t2, 0) + 0.5],
+            marker: { size: 10, color: '#3c78d8', symbol: 'diamond' },
+            hoverinfo: 'skip'
+        };
+
+        function getRidgeGrid(lambda) {
+            const grid = [];
+            for (let j = 0; j <= gridSize; j++) {
+                const row = [];
+                for (let i = 0; i <= gridSize; i++) {
+                    row.push(mseGrid[j][i] + lambda * penaltyGrid[j][i]);
+                }
+                grid.push(row);
+            }
+            return grid;
+        }
+
+        const objCameraAngle = { eye: { x: 2.40, y: -0.01, z: 0.59 } };
+
+        const objLayout = {
+            scene: {
+                xaxis: { title: 'θ₁', range: [tMin, tMax], ...axisStyle },
+                yaxis: { title: 'θ₂', range: [tMin, tMax], ...axisStyle },
+                zaxis: { title: 'J(θ)', range: [0, maxMSE], ...axisStyle },
+                camera: objCameraAngle,
+                aspectmode: 'cube'
+            },
+            margin: { l: 0, r: 0, t: 0, b: 0 },
+            showlegend: false
+        };
+
+        // Traces: 0=MSE(grey), 1=valley, 2=originT1, 3=originT2, 4=originDot, 5=Ridge(yellow), 6=minimum marker
+        Plotly.newPlot('obj-plot', [mseSurface, valleyLine, originLineT1, originLineT2, originDot, ridgeSurface, ridgeMinMarker], objLayout, {
+            responsive: true,
+            displayModeBar: false
+        });
+
+        // ==================== Slider interaction ====================
+        const lambdaSlider = document.getElementById('lambda-slider');
+
+        function update() {
+            const lambda = parseFloat(lambdaSlider.value);
+            document.getElementById('lambda-val').textContent = lambda.toFixed(1);
+
+            // Solve for ridge minimum
+            const min = solveRidge(lambda);
+            theta1 = min.t1;
+            theta2 = min.t2;
+            const jMse = mse(theta1, theta2);
+            const norm = Math.sqrt(theta1 * theta1 + theta2 * theta2);
+            const jRidge = jMse + lambda * (theta1 * theta1 + theta2 * theta2);
+
+            // Update display
+            document.getElementById('theta-display').innerHTML =
+                `<span class="theta-val">θ*<sub>ridge</sub> = [${theta1.toFixed(3)}, ${theta2.toFixed(3)}]</span> &nbsp; ` +
+                `<span class="norm-val">‖θ*‖ = ${norm.toFixed(3)}</span> &nbsp; ` +
+                `<span class="j-val">MSE = ${jMse.toFixed(2)}</span>`;
+
+            // Update data plot: hypothesis plane changes with theta
+            Plotly.react('data-plot', createDataPlot(), dataLayout);
+
+            // Update objective plot: ridge surface + minimum marker
+            const ridgeGrid = getRidgeGrid(lambda);
+            Plotly.restyle('obj-plot', { z: [ridgeGrid] }, 5);  // trace 5 = ridge surface
+            Plotly.restyle('obj-plot', {
+                x: [[theta1]],
+                y: [[theta2]],
+                z: [[jRidge + 0.5]]
+            }, 6);  // trace 6 = minimum marker
+        }
+
+        lambdaSlider.addEventListener('input', update);
+        update();
+    </script>
+</body>
+</html>
