@@ -94,20 +94,13 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
             border: none;
         }
-        .theta-display {
-            font-family: 'Times New Roman', serif;
-            font-size: 22px;
-            padding: 8px 0;
-            text-align: center;
-            margin-top: 5px;
-        }
-        .theta-display .theta-val {
+        .theta-val {
             color: #674ea7;
         }
-        .theta-display .j-val {
+        .j-val {
             color: #cc8800;
         }
-        .theta-display .norm-val {
+        .norm-val {
             color: #3c78d8;
         }
         .col-vec {
@@ -136,6 +129,40 @@
             transform: translateY(-50%) scaleY(2.2);
             font-size: 24px;
         }
+        .matrix {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2px 8px;
+            margin: 0 14px;
+            line-height: 1.3;
+            font-size: 20px;
+            position: relative;
+        }
+        .matrix::before {
+            content: '[';
+            position: absolute;
+            left: -14px;
+            top: 50%;
+            transform: translateY(-50%) scaleY(3.5);
+            font-size: 24px;
+        }
+        .matrix::after {
+            content: ']';
+            position: absolute;
+            right: -14px;
+            top: 50%;
+            transform: translateY(-50%) scaleY(3.5);
+            font-size: 24px;
+        }
+        .matrix-row {
+            display: flex;
+            gap: 12px;
+        }
+        .matrix-row span {
+            min-width: 28px;
+            text-align: right;
+        }
         .legend-swatch {
             display: inline-block;
             width: 14px;
@@ -144,6 +171,23 @@
             vertical-align: middle;
             margin-right: 4px;
         }
+
+        .tick-marks {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 0 0 0;
+            position: relative;
+        }
+        .tick-marks span {
+            font-size: 11px;
+            color: #999;
+            text-align: center;
+            width: 0;
+            overflow: visible;
+            white-space: nowrap;
+        }
+        .tick-marks span:first-child { text-align: left; }
+        .tick-marks span:last-child { text-align: right; }
 
         /* Embed mode */
         body.embed {
@@ -161,26 +205,31 @@
                 <div class="slider-label">
                     <span class="hint">← OLS</span>
                     <span>λ = <span id="lambda-val">0.0</span></span>
-                    <span class="hint">underfits →</span>
+                    <span class="hint">θ magnitude penalty dominates →</span>
                 </div>
-                <input type="range" id="lambda-slider" class="slider" min="0" max="100" step="0.5" value="0">
+                <input type="range" id="lambda-slider" class="slider" min="0" max="1000" step="1" value="0">
+                <div class="tick-marks">
+                    <span>0</span>
+                    <span>10⁻¹⁰</span>
+                    <span>⁻⁸</span>
+                    <span>⁻⁶</span>
+                    <span>⁻⁴</span>
+                    <span>⁻²</span>
+                    <span>10⁰</span>
+                    <span>10¹</span>
+                </div>
             </div>
-        </div>
-        <div class="theta-display" id="theta-display">
-            <span class="theta-val">θ*<sub>ridge</sub> = [0.549, 0.824]</span> &nbsp;
-            <span class="norm-val">‖θ*‖ = 0.990</span> &nbsp;
-            <span class="j-val">MSE = 5.14</span>
         </div>
     </div>
     <div class="container">
         <div class="panel">
             <h3>Data &amp; Hypothesis</h3>
             <div class="subtitle">
-                <span style="color: #3c78d8; display: inline-flex; align-items: center; gap: 18px;">
-                    <span style="display: inline-flex; align-items: center;">(&#160;<span class="col-vec"><span>2</span><span>3</span></span>&#160;, 7)</span>
-                    <span style="display: inline-flex; align-items: center;">(&#160;<span class="col-vec"><span>4</span><span>6</span></span>&#160;, 8)</span>
-                    <span style="display: inline-flex; align-items: center;">(&#160;<span class="col-vec"><span>6</span><span>9</span></span>&#160;, 9)</span>
+                <span style="color: #3c78d8; display: inline-flex; align-items: center; gap: 8px;">
+                    X = <span class="matrix"><span class="matrix-row"><span>−2</span><span>−4.00006</span></span><span class="matrix-row"><span>−1</span><span>−2.00004</span></span><span class="matrix-row"><span>1</span><span>2.00004</span></span><span class="matrix-row"><span>2</span><span>4.00006</span></span></span>
+                    &nbsp; Y = <span class="matrix"><span class="matrix-row"><span>−1.8</span></span><span class="matrix-row"><span>−1.2</span></span><span class="matrix-row"><span>1.2</span></span><span class="matrix-row"><span>1.8</span></span></span>
                 </span>
+                <br><span id="hypothesis-text" style="color: #674ea7; font-size: 22px;">h = 0.549 x₁ + 0.824 x₂</span>
             </div>
             <div id="data-plot" class="plot"></div>
         </div>
@@ -190,6 +239,7 @@
                 <span class="legend-swatch" style="background: #bbb;"></span>MSE &nbsp;
                 <span class="legend-swatch" style="background: #ffd966;"></span>Ridge (MSE + λ‖θ‖²) &nbsp;
                 <span style="color: #3c78d8;">◆</span> θ*<sub>ridge</sub>
+                <br><span id="obj-stats" style="color: #666; font-size: 22px;"><span class="norm-val">‖θ*‖ = 0.990</span> &nbsp; <span class="j-val">MSE = 5.14</span></span>
             </div>
             <div id="obj-plot" class="plot"></div>
         </div>
@@ -201,11 +251,12 @@
             document.body.classList.add('embed');
         }
 
-        // Collinear data: x2 = 1.5*x1 (same as lecture slides)
+        // Super sensitive: x2 ≈ 2*x1 with ~0.00004 perturbation → det(X^TX) ≈ 1.6e-9
         const dataPoints = [
-            { x1: 2, x2: 3, y: 7 },
-            { x1: 4, x2: 6, y: 8 },
-            { x1: 6, x2: 9, y: 9 }
+            { x1: -2, x2: -4.00006, y: -1.8 },
+            { x1: -1, x2: -2.00004, y: -1.2 },
+            { x1:  1, x2:  2.00004, y:  1.2 },
+            { x1:  2, x2:  4.00006, y:  1.8 }
         ];
         const n = dataPoints.length;
 
@@ -225,7 +276,7 @@
 
         // Solve ridge analytically: theta* = (X^TX + n*lambda*I)^{-1} X^T Y
         function solveRidge(lambda) {
-            const lam = Math.max(lambda, 0.001);
+            const lam = Math.max(lambda, 1e-10);
             let a11 = 0, a12 = 0, a22 = 0, b1 = 0, b2 = 0;
             for (const pt of dataPoints) {
                 a11 += pt.x1 * pt.x1;
@@ -245,7 +296,7 @@
 
         // ==================== Precompute grids ====================
         const gridSize = 50;
-        const tMin = -0.5, tMax = 2.5;
+        const tMin = -5, tMax = 5;
         const t1Range = [], t2Range = [];
         for (let i = 0; i <= gridSize; i++) {
             t1Range.push(tMin + i * (tMax - tMin) / gridSize);
@@ -272,18 +323,6 @@
             }
         }
 
-        // Valley line: theta1 + 1.5*theta2 = beta* where beta* = 100/56
-        const betaStar = 100 / 56;
-        const valleyT1 = [], valleyT2 = [], valleyMseZ = [];
-        for (let t1 = tMin; t1 <= tMax; t1 += 0.05) {
-            const t2 = (betaStar - t1) / 1.5;
-            if (t2 >= tMin && t2 <= tMax) {
-                valleyT1.push(t1);
-                valleyT2.push(t2);
-                valleyMseZ.push(mse(t1, t2) + 0.3);
-            }
-        }
-
         // ==================== Common styling ====================
         const axisStyle = {
             titlefont: { size: 16, family: 'Arial Bold, Arial', color: '#333' },
@@ -301,8 +340,8 @@
             const pGridSize = 10;
             const px1 = [], px2 = [];
             for (let i = 0; i <= pGridSize; i++) {
-                px1.push(-1 + i * 10 / pGridSize);
-                px2.push(-1 + i * 12 / pGridSize);
+                px1.push(-3 + i * 6 / pGridSize);
+                px2.push(-5 + i * 10 / pGridSize);
             }
 
             const planeZ = [];
@@ -370,9 +409,9 @@
 
         const dataLayout = {
             scene: {
-                xaxis: { title: 'x₁', range: [0, 8], ...axisStyle },
-                yaxis: { title: 'x₂', range: [0, 11], ...axisStyle },
-                zaxis: { title: 'y', range: [0, 14], ...axisStyle },
+                xaxis: { title: 'x₁', range: [-3, 3], ...axisStyle },
+                yaxis: { title: 'x₂', range: [-5, 5], ...axisStyle },
+                zaxis: { title: 'y', range: [-3, 3], ...axisStyle },
                 camera: { eye: { x: 1.29, y: 1.60, z: 1.81 } },
                 aspectmode: 'cube'
             },
@@ -395,17 +434,6 @@
             colorscale: [[0, '#e0e0e0'], [1, '#999999']],
             opacity: 0.5,
             showscale: false,
-            hoverinfo: 'skip'
-        };
-
-        // Valley line on MSE
-        const valleyLine = {
-            type: 'scatter3d',
-            mode: 'lines',
-            x: valleyT1,
-            y: valleyT2,
-            z: valleyMseZ,
-            line: { color: '#888', width: 6 },
             hoverinfo: 'skip'
         };
 
@@ -487,8 +515,8 @@
             showlegend: false
         };
 
-        // Traces: 0=MSE(grey), 1=valley, 2=originT1, 3=originT2, 4=originDot, 5=Ridge(yellow), 6=minimum marker
-        Plotly.newPlot('obj-plot', [mseSurface, valleyLine, originLineT1, originLineT2, originDot, ridgeSurface, ridgeMinMarker], objLayout, {
+        // Traces: 0=MSE(grey), 1=originT1, 2=originT2, 3=originDot, 4=Ridge(yellow), 5=minimum marker
+        Plotly.newPlot('obj-plot', [mseSurface, originLineT1, originLineT2, originDot, ridgeSurface, ridgeMinMarker], objLayout, {
             responsive: true,
             displayModeBar: false
         });
@@ -496,9 +524,16 @@
         // ==================== Slider interaction ====================
         const lambdaSlider = document.getElementById('lambda-slider');
 
+        // Log-scale mapping: slider 0 → λ=0, slider 1..1000 → λ = 10^-10..10^1
+        function sliderToLambda(p) {
+            if (p === 0) return 0;
+            return Math.pow(10, -10 + 11 * p / 1000);
+        }
+
         function update() {
-            const lambda = parseFloat(lambdaSlider.value);
-            document.getElementById('lambda-val').textContent = lambda.toFixed(1);
+            const p = parseFloat(lambdaSlider.value);
+            const lambda = sliderToLambda(p);
+            document.getElementById('lambda-val').textContent = lambda === 0 ? '0' : lambda < 0.01 ? lambda.toExponential(1) : lambda.toFixed(2);
 
             // Solve for ridge minimum
             const min = solveRidge(lambda);
@@ -508,9 +543,12 @@
             const norm = Math.sqrt(theta1 * theta1 + theta2 * theta2);
             const jRidge = jMse + lambda * (theta1 * theta1 + theta2 * theta2);
 
-            // Update display
-            document.getElementById('theta-display').innerHTML =
-                `<span class="theta-val">θ*<sub>ridge</sub> = [${theta1.toFixed(3)}, ${theta2.toFixed(3)}]</span> &nbsp; ` +
+            // Update left panel: hypothesis annotation
+            document.getElementById('hypothesis-text').textContent =
+                `h = ${theta1.toFixed(3)} x₁ + ${theta2.toFixed(3)} x₂`;
+
+            // Update right panel: norm and MSE
+            document.getElementById('obj-stats').innerHTML =
                 `<span class="norm-val">‖θ*‖ = ${norm.toFixed(3)}</span> &nbsp; ` +
                 `<span class="j-val">MSE = ${jMse.toFixed(2)}</span>`;
 
@@ -519,12 +557,12 @@
 
             // Update objective plot: ridge surface + minimum marker
             const ridgeGrid = getRidgeGrid(lambda);
-            Plotly.restyle('obj-plot', { z: [ridgeGrid] }, 5);  // trace 5 = ridge surface
+            Plotly.restyle('obj-plot', { z: [ridgeGrid] }, 4);  // trace 4 = ridge surface
             Plotly.restyle('obj-plot', {
                 x: [[theta1]],
                 y: [[theta2]],
                 z: [[jRidge + 0.5]]
-            }, 6);  // trace 6 = minimum marker
+            }, 5);  // trace 5 = minimum marker
         }
 
         lambdaSlider.addEventListener('input', update);
