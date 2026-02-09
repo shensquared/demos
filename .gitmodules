@@ -4,3 +4,6 @@
 [submodule "nn/playground"]
 	path = nn/playground
 	url = https://github.com/shensquared/playground
+[submodule "cnn/conv_arithmetic"]
+	path = cnn/conv_arithmetic
+	url = https://github.com/vdumoulin/conv_arithmetic.git
