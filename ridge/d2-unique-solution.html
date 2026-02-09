@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>d=2: Unique Solution</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 15px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fafafa;
+        }
+        .top-bar {
+            margin-bottom: 10px;
+        }
+        .container {
+            display: flex;
+            gap: 15px;
+            height: calc(100vh - 80px);
+        }
+        .panel {
+            flex: 1;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        .panel h3 {
+            margin: 0 0 5px 0;
+            font-size: 24px;
+            color: #333;
+        }
+        .panel .subtitle {
+            font-size: 27px;
+            color: #666;
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+        .plot {
+            flex: 1;
+        }
+        .theta-display {
+            font-family: 'Times New Roman', serif;
+            font-size: 27px;
+            padding: 10px 15px;
+            text-align: center;
+            background: #f0f0f0;
+            border-radius: 8px;
+        }
+        .theta-display .theta-val {
+            color: #674ea7;
+        }
+        .theta-display .j-val {
+            color: #cc8800;
+        }
+        .col-vec {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0 6px;
+            margin: 0 9px;
+            line-height: 1.2;
+            font-size: 27px;
+            position: relative;
+        }
+        .col-vec::before {
+            content: '[';
+            position: absolute;
+            left: -12px;
+            top: 50%;
+            transform: translateY(-50%) scaleY(2.2);
+            font-size: 30px;
+        }
+        .col-vec::after {
+            content: ']';
+            position: absolute;
+            right: -12px;
+            top: 50%;
+            transform: translateY(-50%) scaleY(2.2);
+            font-size: 30px;
+        }
+
+        /* Embed mode */
+        body.embed {
+            overflow: hidden;
+        }
+        body.embed .container {
+            height: calc(100vh - 100px);
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <div class="theta-display">
+            <span class="theta-val">θ* = [2.00, 3.00]<sup>T</sup></span> &nbsp;
+            <span class="j-val">J(θ*) = 0.00</span>
+        </div>
+    </div>
+    <div class="container">
+        <div class="panel">
+            <h3>Feature (d=2) and Label</h3>
+            <div class="subtitle"><span style="color: #3c78d8; display: inline-flex; align-items: center; gap: 25px;">
+                    <span style="display: inline-flex; align-items: center;">(&#160;<span class="col-vec"><span>1</span><span>0</span></span>&#160;, 2)</span>
+                    <span style="display: inline-flex; align-items: center;">(&#160;<span class="col-vec"><span>0</span><span>1</span></span>&#160;, 3)</span>
+                    <span style="display: inline-flex; align-items: center;">(&#160;<span class="col-vec"><span>1</span><span>1</span></span>&#160;, 5)</span>
+                </span><br><span style="color: #674ea7;">hypothesis h = 2x&#8321; + 3x&#8322;</span></div>
+            <div id="feature-plot" class="plot"></div>
+        </div>
+        <div class="panel">
+            <h3>Training error J(&#952;&#8321;, &#952;&#8322;)</h3>
+            <div class="subtitle">J(&#952;) = &#8531;[(&#952;&#8321;&#8722;2)&#178; + (&#952;&#8322;&#8722;3)&#178; + (&#952;&#8321;+&#952;&#8322;&#8722;5)&#178;]</div>
+            <div id="loss-plot" class="plot"></div>
+        </div>
+    </div>
+
+    <script>
+        // Detect embed mode
+        if (new URLSearchParams(window.location.search).has('embed')) {
+            document.body.classList.add('embed');
+        }
+
+        // Data points: (1,0)->2, (0,1)->3, (1,1)->5
+        const dataPoints = [
+            { x1: 1, x2: 0, y: 2 },
+            { x1: 0, x2: 1, y: 3 },
+            { x1: 1, x2: 1, y: 5 }
+        ];
+
+        // Optimal theta
+        const theta1 = 2, theta2 = 3;
+
+        // Loss function: J(θ) = (1/n) Σ(θ1*x1 + θ2*x2 - y)²
+        function loss(t1, t2) {
+            let sum = 0;
+            for (const pt of dataPoints) {
+                const pred = t1 * pt.x1 + t2 * pt.x2;
+                sum += Math.pow(pred - pt.y, 2);
+            }
+            return sum / dataPoints.length;
+        }
+
+        // Create loss surface data
+        const gridSize = 50;
+        const t1Range = [], t2Range = [];
+        for (let i = 0; i <= gridSize; i++) {
+            t1Range.push(-1 + i * 6 / gridSize);
+            t2Range.push(-1 + i * 8 / gridSize);
+        }
+
+        const lossZ = [];
+        for (let j = 0; j < t2Range.length; j++) {
+            const row = [];
+            for (let i = 0; i < t1Range.length; i++) {
+                row.push(loss(t1Range[i], t2Range[j]));
+            }
+            lossZ.push(row);
+        }
+
+        const axisStyle = {
+            titlefont: { size: 16, family: 'Arial Bold, Arial', color: '#333' },
+            tickfont: { size: 11, color: '#999' },
+            nticks: 5,
+            gridcolor: '#ddd'
+        };
+
+        // Loss plot
+        const lossSurface = {
+            type: 'surface',
+            x: t1Range,
+            y: t2Range,
+            z: lossZ,
+            colorscale: [[0, '#ffd966'], [0.3, '#f6b26b'], [1, '#cc4125']],
+            opacity: 0.8,
+            showscale: false,
+            hoverinfo: 'skip'
+        };
+
+        const optimalPoint = {
+            type: 'scatter3d',
+            mode: 'markers',
+            x: [theta1],
+            y: [theta2],
+            z: [0.15],
+            marker: { size: 12, color: '#674ea7', symbol: 'diamond' },
+            hoverinfo: 'skip'
+        };
+
+        const lossLayout = {
+            scene: {
+                xaxis: { title: 'θ₁', range: [-1, 5], ...axisStyle },
+                yaxis: { title: 'θ₂', range: [-1, 7], ...axisStyle },
+                zaxis: { title: 'J(θ)', ...axisStyle },
+                camera: { eye: { x: 1.8, y: -1.8, z: 0.8 } },
+                aspectmode: 'cube'
+            },
+            margin: { l: 0, r: 0, t: 0, b: 0 },
+            showlegend: false
+        };
+
+        Plotly.newPlot('loss-plot', [lossSurface, optimalPoint], lossLayout, {
+            responsive: true,
+            displayModeBar: false
+        });
+
+        // Feature plot
+        const pGridSize = 10;
+        const px1 = [], px2 = [];
+        for (let i = 0; i <= pGridSize; i++) {
+            px1.push(-0.5 + i * 2 / pGridSize);
+            px2.push(-0.5 + i * 2 / pGridSize);
+        }
+
+        const planeZ = [];
+        for (let j = 0; j < px2.length; j++) {
+            const row = [];
+            for (let i = 0; i < px1.length; i++) {
+                row.push(theta1 * px1[i] + theta2 * px2[j]);
+            }
+            planeZ.push(row);
+        }
+
+        const plane = {
+            type: 'surface',
+            x: px1,
+            y: px2,
+            z: planeZ,
+            colorscale: [[0, '#b4a7d6'], [1, '#674ea7']],
+            opacity: 0.7,
+            showscale: false,
+            hoverinfo: 'skip'
+        };
+
+        const traces = [plane];
+
+        // Data points and deviation lines
+        for (const pt of dataPoints) {
+            const prediction = theta1 * pt.x1 + theta2 * pt.x2;
+
+            // Actual data point
+            traces.push({
+                type: 'scatter3d',
+                mode: 'markers',
+                x: [pt.x1],
+                y: [pt.x2],
+                z: [pt.y],
+                marker: { size: 10, color: '#3c78d8', line: { color: '#1a4a8a', width: 2 } },
+                hoverinfo: 'skip'
+            });
+        }
+
+        const featureLayout = {
+            scene: {
+                xaxis: { title: 'x₁', range: [-0.5, 1.5], ...axisStyle },
+                yaxis: { title: 'x₂', range: [-0.5, 1.5], ...axisStyle },
+                zaxis: { title: 'y', range: [-1, 6], ...axisStyle },
+                camera: { eye: { x: 1.67, y: -2.17, z: 0.18 } },
+                aspectmode: 'cube'
+            },
+            margin: { l: 0, r: 0, t: 0, b: 0 },
+            showlegend: false
+        };
+
+        Plotly.newPlot('feature-plot', traces, featureLayout, {
+            responsive: true,
+            displayModeBar: false
+        });
+    </script>
+</body>
+</html>
