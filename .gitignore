@@ -1,5 +1,49 @@
 *.pdf
 
+# Claude Code
+.claude/
+
+# Marimo build artifacts
+**/assets/
+**/__marimo__/
+**/CLAUDE.md
+.nojekyll
+
+# Marimo WASM HTML exports (need assets/ to work)
+ridge/simple_test.html
+ridge/singular_matrix_demo.html
+
+# Marimo PWA / favicon assets
+android-chrome-*.png
+apple-touch-icon.png
+favicon-*.png
+favicon.ico
+logo.png
+manifest.json
+site.webmanifest
+
+# MDP scratch/test outputs
+mdp/qlearning_steps/
+mdp/custom_grid_example.py
+mdp/grid_all_ones.py
+mdp/qlearning_grid.py
+mdp/test_grid.py
+mdp/scroll.svg
+mdp/1.png
+mdp/2.png
+mdp/3.png
+mdp/4.png
+mdp/5.png
+mdp/6.png
+mdp/all_zeros.png
+mdp/empty.png
+mdp/grid_all_ones.png
+mdp/grid_special.png
+mdp/mm.png
+mdp/mwm.png
+mdp/simple.png
+mdp/test_compare.png
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
