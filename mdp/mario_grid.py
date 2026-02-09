@@ -3,6 +3,31 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 import os
 
+
+def format_number(value, precision=2):
+    """
+    Format a number without trailing zeros.
+    
+    Examples:
+        1.90 -> "1.9"
+        1.00 -> "1"
+        1.23 -> "1.23"
+        0.50 -> "0.5"
+    
+    Args:
+        value: The number to format
+        precision: Maximum number of decimal places (default: 2)
+    
+    Returns:
+        String representation without trailing zeros
+    """
+    # Format with the specified precision
+    formatted = f"{value:.{precision}f}"
+    # Remove trailing zeros and decimal point if needed
+    if '.' in formatted:
+        formatted = formatted.rstrip('0').rstrip('.')
+    return formatted
+
 class GridMDP:
     def __init__(self):
         # States and actions
@@ -61,7 +86,7 @@ class GridMDP:
                 entries = self.P[(s,a)]
                 r = self.R[(s,a)]
                 for prob, s2 in entries:
-                    print(f"s={s:>2}, a={a:<5} → s'={s2}  (prob={prob:.1f}, reward={r:+d})")
+                    print(f"s={s:>2}, a={a:<5} → s'={s2}  (prob={format_number(prob, 1)}, reward={r:+d})")
 
 
 def finite_horizon_value(mdp, horizon):
@@ -200,10 +225,10 @@ def print_grid_triangles(values=None, cell_width=12):
             for col in range(3):
                 state = row * 3 + col + 1
                 if values:
-                    up_val = f"{values.get((state, 'up'), 0):.2f}"
-                    right_val = f"{values.get((state, 'right'), 0):.2f}"
-                    left_val = f"{values.get((state, 'left'), 0):.2f}"
-                    down_val = f"{values.get((state, 'down'), 0):.2f}"
+                    up_val = format_number(values.get((state, 'up'), 0))
+                    right_val = format_number(values.get((state, 'right'), 0))
+                    left_val = format_number(values.get((state, 'left'), 0))
+                    down_val = format_number(values.get((state, 'down'), 0))
                     
                     if sub_row == 0:
                         # Top row with up and right triangles
@@ -245,6 +270,10 @@ def plot_values(values=None, horizon=2, policy="optimal", color_scheme="bw", sav
     """
     fig, ax = plt.subplots(figsize=(10, 10))
     
+    # Set transparent background
+    fig.patch.set_facecolor('none')
+    ax.set_facecolor('none')
+    
     # Set up the grid
     for i in range(4):
         ax.axhline(y=i, color='black', linewidth=2)
@@ -270,7 +299,7 @@ def plot_values(values=None, horizon=2, policy="optimal", color_scheme="bw", sav
             else:
                 return plt.cm.Blues(min(1, abs(value)/10))
         else:  # bw
-            return 'white'
+            return 'none'  # Transparent background
     
     # Draw cells and add values
     for row in range(3):
@@ -307,20 +336,23 @@ def plot_values(values=None, horizon=2, policy="optimal", color_scheme="bw", sav
                         
                         center_x = sum(p[0] for p in triangle) / 3
                         center_y = sum(p[1] for p in triangle) / 3
-                        ax.text(center_x, center_y, f"{value:.2f}", 
-                               ha='center', va='center', fontsize=25)
+                        # Adjust right triangle text slightly to the left to avoid going out of bounds
+                        if action == 'right':
+                            center_x -= 0.05
+                        ax.text(center_x, center_y, format_number(value), 
+                               ha='center', va='center', fontsize=35, fontfamily='DejaVu Sans')
                 else:
                     # V-values: just show the value in the center
                     value = values.get(state, 0)
                     color = get_color(value)
                     rect = plt.Rectangle((x, y), 1, 1, facecolor=color, edgecolor='black')
                     ax.add_patch(rect)
-                    ax.text(x+0.5, y+0.5, f"{value:.2f}", 
-                           ha='center', va='center', fontsize=40)  # Increased font size for V-values
+                    ax.text(x+0.5, y+0.5, format_number(value), 
+                           ha='center', va='center', fontsize=40, fontweight='bold', fontfamily='DejaVu Sans')  # Increased font size for V-values
             else:
                 # Just show state number
                 ax.text(x+0.5, y+0.5, str(state), 
-                       ha='center', va='center', fontsize=12)
+                       ha='center', va='center', fontsize=12, fontweight='bold', fontfamily='DejaVu Sans')
                 
                 # Draw dashed lines for empty grid with more narrow spacing
                 ax.plot([x, x+1], [y+1, y], 'k', linestyle=(0, (3, 5)), linewidth=1)  # Top-right to bottom-left
@@ -333,10 +365,109 @@ def plot_values(values=None, horizon=2, policy="optimal", color_scheme="bw", sav
     if save_path:
         # Create directory if it doesn't exist
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        plt.savefig(save_path, bbox_inches='tight', pad_inches=0.05)
+        plt.savefig(save_path, bbox_inches='tight', pad_inches=0.05, transparent=True)
         plt.close()
     else:
         plt.show()
+
+
+def plot_custom_grid(values_dict=None, save_path=None, highlight=None):
+    """
+    Create an empty transparent grid and plot specified (state, action) values.
+    
+    Args:
+        values_dict: Dictionary mapping (state, action) -> value
+                    Example: {(1, 'up'): 0.5, (2, 'right'): 1.2, (3, 'down'): -0.3}
+        save_path: Optional path to save the plot
+        highlight: Optional tuple (state, action) to highlight with background color #e4efc7
+    
+    Returns:
+        fig, ax: matplotlib figure and axes objects (if save_path is None)
+    """
+    fig, ax = plt.subplots(figsize=(10, 10))
+    
+    # Set transparent background
+    fig.patch.set_facecolor('none')
+    ax.set_facecolor('none')
+    
+    # Set up the grid
+    for i in range(4):
+        ax.axhline(y=i, color='black', linewidth=2)
+        ax.axvline(x=i, color='black', linewidth=2)
+    
+    # Set limits and remove ticks
+    ax.set_xlim(0, 3)
+    ax.set_ylim(0, 3)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    
+    # Remove all margins and padding
+    plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
+    
+    # Initialize values dict if None
+    if values_dict is None:
+        values_dict = {}
+    
+    # Draw cells and add values
+    for row in range(3):
+        for col in range(3):
+            state = row * 3 + col + 1
+            x, y = col, 2-row  # Convert to matplotlib coordinates
+            
+            # Q-values: draw triangles
+            triangles = [
+                # Up triangle
+                [(x, y+1), (x+1, y+1), (x+0.5, y+0.5)],
+                # Right triangle
+                [(x+1, y+1), (x+1, y), (x+0.5, y+0.5)],
+                # Down triangle
+                [(x+1, y), (x, y), (x+0.5, y+0.5)],
+                # Left triangle
+                [(x, y), (x, y+1), (x+0.5, y+0.5)]
+            ]
+            
+            actions = ['up', 'right', 'down', 'left']
+            
+            # Build Q-values dict matching plot_values structure
+            q_values = {
+                'up': values_dict.get((state, 'up'), 0),
+                'right': values_dict.get((state, 'right'), 0),
+                'down': values_dict.get((state, 'down'), 0),
+                'left': values_dict.get((state, 'left'), 0)
+            }
+            
+            # Draw all triangles exactly like plot_values does
+            for i, (triangle, (action, value)) in enumerate(zip(triangles, q_values.items())):
+                # Check if this triangle should be highlighted
+                is_highlighted = highlight is not None and highlight == (state, action)
+                facecolor = '#e4efc7' if is_highlighted else 'none'
+                
+                # Use highlight color if this is the triangle being updated
+                polygon = Polygon(triangle, facecolor=facecolor, edgecolor='black', 
+                                linestyle=(0, (3, 5)), linewidth=1)  # More narrow dashed lines
+                ax.add_patch(polygon)
+                
+                # Only add text if value is non-zero (i.e., was explicitly set)
+                if (state, action) in values_dict:
+                    center_x = sum(p[0] for p in triangle) / 3
+                    center_y = sum(p[1] for p in triangle) / 3
+                    # Adjust right triangle text slightly to the left to avoid going out of bounds
+                    if action == 'right':
+                        center_x -= 0.05
+                    ax.text(center_x, center_y, format_number(value), 
+                           ha='center', va='center', fontsize=35, fontfamily='DejaVu Sans')
+    
+    if save_path:
+        # Create directory if it doesn't exist (matching plot_values behavior)
+        dir_path = os.path.dirname(save_path)
+        if dir_path:  # Only create if path contains a directory
+            os.makedirs(dir_path, exist_ok=True)
+        # Use exact same savefig parameters as plot_values for identical output format
+        plt.savefig(save_path, bbox_inches='tight', pad_inches=0.05, transparent=True)
+        plt.close()
+        return None, None
+    else:
+        return fig, ax
 
 
 def always_up_policy_value(mdp, horizon):
