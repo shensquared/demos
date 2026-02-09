@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>3D Plane Fit - d=2 Features</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fafafa;
+        }
+        #plot {
+            width: 100%;
+            height: calc(100vh - 40px);
+        }
+        .info {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            background: rgba(255,255,255,0.95);
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 14px;
+            max-width: 280px;
+            z-index: 100;
+        }
+        .info h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .formula {
+            background: #b4a7d6;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-family: 'Times New Roman', serif;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        .data-point {
+            color: #3c78d8;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div id="plot"></div>
+
+    <script>
+        // Data points: X = [[1,0], [0,1], [1,1]], Y = [2, 3, 5]
+        const dataPoints = {
+            x1: [1, 0, 1],
+            x2: [0, 1, 1],
+            y: [2, 3, 5]
+        };
+
+        // Best fit: y = 2*x1 + 3*x2
+        const theta = [2, 3];
+
+        // Create plane mesh
+        const gridSize = 20;
+        const x1Range = [];
+        const x2Range = [];
+        for (let i = 0; i <= gridSize; i++) {
+            x1Range.push(-0.2 + i * 1.7 / gridSize);
+            x2Range.push(-0.2 + i * 1.7 / gridSize);
+        }
+
+        const planeZ = [];
+        for (let i = 0; i < x2Range.length; i++) {
+            const row = [];
+            for (let j = 0; j < x1Range.length; j++) {
+                row.push(theta[0] * x1Range[j] + theta[1] * x2Range[i]);
+            }
+            planeZ.push(row);
+        }
+
+        // Vertical lines from points to plane
+        const verticalLines = [];
+        for (let i = 0; i < dataPoints.x1.length; i++) {
+            const planeY = theta[0] * dataPoints.x1[i] + theta[1] * dataPoints.x2[i];
+            verticalLines.push({
+                type: 'scatter3d',
+                mode: 'lines',
+                x: [dataPoints.x1[i], dataPoints.x1[i]],
+                y: [dataPoints.x2[i], dataPoints.x2[i]],
+                z: [0, dataPoints.y[i]],
+                line: { color: '#3c78d8', width: 3, dash: 'dash' },
+                showlegend: false,
+                hoverinfo: 'skip'
+            });
+        }
+
+        const traces = [
+            // Best-fit plane
+            {
+                type: 'surface',
+                x: x1Range,
+                y: x2Range,
+                z: planeZ,
+                colorscale: [[0, '#b4a7d6'], [1, '#674ea7']],
+                opacity: 0.7,
+                showscale: false,
+                name: 'Best-fit plane',
+                hovertemplate: 'x₁: %{x:.2f}<br>x₂: %{y:.2f}<br>y: %{z:.2f}<extra>Best-fit plane</extra>'
+            },
+            // Data points
+            {
+                type: 'scatter3d',
+                mode: 'markers',
+                x: dataPoints.x1,
+                y: dataPoints.x2,
+                z: dataPoints.y,
+                marker: {
+                    size: 10,
+                    color: '#3c78d8',
+                    line: { color: '#1a4a8a', width: 2 }
+                },
+                name: 'Data points',
+                hovertemplate: '(%{x}, %{y}) → %{z}<extra>Data point</extra>'
+            },
+            ...verticalLines
+        ];
+
+        const layout = {
+            scene: {
+                xaxis: { title: 'x₁', range: [-0.2, 1.5], zeroline: true, zerolinewidth: 2 },
+                yaxis: { title: 'x₂', range: [-0.2, 1.5], zeroline: true, zerolinewidth: 2 },
+                zaxis: { title: 'y', range: [-0.5, 6], zeroline: true, zerolinewidth: 2 },
+                camera: {
+                    eye: { x: 1.5, y: 1.5, z: 1.2 }
+                },
+                aspectmode: 'cube'
+            },
+            margin: { l: 0, r: 0, t: 0, b: 0 },
+            showlegend: false
+        };
+
+        const config = {
+            responsive: true,
+            displayModeBar: true,
+            modeBarButtonsToRemove: ['toImage', 'sendDataToCloud'],
+            displaylogo: false
+        };
+
+        Plotly.newPlot('plot', traces, layout, config);
+    </script>
+</body>
+</html>
