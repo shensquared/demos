@@ -285,16 +285,6 @@
                 hoverinfo: 'skip'
             });
 
-            // Optimal point
-            const optT1 = 2, optT2 = 3;
-            traces.push({
-                type: 'scatter3d',
-                mode: 'markers',
-                x: [optT1], y: [optT2], z: [fn(optT1, optT2) + 0.3],
-                marker: { size: 6, color: '#674ea7', symbol: 'diamond' },
-                hoverinfo: 'skip'
-            });
-
             const titleText = lambda > 0
                 ? `J<sub>ridge</sub>(θ) with λ=${lambda.toFixed(1)} — chord ≥ surface everywhere`
                 : 'J<sub>MSE</sub>(θ) — chord ≥ surface everywhere';
