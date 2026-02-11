@@ -197,12 +197,9 @@
             height: calc(100vh - 130px);
         }
 
-        /* Jonly mode: show only the objective surface */
-        body.Jonly .top-bar {
-            display: none;
-        }
+        /* Jonly mode: show only the objective surface, keep slider */
         body.Jonly .container {
-            height: 100vh;
+            height: calc(100vh - 80px);
         }
         body.Jonly .panel:first-child {
             display: none;
