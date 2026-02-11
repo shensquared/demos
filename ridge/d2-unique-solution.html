@@ -91,6 +91,17 @@
         body.embed .container {
             height: calc(100vh - 100px);
         }
+
+        /* Jonly mode: show only the loss surface */
+        body.Jonly .top-bar {
+            display: none;
+        }
+        body.Jonly .container {
+            height: 100vh;
+        }
+        body.Jonly .panel:first-child {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -119,8 +130,12 @@
 
     <script>
         // Detect embed mode
-        if (new URLSearchParams(window.location.search).has('embed')) {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('embed')) {
             document.body.classList.add('embed');
+        }
+        if (params.has('Jonly')) {
+            document.body.classList.add('Jonly');
         }
 
         // Data points: (1,0)->2, (0,1)->3, (1,1)->5

@@ -196,6 +196,17 @@
         body.embed .container {
             height: calc(100vh - 130px);
         }
+
+        /* Jonly mode: show only the objective surface */
+        body.Jonly .top-bar {
+            display: none;
+        }
+        body.Jonly .container {
+            height: 100vh;
+        }
+        body.Jonly .panel:first-child {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -247,8 +258,12 @@
 
     <script>
         // Detect embed mode
-        if (new URLSearchParams(window.location.search).has('embed')) {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('embed')) {
             document.body.classList.add('embed');
+        }
+        if (params.has('Jonly')) {
+            document.body.classList.add('Jonly');
         }
 
         // Super sensitive: x2 ≈ 2*x1 with ~0.00004 perturbation → det(X^TX) ≈ 1.6e-9
