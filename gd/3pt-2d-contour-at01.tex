@@ -1,0 +1,111 @@
+\documentclass[tikz]{standalone}
+\usepackage{pgfplots}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepgfplotslibrary{patchplots}
+\usetikzlibrary{arrows.meta}
+\definecolor{brown}{HTML}{8a4e3d}
+\definecolor{blue}{HTML}{6d9eeb}
+\definecolor{gray}{HTML}{888888}
+\definecolor{gold}{HTML}{ffd966}
+\definecolor{green}{HTML}{6aa84f}
+\pgfplotsset{compat=1.18}
+
+\begin{document}
+\begin{tikzpicture}
+  \begin{axis}[
+    set layers,
+    view={0}{90},
+    xlabel={\(\theta_1\)},
+    ylabel={\(\theta_2\)},
+    xmin=-0.75, xmax=1.5,
+    ymin=0, ymax=2.5,
+    xtick={-0.5,0,0.5,1,1.5},
+    ytick={0,0.5,1,1.5,2,2.5},
+    minor x tick num=1,
+    minor y tick num=1,
+    grid=both,
+    major grid style={line width=0.2pt,draw=black},
+    minor grid style={line width=0.1pt,draw=gray!50,dashed},
+    width=9cm,
+    height=10cm,
+    scale only axis,
+    axis lines=left,
+    x axis line style={->,>=stealth, shorten >=-3pt},
+    y axis line style={->,>=stealth, shorten >=-3pt},
+  ]
+    % Data: p1=(1,2,3), p2=(2,1,2), p3=(3,4,6), h=θ₁x₁+θ₂x₂
+    % J₁ = (3-θ₁-2θ₂)², J₂ = (2-2θ₁-θ₂)², J₃ = (6-3θ₁-4θ₂)²
+    % J = 1/3[J₁+J₂+J₃]
+    % Minimum at θ₁≈0.342, θ₂≈1.263
+    \addplot3[
+      contour gnuplot={
+        levels={0.1, 0.25, 0.5, 1, 2, 4, 8, 16},
+        draw color=gold!80!black,
+        labels=false,
+      },
+      domain=-0.75:1.5, domain y=0:2.5,
+      samples=120,
+    ] {((3-x-2*y)^2 + (2-2*x-y)^2 + (6-3*x-4*y)^2)/3};
+
+    % Mark minimum at (13/38, 24/19) ≈ (0.342, 1.263)
+    \addplot[only marks, mark=star, mark options={scale=2.5, fill=red}]
+      coordinates {(0.342,1.263)};
+
+    % Evaluation point (0, 1)
+    % residual₁ = 3-0-2 = 1      → ∇J₁ = -2(1)[1,2] = [-2, -4]
+    % residual₂ = 2-0-1 = 1      → ∇J₂ = -2(1)[2,1] = [-4, -2]
+    % residual₃ = 6-0-4 = 2      → ∇J₃ = -2(2)[3,4] = [-12, -16]
+    % ∇J = 1/3[-2-4-12, -4-2-16] = [-6, -22/3]
+    \addplot[only marks, mark=diamond*, mark options={scale=3, fill=gold!80!black}]
+      coordinates {(0,1)};
+
+    % Gradient arrows (scaled by 0.04)
+    % ∇J₁ = [-2,-4] → [-0.08, -0.16]
+    \draw[-{Stealth[length=6pt,width=4pt]}, line width=2pt, brown]
+      (axis cs:0,1) -- (axis cs:-0.08,0.84);
+
+    % ∇J₂ = [-4,-2] → [-0.16, -0.08]
+    \draw[-{Stealth[length=6pt,width=4pt]}, line width=2pt, blue]
+      (axis cs:0,1) -- (axis cs:-0.16,0.92);
+
+    % ∇J₃ = [-12,-16] → [-0.48, -0.64]
+    \draw[-{Stealth[length=6pt,width=4pt]}, line width=2pt, gray]
+      (axis cs:0,1) -- (axis cs:-0.48,0.36);
+
+    % ∇J = [-6, -22/3] → [-0.24, -0.293]
+    \draw[-{Stealth[length=6pt,width=4pt]}, line width=2pt, green!80!black]
+      (axis cs:0,1) -- (axis cs:-0.24,0.707);
+
+    % Boxes on foreground layer (above grid)
+    \begin{pgfonlayer}{axis foreground}
+    % Gradient legend (top right)
+    \node[anchor=north east, fill=white, draw=gray!50, inner sep=6pt, rounded corners=2pt]
+      at (axis cs:1.45,2.45) {%
+      \small
+      \begin{tabular}{@{}cl@{}}
+        \tikz[baseline=-0.3ex]\draw[-{Stealth[length=4pt,width=3pt]}, line width=2pt, brown] (0,0) -- (0.18,0); & $\nabla J_1$ \\
+        \tikz[baseline=-0.3ex]\draw[-{Stealth[length=4pt,width=3pt]}, line width=2pt, blue] (0,0) -- (0.18,0); & $\nabla J_2$ \\
+        \tikz[baseline=-0.3ex]\draw[-{Stealth[length=4pt,width=3pt]}, line width=2pt, gray] (0,0) -- (0.18,0); & $\nabla J_3$ \\
+        \tikz[baseline=-0.3ex]\draw[-{Stealth[length=4pt,width=3pt]}, line width=2pt, green!80!black] (0,0) -- (0.18,0); & $\nabla J$ \\
+      \end{tabular}%
+    };
+
+    % Dataset table
+    \node[anchor=north west, fill=white, draw=gray!50,
+          inner sep=6pt, rounded corners=2pt] at (axis cs:-0.7,2.45) {%
+      \small
+      \begin{tabular}{@{}c ccc@{}}
+        \toprule
+        & $x_1$ & $x_2$ & $y$ \\
+        \midrule
+        \textcolor{brown}{$p_1$} & 1 & 2 & 3 \\
+        \textcolor{blue}{$p_2$} & 2 & 1 & 2 \\
+        \textcolor{gray}{$p_3$} & 3 & 4 & 6 \\
+        \bottomrule
+      \end{tabular}%
+    };
+    \end{pgfonlayer}
+  \end{axis}
+\end{tikzpicture}
+\end{document}

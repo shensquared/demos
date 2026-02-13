@@ -1,0 +1,78 @@
+\documentclass[tikz]{standalone}
+\usepackage{pgfplots}
+\usepackage{xcolor}
+\usetikzlibrary{calc}
+\definecolor{brown}{HTML}{8a4e3d}
+\definecolor{blue}{HTML}{6d9eeb}
+\definecolor{gray}{HTML}{888888}
+\pgfplotsset{compat=1.18}
+
+\begin{document}
+\begin{tikzpicture}
+  \begin{axis}[
+    axis lines=left,
+    x axis line style={->,>=stealth, shorten >=-3pt},
+    y axis line style={->,>=stealth, shorten >=-3pt},
+    xlabel={\(\theta\)},
+    ylabel={\(J_i(\theta)\)},
+    ylabel style={rotate=-90},
+    xmin=0, xmax=4,
+    ymin=0, ymax=25,
+    xtick={0,1,...,4},
+    ytick={0,5,...,25},
+    minor x tick num=1,
+    minor y tick num=1,
+    grid=both,
+    major grid style={line width=0.2pt,draw=black},
+    minor grid style={line width=0.1pt,draw=gray!50,dashed},
+    width=10cm,
+    height=10cm,
+    legend style={at={(0.5,0.97)}, anchor=north, font=\small},
+    every legend image post/.append style={xscale=0.5},
+  ]
+    % J1(θ) = (2θ-5)^2
+    \addplot[domain=0:4, samples=200, ultra thick, color=brown]
+      {(2*x-5)^2};
+    \addlegendentry{\(J_1 = (2\theta-5)^2\)}
+
+    % J2(θ) = (3θ-6)^2
+    \addplot[domain=0:4, samples=200, ultra thick, color=blue]
+      {(3*x-6)^2};
+    \addlegendentry{\(J_2 = (3\theta-6)^2\)}
+
+    % J3(θ) = (4θ-7)^2
+    \addplot[domain=0:4, samples=200, ultra thick, color=gray]
+      {(4*x-7)^2};
+    \addlegendentry{\(J_3 = (4\theta-7)^2\)}
+
+    % Tangent lines at θ=2.5
+    % J1: slope 0, value 0
+    \addplot[domain=1:4, samples=2, line width=1.2pt, color=brown!50, dashed]
+      {0};
+
+    % J2: slope 9, value 2.25 → y = 9(x-2.5)+2.25
+    \addplot[domain=1:4, samples=2, line width=1.2pt, color=blue!50, dashed]
+      {9*(x-2.5)+2.25};
+
+    % J3: slope 24, value 9 → y = 24(x-2.5)+9
+    \addplot[domain=1.5:3.167, samples=2, line width=1.2pt, color=gray!60, dashed]
+      {24*(x-2.5)+9};
+
+    % Diamond markers at θ=2.5 on each curve
+    \addplot[only marks, mark=diamond*, mark options={scale=2.5, fill=brown}]
+      coordinates {(2.5,0)};
+    \addplot[only marks, mark=diamond*, mark options={scale=2.5, fill=blue}]
+      coordinates {(2.5,2.25)};
+    \addplot[only marks, mark=diamond*, mark options={scale=2.5, fill=gray}]
+      coordinates {(2.5,9)};
+
+    % Slope labels
+    \node[brown, font=\small, anchor=west] at (axis cs:3.2,0.8) {slope $= 0$};
+    \node[blue, font=\small, anchor=west] at (axis cs:3.1,7.2) {slope $= 9$};
+    \node[gray, font=\small, anchor=south west] at (axis cs:1.5,8) {slope $= 24$};
+  \end{axis}
+  \pgfresetboundingbox
+  \useasboundingbox ([xshift=-19mm, yshift=-11mm]current axis.south west)
+    rectangle ([xshift=4mm, yshift=4mm]current axis.north east);
+\end{tikzpicture}
+\end{document}
