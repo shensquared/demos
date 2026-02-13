@@ -27,7 +27,7 @@
     minor grid style={line width=0.1pt,draw=gray!50,dashed},
     width=10cm,
     height=10cm,
-    legend style={at={(0.5,0.97)}, anchor=north, font=\small},
+    legend style={at={(0.5,0.97)}, anchor=north, font=\small, fill=white, draw=gray!50, rounded corners=2pt, inner sep=6pt},
     every legend image post/.append style={xscale=0.5},
   ]
     % J1(θ) = (2θ-5)^2
@@ -67,9 +67,9 @@
       coordinates {(2.5,9)};
 
     % Slope labels
-    \node[brown, font=\small, anchor=west] at (axis cs:3.2,0.8) {slope $= 0$};
-    \node[blue, font=\small, anchor=west] at (axis cs:3.1,7.2) {slope $= 9$};
-    \node[gray, font=\small, anchor=south west] at (axis cs:1.5,8) {slope $= 24$};
+    \node[brown, font=\small, anchor=west, fill=white, draw=gray!50, inner sep=3pt, rounded corners=2pt] at (axis cs:3.2,1.15) {slope $= 0$};
+    \node[blue, font=\small, anchor=west, fill=white, draw=gray!50, inner sep=3pt, rounded corners=2pt] at (axis cs:3.1,7.2) {slope $= 9$};
+    \node[gray, font=\small, anchor=south west, fill=white, draw=gray!50, inner sep=3pt, rounded corners=2pt] at (axis cs:1.5,8) {slope $= 24$};
   \end{axis}
   \pgfresetboundingbox
   \useasboundingbox ([xshift=-19mm, yshift=-11mm]current axis.south west)

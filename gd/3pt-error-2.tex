@@ -34,10 +34,10 @@
     \addplot[domain=0:4, samples=200, ultra thick, color=mycolor]
       {(3*x-6)^2};
 
-    % Tangent line at θ=2.5: slope 12 → y = 12(x-2.5)+J(2.5)
-    % J(θ) = (3θ-6)^2, so J(2.5) = (7.5-6)^2 = 2.25 and J'(θ)=2(3θ-6)*3 → J'(2.5)=12
+    % Tangent line at θ=2.5: slope 9 → y = 9(x-2.5)+J(2.5)
+    % J(θ) = (3θ-6)^2, so J(2.5) = (7.5-6)^2 = 2.25 and J'(θ)=2·3·(3θ-6) → J'(2.5)=9
     \addplot[domain=0:4, samples=2, ultra thick, color=mycolor!70]
-      {12*(x-2.5)+2.25};
+      {9*(x-2.5)+2.25};
 
     % Mark the minimum at θ=2
     \addplot[only marks, mark=star, mark options={scale=2, fill=red}] 

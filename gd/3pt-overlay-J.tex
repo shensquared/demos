@@ -47,11 +47,11 @@
       coordinates {(1.931, {((2*1.931-5)^2 + (3*1.931-6)^2 + (4*1.931-7)^2)/3})};
 
     % Slope label
-    \node[green!80!black, font=\small, anchor=north east, align=left] at (axis cs:4.0,2.5)
+    \node[green!80!black, font=\small, anchor=north east, align=left, fill=white, draw=gray!50, inner sep=3pt, rounded corners=2pt] at (axis cs:4.0,3.0)
       {slope $= \frac{1}{3}(\textcolor{brown}{0}+\textcolor{blue}{9}+\textcolor{gray}{24})$\\$\phantom{\text{slope}} = 11$};
 
-    % Label the curve
-    \node[gold!80!black, font=\small, anchor=north east] at (axis cs:3.05,20)
+    % Label the curve (center-top, matching Option A legend position)
+    \node[gold!80!black, font=\small, anchor=north, fill=white, draw=gray!50, inner sep=6pt, rounded corners=2pt] at (axis cs:2,24.25)
       {\(J = \frac{1}{3}(\textcolor{brown}{J_1}\!+\!\textcolor{blue}{J_2}\!+\!\textcolor{gray}{J_3})\)};
   \end{axis}
   \pgfresetboundingbox
