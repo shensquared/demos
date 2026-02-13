@@ -1,5 +1,6 @@
 \documentclass[tikz]{standalone}
 \usepackage{pgfplots}
+\usepackage{amsmath}
 \usepackage{xcolor}
 \usetikzlibrary{calc}
 \definecolor{brown}{HTML}{8a4e3d}
@@ -52,7 +53,7 @@
 
     % Label the curve (center-top, matching Option A legend position)
     \node[gold!80!black, font=\small, anchor=north, fill=white, draw=gray!50, inner sep=6pt, rounded corners=2pt] at (axis cs:2,24.25)
-      {\(J = \frac{1}{3}(\textcolor{brown}{J_1}\!+\!\textcolor{blue}{J_2}\!+\!\textcolor{gray}{J_3})\)};
+      {\raisebox{0.5ex}{\tikz\draw[gold, ultra thick] (0,0) -- (0.2,0);}\;\(J = \frac{1}{3}(\textcolor{brown}{J_1}\!+\!\textcolor{blue}{J_2}\!+\!\textcolor{gray}{J_3})\)};
   \end{axis}
   \pgfresetboundingbox
   \useasboundingbox ([xshift=-19mm, yshift=-11mm]current axis.south west)
