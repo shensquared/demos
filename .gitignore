@@ -1,5 +1,8 @@
 *.pdf
 
+# gnuplot contour temp files
+*_contourtmp*
+
 # Claude Code
 .claude/
 

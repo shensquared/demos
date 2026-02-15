@@ -5,6 +5,7 @@
 \definecolor{brown}{HTML}{8a4e3d}
 \definecolor{blue}{HTML}{6d9eeb}
 \definecolor{gray}{HTML}{888888}
+\definecolor{gold}{HTML}{ffd966}
 \pgfplotsset{compat=1.18}
 
 \begin{document}
@@ -14,7 +15,6 @@
     x axis line style={->,>=stealth, shorten >=-3pt},
     y axis line style={->,>=stealth, shorten >=-3pt},
     xlabel={\(\theta\)},
-    ylabel={\(J_i(\theta)\)},
     ylabel style={rotate=-90},
     xmin=0, xmax=4,
     ymin=0, ymax=25,
@@ -28,42 +28,47 @@
     width=10cm,
     height=10cm,
   ]
-    % J1(θ) = (2θ-5)^2
-    \addplot[domain=0:4, samples=200, ultra thick, color=brown]
+    % Individual curves
+    \addplot[domain=0:4, samples=200, thick, color=brown!70]
       {(2*x-5)^2};
 
-    % J2(θ) = (3θ-6)^2
-    \addplot[domain=0:4, samples=200, ultra thick, color=blue]
+    \addplot[domain=0:4, samples=200, thick, color=blue!70]
       {(3*x-6)^2};
 
-    % J3(θ) = (4θ-7)^2
-    \addplot[domain=0:4, samples=200, ultra thick, color=gray]
+    \addplot[domain=0:4, samples=200, thick, color=gray!70]
       {(4*x-7)^2};
+
+    % Combined J(θ)
+    \addplot[domain=0:4, samples=200, ultra thick, color=gold]
+      {((2*x-5)^2 + (3*x-6)^2 + (4*x-7)^2)/3};
 
     % Tangent lines at θ=2.5
     % J1: slope 0, value 0
-    \addplot[domain=1:4, samples=2, line width=1.2pt, color=brown!50, dashed]
+    \addplot[domain=1:4, samples=2, thick, color=brown!50, dashed]
       {0};
 
-    % J2: slope 9, value 2.25 → y = 9(x-2.5)+2.25
-    \addplot[domain=1:4, samples=2, line width=1.2pt, color=blue!50, dashed]
+    % J2: slope 9, value 2.25
+    \addplot[domain=1:4, samples=2, thick, color=blue!50, dashed]
       {9*(x-2.5)+2.25};
 
-    % J3: slope 24, value 9 → y = 24(x-2.5)+9
-    \addplot[domain=1.5:3.167, samples=2, line width=1.2pt, color=gray!60, dashed]
+    % J3: slope 24, value 9
+    \addplot[domain=1.5:3.167, samples=2, thick, color=gray!60, dashed]
       {24*(x-2.5)+9};
 
-    % Diamond markers at θ=2.5 on each curve
+    % Combined tangent: slope 11, value J(2.5) = (0+2.25+9)/3 = 3.75
+    \addplot[domain=1:4, samples=2, thick, color=gold!80!black, dashed]
+      {11*(x-2.5)+3.75};
+
+    % Diamond markers at θ=2.5
     \addplot[only marks, mark=diamond*, mark options={scale=3, fill=brown}]
       coordinates {(2.5,0)};
     \addplot[only marks, mark=diamond*, mark options={scale=3, fill=blue}]
       coordinates {(2.5,2.25)};
     \addplot[only marks, mark=diamond*, mark options={scale=3, fill=gray}]
       coordinates {(2.5,9)};
+    \addplot[only marks, mark=diamond*, mark options={scale=3, fill=gold}]
+      coordinates {(2.5,3.75)};
 
   \end{axis}
-  \pgfresetboundingbox
-  \useasboundingbox ([xshift=-19mm, yshift=-11mm]current axis.south west)
-    rectangle ([xshift=4mm, yshift=4mm]current axis.north east);
 \end{tikzpicture}
 \end{document}

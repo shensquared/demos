@@ -1,0 +1,59 @@
+\documentclass[tikz]{standalone}
+\usepackage{pgfplots}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\definecolor{blue}{HTML}{6d9eeb}
+\definecolor{gray}{HTML}{888888}
+\definecolor{purple}{HTML}{674ea7}
+\pgfplotsset{compat=1.18}
+
+\begin{document}
+\begin{tikzpicture}
+  \begin{axis}[
+    set layers,
+    axis lines=left,
+    x axis line style={->,>=stealth, shorten >=-3pt},
+    y axis line style={->,>=stealth, shorten >=-3pt},
+    xlabel={\(x\)},
+    ylabel={\(y\)},
+    ylabel style={rotate=-90},
+    xmin=0, xmax=8,
+    ymin=0, ymax=8,
+    xtick={0,1,...,8},
+    ytick={0,1,...,8},
+    axis equal,
+    minor x tick num=1,
+    minor y tick num=1,
+    grid=both,
+    major grid style={line width=0.2pt,draw=black},
+    minor grid style={line width=0.1pt,draw=gray!50,dashed},
+    width=10cm,
+    height=10cm,
+  ]
+    % Fit line h = 1.5x (clips at y=8 → x=5.33)
+    \addplot[domain=0:5.33, samples=2, ultra thick, color=purple] {1.5*x};
+
+    % Data point
+    \addplot[only marks, mark=*, mark options={scale=2.5, fill=blue}]
+      coordinates {(3,6)};
+
+    % Dataset table (on foreground layer, above grid)
+    \begin{pgfonlayer}{axis foreground}
+    \node[anchor=south east, fill=white, draw=gray!50,
+          inner sep=6pt, rounded corners=2pt] at (axis cs:7.9,0.1) {%
+      \small
+      \begin{tabular}{@{}cc@{}}
+        \toprule
+        $x$ & $y$ \\
+        \midrule
+        \textcolor{blue}{3} & \textcolor{blue}{6} \\
+        \bottomrule
+      \end{tabular}%
+    };
+    \end{pgfonlayer}
+  \end{axis}
+  \pgfresetboundingbox
+  \useasboundingbox ([xshift=-19mm, yshift=-11mm]current axis.south west)
+    rectangle ([xshift=4mm, yshift=4mm]current axis.north east);
+\end{tikzpicture}
+\end{document}
