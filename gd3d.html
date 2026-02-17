@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gradient Descent 2D Demo</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      html, body {
+        width: 100%;
+        height: 100%;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        background: #fafafa;
+        color: #333;
+      }
+
+      .container {
+        display: flex;
+        height: 100%;
+      }
+
+      .sidebar {
+        width: 260px;
+        min-width: 260px;
+        padding: 28px 24px;
+        background: #fff;
+        border-right: 1px solid #e0e0e0;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+        overflow-y: auto;
+      }
+
+      .sidebar h1 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #222;
+        margin-bottom: 4px;
+      }
+
+      .sidebar .subtitle {
+        font-size: 13px;
+        color: #888;
+      }
+
+      .control-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 500;
+        color: #555;
+        margin-bottom: 6px;
+      }
+
+      .control-group .value {
+        font-family: "SF Mono", "Menlo", monospace;
+        font-size: 13px;
+        color: #222;
+        float: right;
+      }
+
+      input[type="range"] {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 6px;
+        border-radius: 3px;
+        background: #e0e0e0;
+        outline: none;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #555;
+        cursor: pointer;
+        border: 2px solid #fff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      }
+
+      .view-toggle {
+        display: flex;
+        gap: 0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .view-toggle button {
+        flex: 1;
+        padding: 6px 0;
+        font-size: 12px;
+        font-family: inherit;
+        border: none;
+        background: #fff;
+        color: #777;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .view-toggle button.active {
+        background: #555;
+        color: #fff;
+      }
+
+      .view-toggle button:not(:last-child) {
+        border-right: 1px solid #ddd;
+      }
+
+      .info {
+        margin-top: auto;
+        padding-top: 16px;
+        border-top: 1px solid #e0e0e0;
+        font-size: 12px;
+        color: #aaa;
+        line-height: 1.7;
+      }
+
+      .info span {
+        font-family: "SF Mono", "Menlo", monospace;
+        color: #666;
+      }
+
+      #plot {
+        flex: 1;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="sidebar">
+        <div>
+          <h1>GD — 2 Parameters</h1>
+          <div class="subtitle">\(J(\theta_1, \theta_2) = \tfrac{1}{3}\sum_i (y_i - \mathbf{x}_i^\top \boldsymbol{\theta})^2\)</div>
+        </div>
+
+        <div class="control-group">
+          <label>View</label>
+          <div class="view-toggle">
+            <button id="btnContour" class="active">Contour</button>
+            <button id="btn3D">3D Surface</button>
+            <button id="btnBoth">Both</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>Learning rate <span class="value" id="lrValue">0.01</span></label>
+          <input type="range" id="lrSlider" min="0" max="4" value="0" step="1" />
+        </div>
+
+        <div class="control-group">
+          <label>Iterations <span class="value" id="iterValue">1</span></label>
+          <input type="range" id="iterSlider" min="1" max="50" value="1" step="1" />
+        </div>
+
+        <div class="control-group">
+          <label>Initial \(\theta_1\) <span class="value" id="init1Value">-1.0</span></label>
+          <input type="range" id="init1Slider" min="-3" max="4" value="-1" step="0.5" />
+        </div>
+
+        <div class="control-group">
+          <label>Initial \(\theta_2\) <span class="value" id="init2Value">3.0</span></label>
+          <input type="range" id="init2Slider" min="-2" max="5" value="3" step="0.5" />
+        </div>
+
+        <div class="info">
+          After <span id="infoIter">1</span> steps:<br />
+          \(\theta_1\) = <span id="infoT1">—</span><br />
+          \(\theta_2\) = <span id="infoT2">—</span><br />
+          \(J\) = <span id="infoCost">—</span><br />
+          <br />
+          <span style="color:#bbb">Optimum: \(\theta^* \approx (0.342,\; 1.263)\)</span>
+        </div>
+      </div>
+
+      <div id="plot"></div>
+    </div>
+
+    <script>
+      window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] } };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <script>
+      // J(θ₁,θ₂) = ⅓[(3−θ₁−2θ₂)² + (2−2θ₁−θ₂)² + (6−3θ₁−4θ₂)²]
+      function J(t1, t2) {
+        const a = 3 - t1 - 2 * t2;
+        const b = 2 - 2 * t1 - t2;
+        const c = 6 - 3 * t1 - 4 * t2;
+        return (a * a + b * b + c * c) / 3;
+      }
+
+      function gradJ(t1, t2) {
+        const a = 3 - t1 - 2 * t2;
+        const b = 2 - 2 * t1 - t2;
+        const c = 6 - 3 * t1 - 4 * t2;
+        return [
+          (-2 * a - 4 * b - 6 * c) / 3,
+          (-4 * a - 2 * b - 8 * c) / 3,
+        ];
+      }
+
+      const lrSteps = [0.01, 0.03, 0.05, 0.07, 0.09];
+      const config = { displayModeBar: false, responsive: true };
+
+      // Precompute surface grid
+      const N = 80;
+      const t1Arr = Array.from({ length: N }, (_, i) => -3 + i * 7 / (N - 1));
+      const t2Arr = Array.from({ length: N }, (_, i) => -2 + i * 7 / (N - 1));
+      const zGrid = t2Arr.map((t2) => t1Arr.map((t1) => J(t1, t2)));
+
+      // Optimum: θ* = (13/38, 48/38)
+      const optT1 = 13 / 38, optT2 = 48 / 38;
+
+      let viewMode = "contour"; // "contour", "3d", "both"
+
+      function runGD() {
+        const lrIdx = parseInt(document.getElementById("lrSlider").value);
+        const lr = lrSteps[lrIdx];
+        const iterations = parseInt(document.getElementById("iterSlider").value);
+        let t1 = parseFloat(document.getElementById("init1Slider").value);
+        let t2 = parseFloat(document.getElementById("init2Slider").value);
+
+        document.getElementById("lrValue").textContent = lr.toFixed(2);
+        document.getElementById("iterValue").textContent = iterations;
+        document.getElementById("init1Value").textContent = t1.toFixed(1);
+        document.getElementById("init2Value").textContent = t2.toFixed(1);
+
+        const p1 = [t1], p2 = [t2], pJ = [J(t1, t2)];
+        for (let i = 0; i < iterations; i++) {
+          const [g1, g2] = gradJ(t1, t2);
+          t1 -= lr * g1;
+          t2 -= lr * g2;
+          p1.push(t1); p2.push(t2); pJ.push(J(t1, t2));
+        }
+
+        document.getElementById("infoIter").textContent = iterations;
+        document.getElementById("infoT1").textContent = t1.toFixed(4);
+        document.getElementById("infoT2").textContent = t2.toFixed(4);
+        document.getElementById("infoCost").textContent = J(t1, t2).toFixed(4);
+
+        return { p1, p2, pJ };
+      }
+
+      function markerColors(arr) {
+        return arr.map((_, i) =>
+          i === 0 ? "#e74c3c" : i === arr.length - 1 ? "#2ecc71" : "#555"
+        );
+      }
+
+      function markerSizes(arr, big, small) {
+        return arr.map((_, i) =>
+          i === 0 || i === arr.length - 1 ? big : small
+        );
+      }
+
+      function plotContour(path) {
+        const traces = [
+          {
+            x: t1Arr, y: t2Arr, z: zGrid, type: "contour",
+            colorscale: [[0, "#f5f5f5"], [0.2, "#dce9f5"], [0.5, "#8cb4d9"], [1, "#3a7ebf"]],
+            contours: { coloring: "heatmap", showlabels: true, labelfont: { size: 10, color: "#666" } },
+            colorbar: { title: "J", thickness: 14, len: 0.6, tickfont: { size: 10 } },
+            hovertemplate: "θ₁ = %{x:.2f}<br>θ₂ = %{y:.2f}<br>J = %{z:.3f}<extra></extra>",
+          },
+          {
+            x: path.p1, y: path.p2, mode: "markers+lines", type: "scatter",
+            line: { color: "rgba(80,80,80,0.5)", width: 1.5, dash: "dot" },
+            marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 10, 5), line: { color: "#fff", width: 1.5 } },
+            hovertemplate: "θ₁ = %{x:.3f}<br>θ₂ = %{y:.3f}<extra></extra>",
+          },
+          {
+            x: [optT1], y: [optT2], mode: "markers", type: "scatter",
+            marker: { color: "#ffd966", size: 10, symbol: "star", line: { color: "#333", width: 1 } },
+            hovertemplate: "θ* = (0.342, 1.263)<extra>optimum</extra>",
+          },
+        ];
+
+        const layout = {
+          xaxis: { title: { text: "θ₁", font: { size: 14 } }, zeroline: false, gridcolor: "#eee" },
+          yaxis: { title: { text: "θ₂", font: { size: 14 } }, zeroline: false, gridcolor: "#eee", scaleanchor: "x" },
+          margin: { l: 56, r: 24, t: 24, b: 48 },
+          paper_bgcolor: "#fafafa", plot_bgcolor: "#fafafa",
+          showlegend: false, hovermode: "closest",
+        };
+
+        Plotly.react("plot", traces, layout, config);
+      }
+
+      function plot3D(path) {
+        const traces = [
+          {
+            x: t1Arr, y: t2Arr, z: zGrid, type: "surface",
+            colorscale: [[0, "#f5f5f5"], [0.2, "#dce9f5"], [0.5, "#8cb4d9"], [1, "#3a7ebf"]],
+            opacity: 0.85, showscale: false,
+            hovertemplate: "θ₁ = %{x:.2f}<br>θ₂ = %{y:.2f}<br>J = %{z:.3f}<extra></extra>",
+          },
+          {
+            x: path.p1, y: path.p2, z: path.pJ,
+            mode: "markers+lines", type: "scatter3d",
+            line: { color: "#e74c3c", width: 5 },
+            marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 5, 3) },
+            hovertemplate: "θ₁ = %{x:.3f}<br>θ₂ = %{y:.3f}<br>J = %{z:.3f}<extra></extra>",
+          },
+        ];
+
+        const layout = {
+          scene: {
+            xaxis: { title: "θ₁" },
+            yaxis: { title: "θ₂" },
+            zaxis: { title: "J" },
+            camera: { eye: { x: -1.6, y: -1.6, z: 0.8 } },
+          },
+          margin: { l: 0, r: 0, t: 0, b: 0 },
+          paper_bgcolor: "#fafafa",
+          showlegend: false,
+        };
+
+        Plotly.react("plot", traces, layout, config);
+      }
+
+      function plotBoth(path) {
+        const traces = [
+          // Contour (left)
+          {
+            x: t1Arr, y: t2Arr, z: zGrid, type: "contour",
+            colorscale: [[0, "#f5f5f5"], [0.2, "#dce9f5"], [0.5, "#8cb4d9"], [1, "#3a7ebf"]],
+            contours: { coloring: "heatmap", showlabels: true, labelfont: { size: 9, color: "#666" } },
+            showscale: false,
+            hovertemplate: "θ₁ = %{x:.2f}<br>θ₂ = %{y:.2f}<br>J = %{z:.3f}<extra></extra>",
+            xaxis: "x", yaxis: "y",
+          },
+          {
+            x: path.p1, y: path.p2, mode: "markers+lines", type: "scatter",
+            line: { color: "rgba(80,80,80,0.5)", width: 1.5, dash: "dot" },
+            marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 9, 4), line: { color: "#fff", width: 1 } },
+            hovertemplate: "θ₁ = %{x:.3f}<br>θ₂ = %{y:.3f}<extra></extra>",
+            xaxis: "x", yaxis: "y",
+          },
+          {
+            x: [optT1], y: [optT2], mode: "markers", type: "scatter",
+            marker: { color: "#ffd966", size: 9, symbol: "star", line: { color: "#333", width: 1 } },
+            hovertemplate: "θ* = (0.342, 1.263)<extra>optimum</extra>",
+            xaxis: "x", yaxis: "y",
+          },
+          // 3D surface (right)
+          {
+            x: t1Arr, y: t2Arr, z: zGrid, type: "surface",
+            colorscale: [[0, "#f5f5f5"], [0.2, "#dce9f5"], [0.5, "#8cb4d9"], [1, "#3a7ebf"]],
+            opacity: 0.85, showscale: false,
+            hovertemplate: "θ₁ = %{x:.2f}<br>θ₂ = %{y:.2f}<br>J = %{z:.3f}<extra></extra>",
+            scene: "scene",
+          },
+          {
+            x: path.p1, y: path.p2, z: path.pJ,
+            mode: "markers+lines", type: "scatter3d",
+            line: { color: "#e74c3c", width: 5 },
+            marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 5, 3) },
+            hovertemplate: "θ₁ = %{x:.3f}<br>θ₂ = %{y:.3f}<br>J = %{z:.3f}<extra></extra>",
+            scene: "scene",
+          },
+        ];
+
+        const layout = {
+          xaxis: {
+            title: { text: "θ₁", font: { size: 13 } },
+            domain: [0, 0.44], zeroline: false, gridcolor: "#eee",
+          },
+          yaxis: {
+            title: { text: "θ₂", font: { size: 13 } },
+            zeroline: false, gridcolor: "#eee", scaleanchor: "x",
+          },
+          scene: {
+            domain: { x: [0.52, 1], y: [0, 1] },
+            xaxis: { title: "θ₁" },
+            yaxis: { title: "θ₂" },
+            zaxis: { title: "J" },
+            camera: { eye: { x: -1.6, y: -1.6, z: 0.8 } },
+          },
+          margin: { l: 56, r: 16, t: 16, b: 48 },
+          paper_bgcolor: "#fafafa", plot_bgcolor: "#fafafa",
+          showlegend: false, hovermode: "closest",
+        };
+
+        Plotly.react("plot", traces, layout, config);
+      }
+
+      function updatePlot() {
+        const path = runGD();
+        if (viewMode === "contour") plotContour(path);
+        else if (viewMode === "3d") plot3D(path);
+        else plotBoth(path);
+      }
+
+      // View toggle buttons
+      function setView(m) {
+        viewMode = m;
+        document.getElementById("btnContour").classList.toggle("active", m === "contour");
+        document.getElementById("btn3D").classList.toggle("active", m === "3d");
+        document.getElementById("btnBoth").classList.toggle("active", m === "both");
+        Plotly.purge("plot");
+        updatePlot();
+      }
+
+      document.getElementById("btnContour").addEventListener("click", () => setView("contour"));
+      document.getElementById("btn3D").addEventListener("click", () => setView("3d"));
+      document.getElementById("btnBoth").addEventListener("click", () => setView("both"));
+
+      document.getElementById("lrSlider").addEventListener("input", updatePlot);
+      document.getElementById("iterSlider").addEventListener("input", updatePlot);
+      document.getElementById("init1Slider").addEventListener("input", updatePlot);
+      document.getElementById("init2Slider").addEventListener("input", updatePlot);
+
+      updatePlot();
+    </script>
+  </body>
+</html>

@@ -3,206 +3,233 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gradient Descent Visualization with Fixed Scale</title>
+    <title>Gradient Descent Demo</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
-      html,
-      body {
-        margin: 0;
-        padding: 0;
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      html, body {
         width: 100%;
-        height: 100%; /* Ensure the body takes up the full height of the browser */
+        height: 100%;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        background: #fafafa;
+        color: #333;
+      }
+
+      .container {
+        display: flex;
+        height: 100%;
+      }
+
+      .sidebar {
+        width: 240px;
+        min-width: 240px;
+        padding: 28px 24px;
+        background: #fff;
+        border-right: 1px solid #e0e0e0;
         display: flex;
         flex-direction: column;
+        gap: 24px;
       }
 
-      .content-container {
-        display: flex;
+      .sidebar h1 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #222;
+        margin-bottom: 4px;
+      }
+
+      .sidebar .subtitle {
+        font-size: 13px;
+        color: #888;
+      }
+
+      .control-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 500;
+        color: #555;
+        margin-bottom: 6px;
+      }
+
+      .control-group .value {
+        font-family: "SF Mono", "Menlo", monospace;
+        font-size: 13px;
+        color: #222;
+        float: right;
+      }
+
+      input[type="range"] {
+        -webkit-appearance: none;
         width: 100%;
-        flex-grow: 1; /* Allows it to take up the remaining vertical space */
-        padding: 20px;
-        box-sizing: border-box;
-        align-items: flex-start; /* Align controls and plot at the top */
+        height: 6px;
+        border-radius: 3px;
+        background: #e0e0e0;
+        outline: none;
       }
 
-      .controls {
-        flex: 0 0 20%; /* Take up 20% of the width for the controls */
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start; /* Align controls at the top */
-        padding-right: 20px;
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #555;
+        cursor: pointer;
+        border: 2px solid #fff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
       }
 
-      .controls div {
-        margin-bottom: 20px;
+      .info {
+        margin-top: auto;
+        padding-top: 20px;
+        border-top: 1px solid #e0e0e0;
+        font-size: 12px;
+        color: #aaa;
+        line-height: 1.6;
       }
 
-      #gradientDescentPlot {
-        flex: 1; /* Take up the remaining space */
-        height: 100%; /* Make sure the plot takes up the full height */
+      .info span {
+        font-family: "SF Mono", "Menlo", monospace;
+        color: #666;
       }
 
-      .footer {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
-        background-color: #f8f9fa;
-        color: #6c757d;
-        text-align: center;
-        padding: 10px 0;
-      }
-
-      .footer a {
-        color: #007bff;
-        text-decoration: none;
-      }
-
-      .footer a:hover {
-        text-decoration: underline;
+      #plot {
+        flex: 1;
+        height: 100%;
       }
     </style>
   </head>
   <body>
-    <div class="content-container">
-      <div class="controls">
+    <div class="container">
+      <div class="sidebar">
         <div>
-          Learning Rate: <span id="lrValue">0.05</span><br />
-          <input
-            type="range"
-            id="lrSlider"
-            min="0"
-            max="4"
-            value="0"
-            step="1"
-          />
+          <h1>Gradient Descent</h1>
+          <div class="subtitle">\(J(\theta) = \theta^2\)</div>
         </div>
-        <div>
-          Iterations: <span id="iterValue">1</span><br />
-          <input
-            type="range"
-            id="iterSlider"
-            min="1"
-            max="20"
-            value="1"
-            step="1"
-          />
+
+        <div class="control-group">
+          <label>Learning rate <span class="value" id="lrValue">0.05</span></label>
+          <input type="range" id="lrSlider" min="0" max="4" value="0" step="1" />
         </div>
-        <div>
-          Initial Point: <span id="initialPointValue">9</span><br />
-          <input
-            type="range"
-            id="initialPointSlider"
-            min="-10"
-            max="10"
-            value="9"
-            step="1"
-          />
+
+        <div class="control-group">
+          <label>Iterations <span class="value" id="iterValue">1</span></label>
+          <input type="range" id="iterSlider" min="1" max="20" value="1" step="1" />
+        </div>
+
+        <div class="control-group">
+          <label>Initial \(\theta\) <span class="value" id="initValue">9</span></label>
+          <input type="range" id="initSlider" min="-10" max="10" value="9" step="1" />
+        </div>
+
+        <div class="info">
+          After <span id="infoIter">1</span> step:<br />
+          \(\theta\) = <span id="infoTheta">—</span><br />
+          \(J(\theta)\) = <span id="infoCost">—</span>
         </div>
       </div>
-      <div id="gradientDescentPlot"></div>
+
+      <div id="plot"></div>
     </div>
-    <div class="footer">
-      Built with ❤️ by &nbsp;
-      <a href="https://shenshen.mit.edu" target="_blank">Shen²</a>
-      <span>&nbsp;|&nbsp;</span>
-      <a href="https://github.com/shensquared/demos" target="_blank"
-        >Report a Bug</a
-      >
-    </div>
+
     <script>
-      function f(x) {
-        return x * x;
-      }
+      // MathJax for the sidebar labels
+      window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] } };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
 
-      function df(x) {
-        return 2 * x;
-      }
+    <script>
+      const f = (x) => x * x;
+      const df = (x) => 2 * x;
 
-      const xValues = Array.from({ length: 400 }, (_, i) => -10 + i * 0.05);
-      const yFunction = xValues.map((x) => f(x));
+      const xCurve = Array.from({ length: 400 }, (_, i) => -10 + i * 0.05);
+      const yCurve = xCurve.map(f);
 
-      // Define fixed axis ranges to keep the scale constant
-      const axisRange = {
+      const lrSteps = [0.05, 0.35, 0.65, 0.95, 1.25];
+
+      const layout = {
         xaxis: {
-          range: [-10, 10],
+          range: [-10.5, 10.5],
+          title: { text: "θ", font: { size: 16 } },
+          zeroline: false,
+          gridcolor: "#eee",
         },
         yaxis: {
-          range: [0, 100], // Adjust based on expected output range
+          range: [-2, 105],
+          title: { text: "J(θ)", font: { size: 16 } },
+          zeroline: false,
+          gridcolor: "#eee",
         },
-        margin: {
-          l: 40, // Left margin
-          r: 20, // Right margin
-          t: 60, // Top margin to prevent title cutoff
-          b: 40, // Bottom margin
-        },
+        margin: { l: 56, r: 24, t: 24, b: 48 },
+        paper_bgcolor: "#fafafa",
+        plot_bgcolor: "#fafafa",
+        showlegend: false,
+        hovermode: "closest",
       };
 
-      Plotly.newPlot(
-        "gradientDescentPlot",
-        [
-          {
-            x: xValues,
-            y: yFunction,
-            type: "scatter",
-            mode: "lines",
-            name: "Function",
-          },
-        ],
-        axisRange
-      );
+      const config = {
+        displayModeBar: false,
+        responsive: true,
+      };
+
+      const curveTrace = {
+        x: xCurve,
+        y: yCurve,
+        type: "scatter",
+        mode: "lines",
+        line: { color: "#bbb", width: 2 },
+        hoverinfo: "skip",
+      };
+
+      Plotly.newPlot("plot", [curveTrace], layout, config);
 
       function updatePlot() {
-        const lr = (
-          document.getElementById("lrSlider").value * 0.3 +
-          0.05
-        ).toFixed(2); // Learning rate
-        const iterations = parseInt(
-          document.getElementById("iterSlider").value
-        );
-        let x = parseInt(document.getElementById("initialPointSlider").value); // Initial point
+        const lrIdx = parseInt(document.getElementById("lrSlider").value);
+        const lr = lrSteps[lrIdx];
+        const iterations = parseInt(document.getElementById("iterSlider").value);
+        let x = parseInt(document.getElementById("initSlider").value);
 
-        document.getElementById("lrValue").textContent = lr;
+        document.getElementById("lrValue").textContent = lr.toFixed(2);
         document.getElementById("iterValue").textContent = iterations;
-        document.getElementById("initialPointValue").textContent = x;
+        document.getElementById("initValue").textContent = x;
 
-        const xGradient = [x];
-        const yGradient = [f(x)];
+        const xPath = [x];
+        const yPath = [f(x)];
 
         for (let i = 0; i < iterations; i++) {
           x = x - lr * df(x);
-          xGradient.push(x);
-          yGradient.push(f(x));
+          xPath.push(x);
+          yPath.push(f(x));
         }
 
-        Plotly.react(
-          "gradientDescentPlot",
-          [
-            {
-              x: xValues,
-              y: yFunction,
-              type: "scatter",
-              mode: "lines",
-              name: "Function",
-            },
-            {
-              x: xGradient,
-              y: yGradient,
-              mode: "markers+lines",
-              name: "Gradient Descent",
-            },
-          ],
-          axisRange
-        );
+        // Update info
+        document.getElementById("infoIter").textContent = iterations;
+        document.getElementById("infoTheta").textContent = x.toFixed(4);
+        document.getElementById("infoCost").textContent = f(x).toFixed(4);
+
+        const pathTrace = {
+          x: xPath,
+          y: yPath,
+          mode: "markers+lines",
+          line: { color: "rgba(100,100,100,0.4)", width: 1.5, dash: "dot" },
+          marker: {
+            color: xPath.map((_, i) =>
+              i === 0 ? "#e74c3c" : i === xPath.length - 1 ? "#2ecc71" : "#555"
+            ),
+            size: xPath.map((_, i) =>
+              i === 0 || i === xPath.length - 1 ? 10 : 6
+            ),
+            line: { color: "#fff", width: 1.5 },
+          },
+          hovertemplate: "θ = %{x:.3f}<br>J(θ) = %{y:.3f}<extra></extra>",
+        };
+
+        Plotly.react("plot", [curveTrace, pathTrace], layout, config);
       }
 
       document.getElementById("lrSlider").addEventListener("input", updatePlot);
-      document
-        .getElementById("iterSlider")
-        .addEventListener("input", updatePlot);
-      document
-        .getElementById("initialPointSlider")
-        .addEventListener("input", updatePlot);
+      document.getElementById("iterSlider").addEventListener("input", updatePlot);
+      document.getElementById("initSlider").addEventListener("input", updatePlot);
 
       updatePlot();
     </script>
