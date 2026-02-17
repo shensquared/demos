@@ -133,16 +133,15 @@
     <div class="container">
       <div class="sidebar">
         <div>
-          <h1>GD — 2 Parameters</h1>
-          <div class="subtitle">\(J(\theta_1, \theta_2) = \tfrac{1}{3}\sum_i (y_i - \mathbf{x}_i^\top \boldsymbol{\theta})^2\)</div>
+          <div class="subtitle">\(J = \theta_1^2 + \theta_1\theta_2 + \theta_2^2 - 3\theta_1 - 3\theta_2\)</div>
         </div>
 
         <div class="control-group">
           <label>View</label>
           <div class="view-toggle">
-            <button id="btnContour" class="active">Contour</button>
+            <button id="btnContour">Contour</button>
             <button id="btn3D">3D Surface</button>
-            <button id="btnBoth">Both</button>
+            <button id="btnBoth" class="active">Both</button>
           </div>
         </div>
 
@@ -157,13 +156,13 @@
         </div>
 
         <div class="control-group">
-          <label>Initial \(\theta_1\) <span class="value" id="init1Value">-1.0</span></label>
-          <input type="range" id="init1Slider" min="-3" max="4" value="-1" step="0.5" />
+          <label>Initial \(\theta_1\) <span class="value" id="init1Value">4.0</span></label>
+          <input type="range" id="init1Slider" min="-3" max="5" value="4" step="0.5" />
         </div>
 
         <div class="control-group">
-          <label>Initial \(\theta_2\) <span class="value" id="init2Value">3.0</span></label>
-          <input type="range" id="init2Slider" min="-2" max="5" value="3" step="0.5" />
+          <label>Initial \(\theta_2\) <span class="value" id="init2Value">2.0</span></label>
+          <input type="range" id="init2Slider" min="-3" max="5" value="2" step="0.5" />
         </div>
 
         <div class="info">
@@ -172,7 +171,7 @@
           \(\theta_2\) = <span id="infoT2">—</span><br />
           \(J\) = <span id="infoCost">—</span><br />
           <br />
-          <span style="color:#bbb">Optimum: \(\theta^* \approx (0.342,\; 1.263)\)</span>
+          <span style="color:#bbb">Optimum: \(\theta^* = (1,\; 1)\)</span>
         </div>
       </div>
 
@@ -185,37 +184,32 @@
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
 
     <script>
-      // J(θ₁,θ₂) = ⅓[(3−θ₁−2θ₂)² + (2−2θ₁−θ₂)² + (6−3θ₁−4θ₂)²]
+      // J(θ₁,θ₂) = θ₁² + θ₁θ₂ + θ₂² − 3θ₁ − 3θ₂
+      // Hessian = [[2,1],[1,2]], condition number = 3, optimum at (1,1)
       function J(t1, t2) {
-        const a = 3 - t1 - 2 * t2;
-        const b = 2 - 2 * t1 - t2;
-        const c = 6 - 3 * t1 - 4 * t2;
-        return (a * a + b * b + c * c) / 3;
+        return t1 * t1 + t1 * t2 + t2 * t2 - 3 * t1 - 3 * t2;
       }
 
       function gradJ(t1, t2) {
-        const a = 3 - t1 - 2 * t2;
-        const b = 2 - 2 * t1 - t2;
-        const c = 6 - 3 * t1 - 4 * t2;
         return [
-          (-2 * a - 4 * b - 6 * c) / 3,
-          (-4 * a - 2 * b - 8 * c) / 3,
+          2 * t1 + t2 - 3,
+          t1 + 2 * t2 - 3,
         ];
       }
 
-      const lrSteps = [0.01, 0.03, 0.05, 0.07, 0.09];
+      const lrSteps = [0.05, 0.15, 0.30, 0.50, 0.70];
       const config = { displayModeBar: false, responsive: true };
 
       // Precompute surface grid
       const N = 80;
-      const t1Arr = Array.from({ length: N }, (_, i) => -3 + i * 7 / (N - 1));
-      const t2Arr = Array.from({ length: N }, (_, i) => -2 + i * 7 / (N - 1));
+      const t1Arr = Array.from({ length: N }, (_, i) => -3 + i * 8 / (N - 1));
+      const t2Arr = Array.from({ length: N }, (_, i) => -3 + i * 8 / (N - 1));
       const zGrid = t2Arr.map((t2) => t1Arr.map((t1) => J(t1, t2)));
 
-      // Optimum: θ* = (13/38, 48/38)
-      const optT1 = 13 / 38, optT2 = 48 / 38;
+      // Optimum: θ* = (1, 1)
+      const optT1 = 1, optT2 = 1;
 
-      let viewMode = "contour"; // "contour", "3d", "both"
+      let viewMode = "both"; // "contour", "3d", "both"
 
       function runGD() {
         const lrIdx = parseInt(document.getElementById("lrSlider").value);
@@ -247,7 +241,7 @@
 
       function markerColors(arr) {
         return arr.map((_, i) =>
-          i === 0 ? "#e74c3c" : i === arr.length - 1 ? "#2ecc71" : "#555"
+          i === 0 ? "#e74c3c" : i === arr.length - 1 ? "#2ecc71" : "#ffd966"
         );
       }
 
@@ -268,14 +262,14 @@
           },
           {
             x: path.p1, y: path.p2, mode: "markers+lines", type: "scatter",
-            line: { color: "rgba(80,80,80,0.5)", width: 1.5, dash: "dot" },
+            line: { color: "rgba(200,170,40,0.6)", width: 2 },
             marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 10, 5), line: { color: "#fff", width: 1.5 } },
             hovertemplate: "θ₁ = %{x:.3f}<br>θ₂ = %{y:.3f}<extra></extra>",
           },
           {
             x: [optT1], y: [optT2], mode: "markers", type: "scatter",
             marker: { color: "#ffd966", size: 10, symbol: "star", line: { color: "#333", width: 1 } },
-            hovertemplate: "θ* = (0.342, 1.263)<extra>optimum</extra>",
+            hovertemplate: "θ* = (1, 1)<extra>optimum</extra>",
           },
         ];
 
@@ -301,7 +295,7 @@
           {
             x: path.p1, y: path.p2, z: path.pJ,
             mode: "markers+lines", type: "scatter3d",
-            line: { color: "#e74c3c", width: 5 },
+            line: { color: "#ffd966", width: 5 },
             marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 5, 3) },
             hovertemplate: "θ₁ = %{x:.3f}<br>θ₂ = %{y:.3f}<br>J = %{z:.3f}<extra></extra>",
           },
@@ -312,7 +306,7 @@
             xaxis: { title: "θ₁" },
             yaxis: { title: "θ₂" },
             zaxis: { title: "J" },
-            camera: { eye: { x: -1.6, y: -1.6, z: 0.8 } },
+            camera: { eye: { x: -2.26, y: 0, z: 0.8 } },
           },
           margin: { l: 0, r: 0, t: 0, b: 0 },
           paper_bgcolor: "#fafafa",
@@ -335,7 +329,7 @@
           },
           {
             x: path.p1, y: path.p2, mode: "markers+lines", type: "scatter",
-            line: { color: "rgba(80,80,80,0.5)", width: 1.5, dash: "dot" },
+            line: { color: "rgba(200,170,40,0.6)", width: 2 },
             marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 9, 4), line: { color: "#fff", width: 1 } },
             hovertemplate: "θ₁ = %{x:.3f}<br>θ₂ = %{y:.3f}<extra></extra>",
             xaxis: "x", yaxis: "y",
@@ -343,7 +337,7 @@
           {
             x: [optT1], y: [optT2], mode: "markers", type: "scatter",
             marker: { color: "#ffd966", size: 9, symbol: "star", line: { color: "#333", width: 1 } },
-            hovertemplate: "θ* = (0.342, 1.263)<extra>optimum</extra>",
+            hovertemplate: "θ* = (1, 1)<extra>optimum</extra>",
             xaxis: "x", yaxis: "y",
           },
           // 3D surface (right)
@@ -357,7 +351,7 @@
           {
             x: path.p1, y: path.p2, z: path.pJ,
             mode: "markers+lines", type: "scatter3d",
-            line: { color: "#e74c3c", width: 5 },
+            line: { color: "#ffd966", width: 5 },
             marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 5, 3) },
             hovertemplate: "θ₁ = %{x:.3f}<br>θ₂ = %{y:.3f}<br>J = %{z:.3f}<extra></extra>",
             scene: "scene",
@@ -378,7 +372,7 @@
             xaxis: { title: "θ₁" },
             yaxis: { title: "θ₂" },
             zaxis: { title: "J" },
-            camera: { eye: { x: -1.6, y: -1.6, z: 0.8 } },
+            camera: { eye: { x: -2.26, y: 0, z: 0.8 } },
           },
           margin: { l: 56, r: 16, t: 16, b: 48 },
           paper_bgcolor: "#fafafa", plot_bgcolor: "#fafafa",
