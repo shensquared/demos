@@ -10,7 +10,7 @@
 % Full-batch Gradient Descent
 % ---------------------------
 \begin{algorithm*}
-\caption{Gradient Descent($\theta_{\text{init}}, \eta, J, \nabla_\theta J, \epsilon$)}
+\caption{Gradient Descent($\theta_{\text{init}}, \eta, J, \epsilon$)}
 \label{alg:gradient-descent}
 \begin{algorithmic}[1]
 \STATE Initialize $\theta^{(0)} = \theta_{\text{init}}$
@@ -29,7 +29,7 @@
 % Stochastic Gradient Descent
 % ---------------------------
 \begin{algorithm*}
-\caption{Stochastic Gradient Descent($\theta_{\text{init}}, \eta, J, \nabla_\theta J, \epsilon$)}
+\caption{Stochastic Gradient Descent($\theta_{\text{init}}, \eta, \{J_i\}_{i=1}^n, \epsilon$)}
 \label{alg:stochastic-gradient-descent}
 \begin{algorithmic}[1]
 \STATE Initialize $\theta^{(0)} = \theta_{\text{init}}$
@@ -49,7 +49,7 @@
 % Mini-batch Gradient Descent
 % ---------------------------
 \begin{algorithm*}
-\caption{Mini-batch Gradient Descent($\theta_{\text{init}}, \eta, b, J, \nabla_\theta J, \epsilon$)}
+\caption{Mini-batch Gradient Descent($\theta_{\text{init}}, \eta, b, \{J_i\}_{i=1}^n, \epsilon$)}
 \label{alg:mini-batch-gradient-descent}
 \begin{algorithmic}[1]
 \STATE Initialize $\theta^{(0)} = \theta_{\text{init}}$
