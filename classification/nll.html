@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NLL Loss</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      html, body {
+        width: 100%; height: 100%;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        background: #fafafa; color: #333;
+      }
+
+      .container { display: flex; height: 100%; }
+
+      .sidebar {
+        width: 240px; min-width: 240px;
+        padding: 24px 20px;
+        background: #fff;
+        border-right: 1px solid #e0e0e0;
+        display: flex; flex-direction: column;
+        gap: 18px;
+        overflow-y: auto;
+      }
+
+      .sidebar h1 { font-size: 20px; font-weight: 600; color: #222; }
+      .sidebar .eq { font-size: 14px; color: #888; margin-top: 2px; }
+
+      .control-group label {
+        display: block; font-size: 15px; font-weight: 500;
+        color: #555; margin-bottom: 6px;
+      }
+
+      .control-group .val {
+        font-family: "SF Mono", Menlo, monospace;
+        font-size: 15px; color: #222; float: right;
+      }
+
+      input[type="range"] {
+        -webkit-appearance: none; width: 100%; height: 6px;
+        border-radius: 3px; background: #e0e0e0; outline: none;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none; width: 16px; height: 16px;
+        border-radius: 50%; background: #555; cursor: pointer;
+        border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+      }
+
+      .class-toggle {
+        display: flex; gap: 0;
+        border: 1px solid #ddd; border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .class-toggle button {
+        flex: 1; padding: 8px 0;
+        font-size: 14px; font-family: inherit;
+        border: none; background: #fff; color: #777;
+        cursor: pointer; transition: all .15s;
+      }
+
+      .class-toggle button.active { background: #555; color: #fff; }
+
+      .class-toggle button:not(:last-child) { border-right: 1px solid #ddd; }
+
+      /* Pipeline */
+      .pipeline {
+        margin-top: auto;
+        padding-top: 14px;
+        border-top: 1px solid #e0e0e0;
+        display: flex; flex-direction: column;
+        align-items: center;
+        gap: 0;
+      }
+
+      .pipe-row {
+        display: flex; flex-direction: column;
+        align-items: center; width: 100%;
+        position: relative;
+      }
+
+      .pipe-label {
+        font-size: 12px; color: #888;
+        margin-bottom: 4px; font-weight: 500;
+      }
+
+      .pipe-track {
+        width: 100%; height: 4px;
+        background: #e0e0e0; border-radius: 2px;
+        position: relative;
+      }
+
+      .pipe-dot {
+        width: 12px; height: 12px;
+        border-radius: 50%;
+        position: absolute; top: -4px;
+        transform: translateX(-50%);
+        box-shadow: 0 1px 3px rgba(0,0,0,.2);
+      }
+
+      .pipe-val {
+        font-family: "SF Mono", Menlo, monospace;
+        font-size: 11px; color: #555;
+        margin-top: 4px;
+      }
+
+      .pipe-arrow {
+        font-size: 16px; color: #ccc;
+        margin: 10px 0;
+      }
+
+      .plots { flex: 1; display: flex; height: 100%; min-width: 0; }
+      .plots > div { flex: 1; height: 100%; min-width: 0; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="sidebar">
+        <div>
+          <h1>NLL Loss</h1>
+          <div class="eq" id="eqDisplay">L = −log(σ(θx + θ₀))</div>
+        </div>
+
+        <div class="control-group">
+          <label>True label</label>
+          <div class="class-toggle">
+            <button data-y="1" class="active">y = 1</button>
+            <button data-y="0">y = 0</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>θ <span class="val" id="thetaVal">-3.0</span></label>
+          <input type="range" id="theta" min="-7" max="7" value="-3" step="0.1" />
+        </div>
+
+        <div class="control-group">
+          <label>θ₀ <span class="val" id="theta0Val">0.0</span></label>
+          <input type="range" id="theta0" min="-5" max="5" value="0" step="0.1" />
+        </div>
+
+        <div class="pipeline">
+          <div class="pipe-row">
+            <div class="pipe-label">x</div>
+            <div class="pipe-track">
+              <div class="pipe-dot" id="pipeDotX" style="background:#333"></div>
+            </div>
+            <div class="pipe-val" id="pipeValX">1.0</div>
+          </div>
+          <div class="pipe-arrow">↓</div>
+          <div class="pipe-row">
+            <div class="pipe-label" style="color:#3a7ebf">g</div>
+            <div class="pipe-track">
+              <div class="pipe-dot" id="pipeDotG" style="background:#3a7ebf"></div>
+            </div>
+            <div class="pipe-val" id="pipeValG">–</div>
+          </div>
+          <div class="pipe-arrow">↓</div>
+          <div class="pipe-row">
+            <div class="pipe-label">L</div>
+            <div class="pipe-track">
+              <div class="pipe-dot" id="pipeDotL" style="background:#f1c40f"></div>
+            </div>
+            <div class="pipe-val" id="pipeValL">–</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="plots">
+        <div id="plotLeft"></div>
+        <div id="plotRight"></div>
+      </div>
+    </div>
+
+    <script>
+      const cfg = { displayModeBar: false, responsive: true };
+      let trueLabel = 1;
+
+      const thetaEl = document.getElementById('theta');
+      const theta0El = document.getElementById('theta0');
+
+      function sigmoid(x, t, t0) {
+        return 1 / (1 + Math.exp(-(t * x + t0)));
+      }
+
+      function loss(g, y) {
+        return y === 1 ? -Math.log(Math.max(g, 1e-15)) : -Math.log(Math.max(1 - g, 1e-15));
+      }
+
+      function pipePct(val, min, max) {
+        return Math.max(0, Math.min(1, (val - min) / (max - min))) * 100;
+      }
+
+      function updatePipeline(g1, l1) {
+        document.getElementById('pipeDotX').style.left = pipePct(1, -10, 10) + '%';
+        document.getElementById('pipeValX').textContent = '1.0';
+
+        document.getElementById('pipeDotG').style.left = pipePct(g1, 0, 1) + '%';
+        document.getElementById('pipeValG').textContent = g1.toFixed(3);
+
+        const lClamped = Math.min(l1, 7);
+        document.getElementById('pipeDotL').style.left = pipePct(lClamped, 0, 7) + '%';
+        document.getElementById('pipeValL').textContent = l1.toFixed(3);
+      }
+
+      function update() {
+        const t = parseFloat(thetaEl.value);
+        const t0 = parseFloat(theta0El.value);
+
+        document.getElementById('thetaVal').textContent = t.toFixed(1);
+        document.getElementById('theta0Val').textContent = t0.toFixed(1);
+
+        const g1 = sigmoid(1, t, t0);
+        const l1 = loss(g1, trueLabel);
+
+        updatePipeline(g1, l1);
+        drawLeft(t, t0, g1);
+        drawRight(g1, l1);
+      }
+
+      function drawLeft(t, t0, g1) {
+        const xs = [], ys = [];
+        for (let x = -10; x <= 10; x += 0.1) {
+          xs.push(x);
+          ys.push(sigmoid(x, t, t0));
+        }
+
+        const sigTrace = {
+          x: xs, y: ys,
+          type: 'scatter', mode: 'lines',
+          line: { color: '#3a7ebf', width: 2.5 },
+          hovertemplate: 'x=%{x:.1f}<br>σ=%{y:.3f}<extra></extra>',
+        };
+
+        const marker = {
+          x: [1], y: [g1],
+          type: 'scatter', mode: 'markers',
+          marker: { size: 15, symbol: 'square', color: '#333', line: { color: '#fff', width: 1.5 } },
+          hovertemplate: 'x=1<br>σ=%{y:.4f}<extra></extra>',
+        };
+
+        const layout = {
+          xaxis: { title: { text: 'x', font: { size: 20 } }, range: [-10, 10], zeroline: false, gridcolor: '#eee' },
+          yaxis: { title: { text: 'g = σ(θx + θ₀)', font: { size: 20, color: '#3a7ebf' } }, range: [-0.05, 1.05], zeroline: false, gridcolor: '#eee' },
+          margin: { l: 52, r: 16, t: 16, b: 44 },
+          paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',
+          showlegend: false, hovermode: 'closest',
+          shapes: [
+            // Vertical dashed line at x=1
+            {
+              type: 'line', x0: 1, y0: 0, x1: 1, y1: 1,
+              line: { dash: 'dash', color: '#333', width: 2 },
+            },
+            // Blue segment on y-axis from 0 to g
+            {
+              type: 'line',
+              x0: 0, x1: 0, xref: 'paper',
+              y0: 0, y1: g1, yref: 'y',
+              line: { color: '#3a7ebf', width: 4 },
+            },
+          ],
+        };
+
+        Plotly.react('plotLeft', [sigTrace, marker], layout, cfg);
+      }
+
+      function drawRight(g1, l1) {
+        const gs = [], ls = [];
+        for (let g = 0.001; g < 0.999; g += 0.001) {
+          gs.push(g);
+          ls.push(loss(g, trueLabel));
+        }
+
+        const curveColor = trueLabel === 1 ? '#2ecc71' : '#e74c3c';
+
+        const lossTrace = {
+          x: gs, y: ls,
+          type: 'scatter', mode: 'lines',
+          line: { color: curveColor, width: 2.5 },
+          hovertemplate: 'g=%{x:.3f}<br>L=%{y:.3f}<extra></extra>',
+        };
+
+        const marker = {
+          x: [g1], y: [l1],
+          type: 'scatter', mode: 'markers',
+          marker: { size: 15, color: '#f1c40f', line: { color: '#fff', width: 1.5 } },
+          hovertemplate: 'g=%{x:.4f}<br>L=%{y:.4f}<extra></extra>',
+        };
+
+        const yLabel = trueLabel === 1 ? '−log(g)' : '−log(1 − g)';
+
+        const layout = {
+          xaxis: { title: { text: 'g (sigmoid output)', font: { size: 20, color: '#3a7ebf' } }, range: [0, 1], zeroline: false, gridcolor: '#eee' },
+          yaxis: { title: { text: yLabel, font: { size: 20 } }, range: [0, 7], zeroline: false, gridcolor: '#eee' },
+          margin: { l: 52, r: 16, t: 16, b: 44 },
+          paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',
+          showlegend: false, hovermode: 'closest',
+          shapes: [
+            // Blue segment on x-axis from 0 to g
+            {
+              type: 'line',
+              x0: 0, x1: g1, xref: 'x',
+              y0: 0, y1: 0, yref: 'paper',
+              line: { color: '#3a7ebf', width: 4 },
+            },
+          ],
+        };
+
+        Plotly.react('plotRight', [lossTrace, marker], layout, cfg);
+      }
+
+      // Slider listeners
+      thetaEl.addEventListener('input', update);
+      theta0El.addEventListener('input', update);
+
+      // Class toggle
+      document.querySelectorAll('.class-toggle button').forEach(btn => {
+        btn.addEventListener('click', function () {
+          trueLabel = parseInt(this.dataset.y);
+          document.querySelectorAll('.class-toggle button').forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+
+          // Update equation display
+          document.getElementById('eqDisplay').textContent =
+            trueLabel === 1 ? 'L = −log(σ(θx + θ₀))' : 'L = −log(1 − σ(θx + θ₀))';
+
+          update();
+        });
+      });
+
+      update();
+
+      window.addEventListener('resize', () => {
+        Plotly.Plots.resize(document.getElementById('plotLeft'));
+        Plotly.Plots.resize(document.getElementById('plotRight'));
+      });
+    </script>
+  </body>
+</html>
