@@ -4,472 +4,382 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Linear Separator</title>
-    <!-- Include Plotly.js -->
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        height: 100%;
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      html, body {
+        width: 100%; height: 100%;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        background: #fafafa; color: #333;
       }
-      body {
-        display: flex;
-        flex-direction: column;
+
+      .container { display: flex; height: 100%; }
+
+      .sidebar {
+        width: 240px; min-width: 240px;
+        padding: 24px 20px;
+        background: #fff;
+        border-right: 1px solid #e0e0e0;
+        display: flex; flex-direction: column;
+        gap: 18px;
+        overflow-y: auto;
       }
-      .plots-container {
-        flex: 1;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+
+      .sidebar h1 { font-size: 20px; font-weight: 600; color: #222; }
+      .sidebar .eq { font-size: 15px; color: #888; margin-top: 2px; }
+
+      .control-group label {
+        display: block; font-size: 15px; font-weight: 500;
+        color: #555; margin-bottom: 6px;
       }
-      #plot {
-        flex-grow: 1;
-        width: 65%;
-        height: 100%;
+
+      .control-group .val {
+        font-family: "SF Mono", Menlo, monospace;
+        font-size: 15px; color: #222; float: right;
       }
-      #plot2D {
-        width: 35%;
-        height: 100%;
+
+      input[type="range"] {
+        -webkit-appearance: none; width: 100%; height: 6px;
+        border-radius: 3px; background: #e0e0e0; outline: none;
       }
-      .slider-container {
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-        height: 15%;
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none; width: 16px; height: 16px;
+        border-radius: 50%; background: #555; cursor: pointer;
+        border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2);
       }
-      .slider-group {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+
+      .scale-toggle {
+        display: flex; gap: 0;
+        border: 1px solid #ddd; border-radius: 4px;
+        overflow: hidden;
       }
-      .footer {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
-        background-color: #f8f9fa;
-        color: #6c757d;
-        text-align: center;
-        height: 5%;
+
+      .scale-toggle button {
+        flex: 1; padding: 8px 0;
+        font-size: 14px; font-family: inherit;
+        border: none; background: #fff; color: #777;
+        cursor: pointer; transition: all .15s;
       }
-      .footer a {
-        color: #007bff;
-        text-decoration: none;
+
+      .scale-toggle button.active { background: #555; color: #fff; }
+
+      .scale-toggle button:not(:last-child) { border-right: 1px solid #ddd; }
+
+      .toggle-btn {
+        width: 100%; padding: 8px 0;
+        font-size: 14px; font-family: inherit;
+        border: 1px solid #ddd; border-radius: 4px;
+        background: #fff; color: #777; cursor: pointer;
+        transition: all .15s;
       }
-      .footer a:hover {
-        text-decoration: underline;
+
+      .toggle-btn.active { background: #555; color: #fff; border-color: #555; }
+
+      .legend { font-size: 14px; color: #666; line-height: 2.2; }
+
+      .legend .dot {
+        display: inline-block; width: 9px; height: 9px;
+        border-radius: 50%; margin-right: 6px; vertical-align: middle;
       }
+
+      .legend .arrow {
+        display: inline-block; color: #2ecc71;
+        font-size: 18px; margin-right: 4px; vertical-align: middle;
+      }
+
+      .legend .line {
+        display: inline-block; width: 16px; height: 2px;
+        margin-right: 6px; vertical-align: middle;
+      }
+
+      .info {
+        margin-top: auto; padding-top: 14px;
+        border-top: 1px solid #e0e0e0;
+        font-size: 14px; color: #aaa; line-height: 1.8;
+      }
+
+      .info span {
+        font-family: "SF Mono", Menlo, monospace; font-size: 14px; color: #666;
+      }
+
+      .plots { flex: 1; display: flex; height: 100%; min-width: 0; }
+      .plots > div { flex: 1; height: 100%; min-width: 0; }
     </style>
   </head>
   <body>
-    <div class="plots-container">
-      <div id="plot"></div>
-      <div id="plot2D"></div>
-    </div>
-    <div class="slider-container">
-      <div class="slider-group">
-        <label for="theta_1">θ₁:</label>
-        <input
-          type="range"
-          id="theta_1"
-          min="-2"
-          max="2"
-          value="0.5"
-          step="0.1"
-          oninput="updatePlot()"
-        />
-        <span id="theta_1_value">0.5</span>
+    <div class="container">
+      <div class="sidebar">
+        <div>
+          <h1>Linear Separator</h1>
+          <div class="eq">z = θ₁x₁ + θ₂x₂ + θ₀</div>
+        </div>
+
+        <div class="control-group">
+          <label>θ₁ <span class="val" id="t1Val">0.5</span></label>
+          <input type="range" id="t1" min="-2" max="2" value="0.5" step="0.1" />
+        </div>
+
+        <div class="control-group">
+          <label>θ₂ <span class="val" id="t2Val">0.5</span></label>
+          <input type="range" id="t2" min="-2" max="2" value="0.5" step="0.1" />
+        </div>
+
+        <div class="control-group">
+          <label>θ₀ <span class="val" id="t0Val">0.0</span></label>
+          <input type="range" id="t0" min="-2" max="2" value="0" step="0.1" />
+        </div>
+
+        <div class="control-group">
+          <label>Scale θ</label>
+          <div class="scale-toggle">
+            <button data-s="-2">−2×</button>
+            <button data-s="-1">−1×</button>
+            <button data-s="1" class="active">1×</button>
+            <button data-s="2">2×</button>
+          </div>
+        </div>
+
+        <button class="toggle-btn" id="btnZ0">Show z = 0 plane</button>
+
+        <div class="legend">
+          <div><span class="dot" style="background:#e74c3c"></span>Positive (+1)</div>
+          <div><span class="dot" style="background:#3a7ebf"></span>Negative (0)</div>
+          <div><span class="line" style="background:#333"></span>Separator</div>
+          <div><span class="arrow">→</span>Normal vector (θ)</div>
+        </div>
+
+        <div class="info">
+          Errors: <span id="infoErr">–</span> / <span id="infoN">10</span><br>
+          Accuracy: <span id="infoAcc">–</span>
+        </div>
       </div>
-      <div class="slider-group">
-        <label for="theta_2">θ₂:</label>
-        <input
-          type="range"
-          id="theta_2"
-          min="-2"
-          max="2"
-          value="0.5"
-          step="0.1"
-          oninput="updatePlot()"
-        />
-        <span id="theta_2_value">0.5</span>
+
+      <div class="plots">
+        <div id="plot2d"></div>
+        <div id="plot3d"></div>
       </div>
-      <div class="slider-group">
-        <label for="theta_0">θ₀:</label>
-        <input
-          type="range"
-          id="theta_0"
-          min="-1"
-          max="1"
-          value="0"
-          step="0.1"
-          oninput="updatePlot()"
-        />
-        <span id="theta_0_value">0</span>
-      </div>
-      <button id="toggleZ0">Toggle z=0 Surface</button>
-    </div>
-    <div class="footer">
-      Built with ❤️ by&nbsp;<a href="https://shenshen.mit.edu" target="_blank">Shen²</a>
-      <span>&nbsp;|&nbsp;</span>
-      <a href="https://github.com/shensquared/demos" target="_blank">Report a Bug</a>
     </div>
 
     <script>
-      let z0SurfaceVisible = false;
-
-      // Custom camera settings for the 3D plot
-      var customCameraSettings = {
-        eye: { x: 0, y: -1, z: 2 },
-        up: { x: 0, y: 0, z: 1 },
-        center: { x: 0, y: 0, z: 0 },
-      };
-
-      // Global layout for the 3D plot with an adaptive title font.
-      var layout = {
-        title: {
-          text: "Features (x₁, x₂) & z = θ₁x₁ + θ₂x₂ + θ₀",
-          font: { size: 18 } // placeholder, updated below
-        },
-        scene: {
-          xaxis: { title: "x₁", range: [-2, 2], tickmode: "linear", dtick: 1 },
-          yaxis: { title: "x₂", range: [-2, 2], tickmode: "linear", dtick: 1 },
-          zaxis: {
-            title: "z",
-            range: [-6, 6],
-            tickvals: [-5, -3, -1, 0, 1, 3, 5],
-          },
-          aspectmode: "manual",
-          aspectratio: { x: 1, y: 1, z: 1 },
-          camera: customCameraSettings,
-        },
-        showlegend: false,
-        sliders: [
-          { currentvalue: { prefix: "Theta 1: " }, pad: { t: 50 }, steps: [], len: 0.5 },
-          { currentvalue: { prefix: "Theta 2: " }, pad: { t: 50 }, steps: [], len: 0.5 },
-          { currentvalue: { prefix: "Theta 0: " }, pad: { t: 50 }, steps: [], len: 0.5 },
-        ],
-        autosize: true
-      };
-
-      // Custom color scale for the surface
-      var customColorscale = [
-        [0, "pink"],
-        [0.49, "pink"],
-        [0.5, "grey"],
-        [0.77, "pink"],
-        [1, "red"],
+      const pts = [
+        { x1: -0.8, x2:  1.2, y:  1 },
+        { x1: -0.3, x2:  0.9, y:  1 },
+        { x1:  0.5, x2:  1.4, y:  1 },
+        { x1: -1.0, x2:  0.4, y:  1 },
+        { x1:  0.2, x2:  0.7, y:  1 },
+        { x1:  1.0, x2: -0.8, y:  0 },
+        { x1:  0.5, x2: -1.1, y:  0 },
+        { x1: -0.4, x2: -1.2, y:  0 },
+        { x1:  1.3, x2: -0.3, y:  0 },
+        { x1: -0.1, x2: -0.6, y:  0 },
       ];
 
-      // Helper function: calculate adaptive font size based on container width.
-      function getAdaptiveFontSize(containerId) {
-        var containerWidth = document.getElementById(containerId).clientWidth;
-        // Adjust divisor and limits as needed
-        return Math.max(Math.min(containerWidth / 30, 24), 14);
+      const posCol = '#e74c3c', negCol = '#3a7ebf';
+      const cfg = { displayModeBar: false, responsive: true };
+
+      const N = 80;
+      const gx = Array.from({ length: N }, (_, i) => -2 + 4 * i / (N - 1));
+      const gy = [...gx];
+
+      let showZ0 = false;
+      let scale = 1;
+      const t1El = document.getElementById('t1');
+      const t2El = document.getElementById('t2');
+      const t0El = document.getElementById('t0');
+
+      function sc(t1, t2, t0, x1, x2) { return t1 * x1 + t2 * x2 + t0; }
+
+      function update() {
+        const t1 = parseFloat(t1El.value) * scale;
+        const t2 = parseFloat(t2El.value) * scale;
+        const t0 = parseFloat(t0El.value) * scale;
+
+        document.getElementById('t1Val').textContent = t1.toFixed(1);
+        document.getElementById('t2Val').textContent = t2.toFixed(1);
+        document.getElementById('t0Val').textContent = t0.toFixed(1);
+
+        let errs = 0;
+        pts.forEach(p => {
+          const s = sc(t1, t2, t0, p.x1, p.x2);
+          if ((p.y === 1 && s <= 0) || (p.y === 0 && s > 0)) errs++;
+        });
+        document.getElementById('infoErr').textContent = errs;
+        document.getElementById('infoN').textContent = pts.length;
+        document.getElementById('infoAcc').textContent =
+          ((pts.length - errs) / pts.length * 100).toFixed(0) + '%';
+
+        draw3D(t1, t2, t0);
+        draw2D(t1, t2, t0);
       }
 
-      // Update the title font for the 3D plot layout
-      function updateTitleFont3D() {
-        layout.title.font.size = getAdaptiveFontSize("plot");
+      function boundaryPts(t1, t2, t0) {
+        let bx = [], by = [];
+        if (Math.abs(t2) > 0.01) {
+          bx = Array.from({ length: 100 }, (_, i) => -2 + 4 * i / 99);
+          by = bx.map(x => (-t0 - t1 * x) / t2);
+        } else if (Math.abs(t1) > 0.01) {
+          by = Array.from({ length: 100 }, (_, i) => -2 + 4 * i / 99);
+          bx = by.map(() => -t0 / t1);
+        }
+        return { bx, by };
       }
 
-      function generateSurfaceData(theta_1, theta_2, theta_0) {
-        var a = [], b = [], z = [];
-        for (var i = -2; i <= 2; i += 0.01) {
-          a.push(i);
-        }
-        for (var j = -2; j <= 2; j += 0.01) {
-          b.push(j);
-        }
-        for (var i = 0; i < a.length; i++) {
-          var zRow = [];
-          for (var j = 0; j < b.length; j++) {
-            zRow.push(theta_2 * a[i] + theta_1 * b[j] + theta_0);
-          }
-          z.push(zRow);
-        }
-        var surfaceColor = z.map((row) =>
-          row.map((value) => {
-            if (value < 0) return 0;
-            if (value === 0) return 0.5;
-            return 1;
-          })
-        );
-        return {
-          x: a,
-          y: b,
-          z: z,
-          type: "surface",
-          showscale: false,
-          opacity: 0.7, 
-          colorscale: customColorscale,
-          surfacecolor: surfaceColor,
-        };
-      }
+      function draw3D(t1, t2, t0) {
+        const zGrid = gy.map(y => gx.map(x => sc(t1, t2, t0, x, y)));
 
-      var xValues = [1.0];
-      var yValues = [1.0];
-
-      function generateScatterTraces(theta_1, theta_2, theta_0) {
-        var scatterDataPositive = {
-          x: [],
-          y: [],
-          z: [],
-          mode: "markers",
-          type: "scatter3d",
-          name: "Prediction: Positive",
-          marker: { size: 5, color: "red" },
-        };
-        var scatterDataNegative = {
-          x: [],
-          y: [],
-          z: [],
-          mode: "markers",
-          type: "scatter3d",
-          name: "Prediction: Negative",
-          marker: { size: 5, color: "pink" },
-        };
-        for (var i = 0; i < 1; i++) {
-          var x = xValues[i];
-          var y = yValues[i];
-          var z = theta_2 * y + theta_1 * x + theta_0; // Place on function surface
-          var value = z;
-          if (value > 0) {
-            scatterDataPositive.x.push(x);
-            scatterDataPositive.y.push(y);
-            scatterDataPositive.z.push(z);
-          } else {
-            scatterDataNegative.x.push(x);
-            scatterDataNegative.y.push(y);
-            scatterDataNegative.z.push(z);
-          }
-        }
-        return [scatterDataPositive, scatterDataNegative];
-      }
-
-      function generateScatterTraces2D(theta_1, theta_2, theta_0) {
-        var scatterDataPositive = {
-          x: [],
-          y: [],
-          mode: "markers",
-          type: "scatter",
-          name: "Prediction: Positive",
-          marker: { size: 8, color: "red" },
-        };
-        var scatterDataNegative = {
-          x: [],
-          y: [],
-          mode: "markers",
-          type: "scatter",
-          name: "Prediction: Negative",
-          marker: { size: 8, color: "pink" },
-        };
-        for (var i = 0; i < 1; i++) {
-          var x = xValues[i];
-          var y = yValues[i];
-          var value = theta_2 * y + theta_1 * x + theta_0;
-          if (value > 0) {
-            scatterDataPositive.x.push(x);
-            scatterDataPositive.y.push(y);
-          } else {
-            scatterDataNegative.x.push(x);
-            scatterDataNegative.y.push(y);
-          }
-        }
-        return [scatterDataPositive, scatterDataNegative];
-      }
-
-      function generateBoundaryTrace3D(theta_1, theta_2, theta_0) {
-        var x_boundary = [], y_boundary = [], z_boundary = [];
-        if (theta_2 !== 0) {
-          x_boundary = Array.from({ length: 100 }, (_, i) => -2 + (4 * i) / 99);
-          y_boundary = x_boundary.map(x => (-theta_0 - theta_1 * x) / theta_2);
-          z_boundary = new Array(x_boundary.length).fill(0);
-        } else {
-          let x_const = -theta_0 / theta_1;
-          x_boundary = new Array(100).fill(x_const);
-          y_boundary = Array.from({ length: 100 }, (_, i) => -2 + (4 * i) / 99);
-          z_boundary = new Array(100).fill(0);
-        }
-        return {
-          x: x_boundary,
-          y: y_boundary,
-          z: z_boundary,
-          mode: "lines",
-          type: "scatter3d",
-          line: { color: "black", width: 4 },
-          name: "Decision Boundary"
-        };
-      }
-
-      // Update 2D plot with adaptive title font
-      function update2DPlot(theta_1, theta_2, theta_0) {
-        let separatorTrace;
-        if (theta_2 === 0) {
-          if (theta_1 === 0) {
-            console.error("Theta_1 and Theta_2 are both 0 - cannot plot a line.");
-            return;
-          }
-          var xVal = -theta_0 / theta_1;
-          separatorTrace = {
-            x: [xVal, xVal],
-            y: [-2, 2],
-            mode: "lines",
-            type: "scatter",
-            name: "Separator",
-          };
-        } else if (theta_1 === 0) {
-          var yVal = -theta_0 / theta_2;
-          separatorTrace = {
-            x: [-2, 2],
-            y: [yVal, yVal],
-            mode: "lines",
-            type: "scatter",
-            name: "Separator",
-          };
-        } else {
-          var xVals = Array.from({ length: 21 }, (_, i) => -2 + (4 * i) / 20);
-          var yVals = xVals.map((x) => (-theta_0 - theta_1 * x) / theta_2);
-          separatorTrace = {
-            x: xVals,
-            y: yVals,
-            mode: "lines",
-            type: "scatter",
-            name: "Separator",
-          };
-        }
-        // Adaptive font for the 2D title
-        var titleFontSize2D = getAdaptiveFontSize("plot2D");
-
-        var legendEntryForVector = {
-          x: [null],
-          y: [null],
-          mode: "lines",
-          name: "Normal vector",
-          line: { color: "red" },
-        };
-        var layout2D = {
-          title: {
-            text: "Feature space (x₁, x₂)",
-            font: { size: titleFontSize2D }
-          },
-          xaxis: { title: "x₁", range: [-2, 2], autorange: false },
-          yaxis: {
-            title: "x₂",
-            range: [-2, 2],
-            autorange: false,
-            scaleanchor: "x",
-            scaleratio: 1,
-          },
-          shapes: [
-            {
-              type: "line",
-              x0: 0,
-              y0: 0,
-              x1: theta_1,
-              y1: theta_2,
-              line: { color: "red", width: 2 },
-            },
-          ],
-          annotations: [
-            {
-              x: theta_1,
-              y: theta_2,
-              xref: "x",
-              yref: "y",
-              showarrow: true,
-              arrowhead: 2,
-              arrowsize: 1,
-              arrowwidth: 2,
-              arrowcolor: "red",
-              ax: theta_1 / 2,
-              ay: theta_2 / 2,
-              axref: "x",
-              ayref: "y",
-            },
-          ],
-          showlegend: true,
-        };
-        Plotly.newPlot("plot2D", [separatorTrace, legendEntryForVector], layout2D);
-      }
-
-      function generateZ0SurfaceData(theta_1, theta_2, theta_0) {
-        var x = [], y = [], z = [];
-        for (var i = -2; i <= 2; i += 1) { x.push(i); }
-        for (var j = -2; j <= 2; j += 1) { y.push(j); }
-        for (var i = 0; i < x.length; i++) {
-          var zRow = [];
-          for (var j = 0; j < y.length; j++) { zRow.push(0); }
-          z.push(zRow);
-        }
-        return {
-          x: x,
-          y: y,
-          z: z,
-          type: "surface",
-          showscale: false,
-          opacity: 0.5,
+        const surface = {
+          x: gx, y: gy, z: zGrid,
+          type: 'surface',
           colorscale: [
-            [0, "rgba(128,128,128,0.5)"],
-            [1, "rgba(128,128,128,0.5)"],
+            [0, '#7eafd4'], [0.4, '#c8dce8'],
+            [0.5, '#f0f0f0'],
+            [0.6, '#e8c8c8'], [1, '#d47e7e'],
           ],
-          name: "z0Surface",
-          visible: false,
+          cmin: -6, cmax: 6,
+          showscale: false, opacity: 0.75, hoverinfo: 'skip',
         };
+
+        const { bx, by } = boundaryPts(t1, t2, t0);
+        const boundary = {
+          x: bx, y: by, z: bx.map(() => 0),
+          type: 'scatter3d', mode: 'lines',
+          line: { color: '#333', width: 5 },
+          hoverinfo: 'skip',
+        };
+
+        const z0plane = {
+          x: [-2, 2], y: [-2, 2], z: [[0, 0], [0, 0]],
+          type: 'surface',
+          colorscale: [[0, 'rgba(140,140,140,.3)'], [1, 'rgba(140,140,140,.3)']],
+          showscale: false, opacity: 0.4,
+          visible: showZ0, hoverinfo: 'skip',
+        };
+
+        const pos = pts.filter(p => p.y === 1);
+        const neg = pts.filter(p => p.y === -1);
+
+        const posT = {
+          x: pos.map(p => p.x1), y: pos.map(p => p.x2), z: pos.map(() => 0),
+          type: 'scatter3d', mode: 'markers',
+          marker: { size: 4, color: posCol, line: { color: '#fff', width: 0.5 } },
+          hovertemplate: '(%{x:.1f}, %{y:.1f})<extra>+1</extra>',
+        };
+        const negT = {
+          x: neg.map(p => p.x1), y: neg.map(p => p.x2), z: neg.map(() => 0),
+          type: 'scatter3d', mode: 'markers',
+          marker: { size: 4, color: negCol, line: { color: '#fff', width: 0.5 } },
+          hovertemplate: '(%{x:.1f}, %{y:.1f})<extra>0</extra>',
+        };
+
+        const layout = {
+          scene: {
+            xaxis: { title: 'x₁', range: [-2, 2], tickmode: 'linear', dtick: 1, gridcolor: '#e0e0e0' },
+            yaxis: { title: 'x₂', range: [-2, 2], tickmode: 'linear', dtick: 1, gridcolor: '#e0e0e0' },
+            zaxis: { title: 'z', range: [-6, 6], gridcolor: '#e0e0e0' },
+            aspectmode: 'manual', aspectratio: { x: 1, y: 1, z: 1 },
+            camera: { eye: { x: 0, y: -2, z: 1.2 }, up: { x: 0, y: 0, z: 1 } },
+            bgcolor: '#fafafa',
+          },
+          margin: { l: 0, r: 0, t: 0, b: 0 },
+          paper_bgcolor: '#fafafa',
+          showlegend: false,
+        };
+
+        Plotly.react('plot3d', [surface, boundary, z0plane, posT, negT], layout, cfg);
       }
 
-      // Update both plots when slider values change.
-      function updatePlot() {
-        var theta_1 = parseFloat(document.getElementById("theta_1").value);
-        var theta_2 = parseFloat(document.getElementById("theta_2").value);
-        var theta_0 = parseFloat(document.getElementById("theta_0").value);
+      function draw2D(t1, t2, t0) {
+        const N2 = 150;
+        const gx2 = Array.from({ length: N2 }, (_, i) => -2 + 4 * i / (N2 - 1));
+        const gy2 = [...gx2];
+        const signGrid = gy2.map(y => gx2.map(x => sc(t1, t2, t0, x, y) > 0 ? 1 : 0));
 
-        document.getElementById("theta_1_value").textContent = theta_1.toFixed(1);
-        document.getElementById("theta_2_value").textContent = theta_2.toFixed(1);
-        document.getElementById("theta_0_value").textContent = theta_0.toFixed(1);
+        const region = {
+          x: gx2, y: gy2, z: signGrid,
+          type: 'heatmap',
+          colorscale: [[0, 'rgba(58,126,191,.1)'], [1, 'rgba(231,76,60,.1)']],
+          showscale: false, hoverinfo: 'skip',
+        };
 
-        // Update the 3D title font size based on container width.
-        updateTitleFont3D();
+        const { bx, by } = boundaryPts(t1, t2, t0);
+        const sep = {
+          x: bx, y: by,
+          type: 'scatter', mode: 'lines',
+          line: { color: '#333', width: 2 },
+          hoverinfo: 'skip',
+        };
 
-        var surfaceTrace = generateSurfaceData(theta_1, theta_2, theta_0);
-        var boundaryTrace = generateBoundaryTrace3D(theta_1, theta_2, theta_0);
-        var scatter3dTraces = generateScatterTraces(theta_1, theta_2, theta_0);
-        var z0trace = generateZ0SurfaceData(theta_1, theta_2, theta_0);
+        const pos = pts.filter(p => p.y === 1);
+        const neg = pts.filter(p => p.y === -1);
 
-        Plotly.react("plot", [surfaceTrace, boundaryTrace, z0trace].concat(scatter3dTraces), layout);
+        const posT = {
+          x: pos.map(p => p.x1), y: pos.map(p => p.x2),
+          type: 'scatter', mode: 'markers',
+          marker: { size: 9, color: posCol, line: { color: '#fff', width: 1.5 } },
+          hovertemplate: '(%{x:.1f}, %{y:.1f})<extra>+1</extra>',
+        };
+        const negT = {
+          x: neg.map(p => p.x1), y: neg.map(p => p.x2),
+          type: 'scatter', mode: 'markers',
+          marker: { size: 9, color: negCol, line: { color: '#fff', width: 1.5 } },
+          hovertemplate: '(%{x:.1f}, %{y:.1f})<extra>0</extra>',
+        };
 
-        update2DPlot(theta_1, theta_2, theta_0);
-        Plotly.addTraces("plot2D", generateScatterTraces2D(theta_1, theta_2, theta_0));
+        const hasVec = Math.abs(t1) > 0.01 || Math.abs(t2) > 0.01;
+
+        const layout = {
+          xaxis: {
+            title: { text: 'x₁', font: { size: 13 } },
+            range: [-2, 2], zeroline: false, gridcolor: '#eee',
+          },
+          yaxis: {
+            title: { text: 'x₂', font: { size: 13 } },
+            range: [-2, 2], zeroline: false, gridcolor: '#eee',
+            scaleanchor: 'x',
+          },
+          margin: { l: 48, r: 16, t: 16, b: 44 },
+          paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',
+          showlegend: false, hovermode: 'closest',
+          annotations: hasVec ? [{
+            x: t1, y: t2,
+            ax: 0, ay: 0,
+            xref: 'x', yref: 'y', axref: 'x', ayref: 'y',
+            showarrow: true,
+            arrowhead: 2, arrowsize: 1.5, arrowwidth: 2,
+            arrowcolor: '#2ecc71', text: '',
+          }] : [],
+        };
+
+        Plotly.react('plot2d', [region, sep, posT, negT], layout, cfg);
       }
 
-      updatePlot();
+      t1El.addEventListener('input', update);
+      t2El.addEventListener('input', update);
+      t0El.addEventListener('input', update);
 
-      function findTraceIndexByName(plotId, traceName) {
-        var plotElement = document.getElementById(plotId);
-        if (plotElement && plotElement.data) {
-          for (var i = 0; i < plotElement.data.length; i++) {
-            if (plotElement.data[i].name === traceName) {
-              return i;
-            }
-          }
-        }
-        return -1;
-      }
-
-      document.getElementById("toggleZ0").addEventListener("click", function () {
-        z0SurfaceVisible = !z0SurfaceVisible;
-        var visibilityState = z0SurfaceVisible ? true : "legendonly";
-        var traceIndex = findTraceIndexByName("plot", "z0Surface");
-        if (traceIndex !== -1) {
-          Plotly.restyle("plot", { visible: visibilityState }, [traceIndex]);
-        }
+      document.querySelectorAll('.scale-toggle button').forEach(btn => {
+        btn.addEventListener('click', function () {
+          scale = parseFloat(this.dataset.s);
+          document.querySelectorAll('.scale-toggle button').forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+          update();
+        });
       });
 
-      window.addEventListener("resize", function() {
-        Plotly.Plots.resize(document.getElementById("plot"));
-        Plotly.Plots.resize(document.getElementById("plot2D"));
-        // Also update title fonts on resize
-        updatePlot();
+      document.getElementById('btnZ0').addEventListener('click', function () {
+        showZ0 = !showZ0;
+        this.classList.toggle('active', showZ0);
+        this.textContent = showZ0 ? 'Hide z = 0 plane' : 'Show z = 0 plane';
+        update();
+      });
+
+      update();
+
+      window.addEventListener('resize', () => {
+        Plotly.Plots.resize(document.getElementById('plot3d'));
+        Plotly.Plots.resize(document.getElementById('plot2d'));
       });
     </script>
   </body>
