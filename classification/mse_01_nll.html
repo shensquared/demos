@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>1D Loss Comparison</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      html, body {
+        width: 100%; height: 100%;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        background: #fafafa; color: #333;
+      }
+
+      .container { display: flex; height: 100%; }
+
+      .sidebar {
+        width: 240px; min-width: 240px;
+        padding: 24px 20px;
+        background: #fff;
+        border-right: 1px solid #e0e0e0;
+        display: flex; flex-direction: column;
+        gap: 18px;
+        overflow-y: auto;
+      }
+
+      .sidebar h1 { font-size: 20px; font-weight: 600; color: #222; }
+      .sidebar .eq { font-size: 15px; color: #888; margin-top: 2px; }
+
+      .control-group label {
+        display: block; font-size: 15px; font-weight: 500;
+        color: #555; margin-bottom: 6px;
+      }
+
+      .control-group .val {
+        font-family: "SF Mono", Menlo, monospace;
+        font-size: 15px; color: #222; float: right;
+      }
+
+      input[type="range"] {
+        -webkit-appearance: none; width: 100%; height: 6px;
+        border-radius: 3px; background: #e0e0e0; outline: none;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none; width: 16px; height: 16px;
+        border-radius: 50%; background: #555; cursor: pointer;
+        border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+      }
+
+      .control-group select {
+        width: 100%; padding: 8px 10px;
+        border: 1px solid #ddd; border-radius: 4px;
+        background: #fff; font-size: 14px;
+        font-family: inherit; cursor: pointer; outline: none;
+      }
+
+      .legend { font-size: 14px; color: #666; line-height: 2.2; }
+
+      .legend .dot {
+        display: inline-block; width: 9px; height: 9px;
+        border-radius: 50%; margin-right: 6px; vertical-align: middle;
+      }
+
+      .legend .line {
+        display: inline-block; width: 16px; height: 2px;
+        margin-right: 6px; vertical-align: middle;
+      }
+
+      .info {
+        margin-top: auto; padding-top: 14px;
+        border-top: 1px solid #e0e0e0;
+        font-size: 14px; color: #aaa; line-height: 1.8;
+      }
+
+      .info span {
+        font-family: "SF Mono", Menlo, monospace; font-size: 14px; color: #666;
+      }
+
+      .info a {
+        color: #007bff; text-decoration: none;
+      }
+      .info a:hover { text-decoration: underline; }
+
+      .plots { flex: 1; display: flex; height: 100%; min-width: 0; }
+      .plots > div { flex: 1; height: 100%; min-width: 0; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="sidebar">
+        <div>
+          <h1>1D Loss Comparison</h1>
+          <div class="eq" id="eqLabel">z = θx</div>
+        </div>
+
+        <div class="control-group">
+          <label>Model</label>
+          <select id="modeSelect" onchange="setMode(this.value)">
+            <option value="mse">OLS</option>
+            <option value="01">Sign-based binary classifier</option>
+            <option value="nll">Logistic classifier</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label>θ <span class="val" id="theta_value">1.0</span></label>
+          <input type="range" id="theta" min="-3" max="3" value="1.0" step="0.1" oninput="update()" />
+        </div>
+
+        <div class="legend">
+          <div><span class="dot" style="background:#e74c3c"></span>Label = 1</div>
+          <div><span class="line" style="background:#3a7ebf"></span>Model output</div>
+          <div><span class="line" style="background:#333"></span>Loss curve</div>
+          <div><span class="dot" style="background:#2ecc71"></span>Current θ</div>
+        </div>
+
+        <div class="info">
+          Loss: <span id="infoLoss">–</span><br>
+          <br>
+          Built with ❤️ by <a href="https://shenshen.mit.edu" target="_blank">Shen²</a>
+          &nbsp;|&nbsp;
+          <a href="https://github.com/shensquared/demos" target="_blank">Report a Bug</a>
+        </div>
+      </div>
+
+      <div class="plots">
+        <div id="plotLeft"></div>
+        <div id="plotRight"></div>
+      </div>
+    </div>
+
+    <script>
+      // --- Data ---
+      const dataPoints = [
+        { x: 1.0, y: 1 },
+      ];
+
+      const xData = dataPoints.map(d => d.x);
+      const yData = dataPoints.map(d => d.y);
+
+      let currentMode = 'mse';
+      const cfg = { displayModeBar: false, responsive: true };
+
+      // --- Helpers ---
+      function sigmoid(z) {
+        return 1 / (1 + Math.exp(-z));
+      }
+
+      function linspace(a, b, n) {
+        const arr = [];
+        const step = (b - a) / (n - 1);
+        for (let i = 0; i < n; i++) arr.push(a + step * i);
+        return arr;
+      }
+
+      // --- Mode switching ---
+      function setMode(mode) {
+        currentMode = mode;
+        const eqEl = document.getElementById('eqLabel');
+        if (mode === 'mse') eqEl.textContent = 'z = θx';
+        else if (mode === '01') eqEl.textContent = 'ŷ = sign(θx)';
+        else eqEl.textContent = 'ŷ = σ(θx)';
+        update();
+      }
+
+      // --- Compute model output for a given x ---
+      function modelOutput(x, theta) {
+        const z = theta * x;
+        if (currentMode === 'nll') return sigmoid(z);
+        if (currentMode === '01') return z >= 0 ? 1 : 0;
+        return z;
+      }
+
+      // --- Compute per-point loss ---
+      function pointLoss(pred, label) {
+        if (currentMode === 'mse') {
+          return (pred - label) ** 2;
+        }
+        if (currentMode === '01') {
+          return pred !== label ? 1 : 0;
+        }
+        // NLL
+        const eps = 1e-12;
+        const p = Math.max(eps, Math.min(1 - eps, pred));
+        return -(label * Math.log(p) + (1 - label) * Math.log(1 - p));
+      }
+
+      // --- Compute average loss over all data points ---
+      function averageLoss(theta) {
+        let total = 0;
+        for (const d of dataPoints) {
+          const pred = modelOutput(d.x, theta);
+          total += pointLoss(pred, d.y);
+        }
+        return total / dataPoints.length;
+      }
+
+      // --- Left plot: model output as function of x ---
+      function buildLeftPlot(theta) {
+        const xRange = linspace(-4, 5, 400);
+        const yModel = xRange.map(x => modelOutput(x, theta));
+
+        const modelTrace = {
+          x: xRange, y: yModel,
+          mode: 'lines',
+          line: { color: '#3a7ebf', width: 2.5 },
+          hoverinfo: 'x+y',
+        };
+
+        const colors = yData.map(y => y === 1 ? '#e74c3c' : '#3498db');
+        const scatterTrace = {
+          x: xData, y: yData,
+          mode: 'markers',
+          marker: { size: 10, color: colors, line: { width: 1.5, color: '#fff' } },
+          hovertemplate: '(%{x:.1f}, %{y})<extra></extra>',
+        };
+
+        let titleText = '';
+        if (currentMode === 'mse') titleText = 'Model output: z = θx';
+        else if (currentMode === '01') titleText = 'Model output: sign(θx)';
+        else titleText = 'Model output: σ(θx)';
+
+        const layout = {
+          title: { text: titleText, font: { size: 15 } },
+          xaxis: {
+            title: { text: 'x', font: { size: 13 } },
+            range: [-4, 5], zeroline: false, gridcolor: '#eee',
+          },
+          yaxis: {
+            title: { text: 'Output', font: { size: 13 } },
+            range: [-2, 2], zeroline: true, zerolinecolor: '#ccc', gridcolor: '#eee',
+          },
+          margin: { l: 50, r: 16, t: 40, b: 44 },
+          paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',
+          showlegend: false, hovermode: 'closest',
+        };
+
+        return { data: [modelTrace, scatterTrace], layout };
+      }
+
+      // --- Right plot: loss landscape as function of theta ---
+      function buildRightPlot(theta) {
+        const thetaRange = linspace(-3, 3, 500);
+        const lossValues = thetaRange.map(t => averageLoss(t));
+
+        const lossTrace = {
+          x: thetaRange, y: lossValues,
+          mode: 'lines',
+          line: { color: '#333', width: 2.5 },
+          hoverinfo: 'x+y',
+        };
+
+        const currentLoss = averageLoss(theta);
+        const markerTrace = {
+          x: [theta], y: [currentLoss],
+          mode: 'markers',
+          marker: { size: 12, color: '#2ecc71', line: { width: 2, color: '#fff' } },
+          hovertemplate: 'θ=%{x:.1f}, J=%{y:.2f}<extra></extra>',
+        };
+
+        let titleText = '';
+        if (currentMode === 'mse') titleText = 'J(θ): MSE loss';
+        else if (currentMode === '01') titleText = 'J(θ): 0-1 loss';
+        else titleText = 'J(θ): NLL';
+
+        const layout = {
+          title: { text: titleText, font: { size: 15 } },
+          xaxis: {
+            title: { text: 'θ', font: { size: 13 } },
+            range: [-3, 3], zeroline: false, gridcolor: '#eee',
+          },
+          yaxis: {
+            title: { text: 'J(θ)', font: { size: 13 } },
+            range: [-1, 8], zeroline: true, zerolinecolor: '#ccc', gridcolor: '#eee',
+          },
+          margin: { l: 50, r: 16, t: 40, b: 44 },
+          paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',
+          showlegend: false, hovermode: 'closest',
+        };
+
+        return { data: [lossTrace, markerTrace], layout };
+      }
+
+      // --- Main update ---
+      function update() {
+        const theta = parseFloat(document.getElementById('theta').value);
+        document.getElementById('theta_value').textContent = theta.toFixed(1);
+
+        const currentLoss = averageLoss(theta);
+        document.getElementById('infoLoss').textContent = currentLoss.toFixed(3);
+
+        const left = buildLeftPlot(theta);
+        const right = buildRightPlot(theta);
+
+        Plotly.react('plotLeft', left.data, left.layout, cfg);
+        Plotly.react('plotRight', right.data, right.layout, cfg);
+      }
+
+      // --- Init ---
+      update();
+
+      window.addEventListener('resize', () => {
+        Plotly.Plots.resize(document.getElementById('plotLeft'));
+        Plotly.Plots.resize(document.getElementById('plotRight'));
+      });
+    </script>
+  </body>
+</html>
