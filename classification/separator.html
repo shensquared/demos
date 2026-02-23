@@ -27,7 +27,6 @@
       }
 
       .sidebar h1 { font-size: 20px; font-weight: 600; color: #222; }
-      .sidebar .eq { font-size: 15px; color: #888; margin-top: 2px; }
 
       .control-group label {
         display: block; font-size: 15px; font-weight: 500;
@@ -113,7 +112,6 @@
       <div class="sidebar">
         <div>
           <h1>Linear Separator</h1>
-          <div class="eq">z = θ₁x₁ + θ₂x₂ + θ₀</div>
         </div>
 
         <div class="control-group">
@@ -157,8 +155,8 @@
       </div>
 
       <div class="plots">
-        <div id="plot2d"></div>
         <div id="plot3d"></div>
+        <div id="plot2d"></div>
       </div>
     </div>
 
@@ -258,7 +256,7 @@
         };
 
         const pos = pts.filter(p => p.y === 1);
-        const neg = pts.filter(p => p.y === -1);
+        const neg = pts.filter(p => p.y === 0);
 
         const posT = {
           x: pos.map(p => p.x1), y: pos.map(p => p.x2), z: pos.map(() => 0),
@@ -312,7 +310,7 @@
         };
 
         const pos = pts.filter(p => p.y === 1);
-        const neg = pts.filter(p => p.y === -1);
+        const neg = pts.filter(p => p.y === 0);
 
         const posT = {
           x: pos.map(p => p.x1), y: pos.map(p => p.x2),
