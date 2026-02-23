@@ -108,7 +108,7 @@
           <label>Cases</label>
           <select id="modeSelect" onchange="setMode(this.value)">
             <option value="mse">OLS</option>
-            <option value="01">Sign-based binary classifier</option>
+            <option value="01">Step-based binary classifier</option>
             <option value="nll">Logistic classifier</option>
           </select>
         </div>
@@ -129,11 +129,7 @@
         </div>
 
         <div class="info">
-          Loss: <span id="infoLoss">–</span><br>
-          <br>
-          Built with ❤️ by <a href="https://shenshen.mit.edu" target="_blank">Shen²</a>
-          &nbsp;|&nbsp;
-          <a href="https://github.com/shensquared/demos" target="_blank">Report a Bug</a>
+          Loss: <span id="infoLoss">–</span>
         </div>
       </div>
 
@@ -186,11 +182,11 @@
         const el = document.getElementById('eqLabel');
         if (currentDim === '1d') {
           if (currentMode === 'mse') el.textContent = 'z = θx';
-          else if (currentMode === '01') el.textContent = 'ŷ = sign(θx)';
+          else if (currentMode === '01') el.textContent = 'ŷ = step(θx)';
           else el.textContent = 'ŷ = σ(θx)';
         } else {
           if (currentMode === 'mse') el.textContent = 'z = θ₁x₁ + θ₂x₂';
-          else if (currentMode === '01') el.textContent = 'ŷ = sign(θ₁x₁ + θ₂x₂)';
+          else if (currentMode === '01') el.textContent = 'ŷ = step(θ₁x₁ + θ₂x₂)';
           else el.textContent = 'ŷ = σ(θ₁x₁ + θ₂x₂)';
         }
       }
@@ -290,7 +286,7 @@
 
         let titleText = '';
         if (currentMode === 'mse') titleText = 'Model output: z = θx';
-        else if (currentMode === '01') titleText = 'Model output: sign(θx)';
+        else if (currentMode === '01') titleText = 'Model output: step(θx)';
         else titleText = 'Model output: σ(θx)';
 
         const layout = {
@@ -404,7 +400,7 @@
 
         let titleText = '';
         if (currentMode === 'mse') titleText = 'z = θ₁x₁ + θ₂x₂';
-        else if (currentMode === '01') titleText = 'ŷ = sign(θ₁x₁ + θ₂x₂)';
+        else if (currentMode === '01') titleText = 'ŷ = step(θ₁x₁ + θ₂x₂)';
         else titleText = 'ŷ = σ(θ₁x₁ + θ₂x₂)';
 
         const layout = {
