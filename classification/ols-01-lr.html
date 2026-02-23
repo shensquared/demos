@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Model Output and Training Error</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      html, body {
+        width: 100%; height: 100%;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        background: #fafafa; color: #333;
+      }
+
+      .container { display: flex; height: 100%; }
+
+      .sidebar {
+        width: 240px; min-width: 240px;
+        padding: 24px 20px;
+        background: #fff;
+        border-right: 1px solid #e0e0e0;
+        display: flex; flex-direction: column;
+        gap: 18px;
+        overflow-y: auto;
+      }
+
+      .sidebar h1 { font-size: 20px; font-weight: 600; color: #222; }
+      .sidebar .eq { font-size: 15px; color: #888; margin-top: 2px; }
+
+      .control-group label {
+        display: block; font-size: 15px; font-weight: 500;
+        color: #555; margin-bottom: 6px;
+      }
+
+      .control-group .val {
+        font-family: "SF Mono", Menlo, monospace;
+        font-size: 15px; color: #222; float: right;
+      }
+
+      input[type="range"] {
+        -webkit-appearance: none; width: 100%; height: 6px;
+        border-radius: 3px; background: #e0e0e0; outline: none;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none; width: 16px; height: 16px;
+        border-radius: 50%; background: #555; cursor: pointer;
+        border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+      }
+
+      .control-group select {
+        width: 100%; padding: 8px 10px;
+        border: 1px solid #ddd; border-radius: 4px;
+        background: #fff; font-size: 14px;
+        font-family: inherit; cursor: pointer; outline: none;
+      }
+
+      .legend { font-size: 14px; color: #666; line-height: 2.2; }
+
+      .legend .dot {
+        display: inline-block; width: 15px; height: 15px;
+        border-radius: 50%; margin-right: 6px; vertical-align: middle;
+      }
+
+      .legend .line {
+        display: inline-block; width: 16px; height: 2px;
+        margin-right: 6px; vertical-align: middle;
+      }
+
+      .info {
+        margin-top: auto; padding-top: 14px;
+        border-top: 1px solid #e0e0e0;
+        font-size: 14px; color: #aaa; line-height: 1.8;
+      }
+
+      .info span {
+        font-family: "SF Mono", Menlo, monospace; font-size: 14px; color: #666;
+      }
+
+      .info a {
+        color: #007bff; text-decoration: none;
+      }
+      .info a:hover { text-decoration: underline; }
+
+      .plots { flex: 1; display: flex; height: 100%; min-width: 0; }
+      .plots > div { flex: 1; height: 100%; min-width: 0; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="sidebar">
+        <div>
+          <h1>Model Output and Training Error</h1>
+          <div class="eq" id="eqLabel">z = θx</div>
+        </div>
+
+        <div class="control-group">
+          <label>Feature Dimension</label>
+          <select id="dimSelect" onchange="setDim(this.value)">
+            <option value="1d">1D</option>
+            <option value="2d">2D</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label>Cases</label>
+          <select id="modeSelect" onchange="setMode(this.value)">
+            <option value="mse">OLS</option>
+            <option value="01">Sign-based binary classifier</option>
+            <option value="nll">Logistic classifier</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label id="theta1Label">θ <span class="val" id="theta_value">1.0</span></label>
+          <input type="range" id="theta" min="-3" max="3" value="1.0" step="0.1" oninput="update()" />
+        </div>
+
+        <div class="control-group" id="theta2Group" style="display:none">
+          <label>θ₂ <span class="val" id="theta2_value">0.5</span></label>
+          <input type="range" id="theta2" min="-3" max="3" value="0.5" step="0.1" oninput="update()" />
+        </div>
+
+        <div class="legend">
+          <div><span class="dot" style="background:#e74c3c"></span>Training data point</div>
+          <div><span class="dot" style="background:#2ecc71"></span>Current θ</div>
+        </div>
+
+        <div class="info">
+          Loss: <span id="infoLoss">–</span><br>
+          <br>
+          Built with ❤️ by <a href="https://shenshen.mit.edu" target="_blank">Shen²</a>
+          &nbsp;|&nbsp;
+          <a href="https://github.com/shensquared/demos" target="_blank">Report a Bug</a>
+        </div>
+      </div>
+
+      <div class="plots">
+        <div id="plotLeft"></div>
+        <div id="plotRight"></div>
+      </div>
+    </div>
+
+    <script>
+      // --- URL params: ?models=ols,01,lr to pick which appear in dropdown ---
+      (function() {
+        const params = new URLSearchParams(window.location.search);
+        const modelsParam = params.get('models');
+        if (modelsParam) {
+          const keep = new Set(modelsParam.split(',').map(s => s.trim()));
+          const map = { ols: 'mse', '01': '01', lr: 'nll' };
+          const sel = document.getElementById('modeSelect');
+          const keepValues = new Set();
+          for (const k of keep) { if (map[k]) keepValues.add(map[k]); }
+          Array.from(sel.options).forEach(opt => {
+            if (!keepValues.has(opt.value)) opt.remove();
+          });
+        }
+      })();
+
+      // --- Data ---
+      const data1D = [{ x: 1.0, y: 1 }];
+      const data2D = [{ x1: 1, x2: 2, y: 1 }];
+
+      let currentMode = document.getElementById('modeSelect').value;
+      let currentDim = '1d';
+      let prevDim = '1d';
+      const cfg = { displayModeBar: false, responsive: true };
+
+      // --- Helpers ---
+      function sigmoid(z) {
+        return 1 / (1 + Math.exp(-z));
+      }
+
+      function linspace(a, b, n) {
+        const arr = [];
+        const step = (b - a) / (n - 1);
+        for (let i = 0; i < n; i++) arr.push(a + step * i);
+        return arr;
+      }
+
+      // --- Equation label ---
+      function updateEqLabel() {
+        const el = document.getElementById('eqLabel');
+        if (currentDim === '1d') {
+          if (currentMode === 'mse') el.textContent = 'z = θx';
+          else if (currentMode === '01') el.textContent = 'ŷ = sign(θx)';
+          else el.textContent = 'ŷ = σ(θx)';
+        } else {
+          if (currentMode === 'mse') el.textContent = 'z = θ₁x₁ + θ₂x₂';
+          else if (currentMode === '01') el.textContent = 'ŷ = sign(θ₁x₁ + θ₂x₂)';
+          else el.textContent = 'ŷ = σ(θ₁x₁ + θ₂x₂)';
+        }
+      }
+
+      // --- Dimension switching ---
+      function setDim(dim) {
+        prevDim = currentDim;
+        currentDim = dim;
+        document.getElementById('theta2Group').style.display = dim === '2d' ? '' : 'none';
+        document.getElementById('theta1Label').innerHTML = dim === '2d'
+          ? 'θ₁ <span class="val" id="theta_value">'+parseFloat(document.getElementById('theta').value).toFixed(1)+'</span>'
+          : 'θ <span class="val" id="theta_value">'+parseFloat(document.getElementById('theta').value).toFixed(1)+'</span>';
+        updateEqLabel();
+        // 2D↔3D requires newPlot
+        fullPlot();
+      }
+
+      // --- Mode switching ---
+      function setMode(mode) {
+        currentMode = mode;
+        updateEqLabel();
+        if (currentDim === '1d') {
+          update();
+        } else {
+          fullPlot();
+        }
+      }
+
+      // --- Compute model output ---
+      function modelOutput1D(x, theta) {
+        const z = theta * x;
+        if (currentMode === 'nll') return sigmoid(z);
+        if (currentMode === '01') return z >= 0 ? 1 : 0;
+        return z;
+      }
+
+      function modelOutput2D(x1, x2, t1, t2) {
+        const z = t1 * x1 + t2 * x2;
+        if (currentMode === 'nll') return sigmoid(z);
+        if (currentMode === '01') return z >= 0 ? 1 : 0;
+        return z;
+      }
+
+      // --- Compute per-point loss ---
+      function pointLoss(pred, label) {
+        if (currentMode === 'mse') {
+          return (pred - label) ** 2;
+        }
+        if (currentMode === '01') {
+          return pred !== label ? 1 : 0;
+        }
+        const eps = 1e-12;
+        const p = Math.max(eps, Math.min(1 - eps, pred));
+        return -(label * Math.log(p) + (1 - label) * Math.log(1 - p));
+      }
+
+      // --- Average loss ---
+      function averageLoss1D(theta) {
+        let total = 0;
+        for (const d of data1D) {
+          total += pointLoss(modelOutput1D(d.x, theta), d.y);
+        }
+        return total / data1D.length;
+      }
+
+      function averageLoss2D(t1, t2) {
+        let total = 0;
+        for (const d of data2D) {
+          total += pointLoss(modelOutput2D(d.x1, d.x2, t1, t2), d.y);
+        }
+        return total / data2D.length;
+      }
+
+      // ============================================================
+      // 1D PLOTS
+      // ============================================================
+      function buildLeftPlot1D(theta) {
+        const xRange = linspace(-4, 5, 400);
+        const yModel = xRange.map(x => modelOutput1D(x, theta));
+
+        const modelTrace = {
+          x: xRange, y: yModel,
+          mode: 'lines',
+          line: { color: '#3a7ebf', width: 2.5 },
+          hoverinfo: 'x+y',
+        };
+
+        const xData = data1D.map(d => d.x);
+        const yData = data1D.map(d => d.y);
+        const colors = yData.map(y => y === 1 ? '#e74c3c' : '#3498db');
+        const scatterTrace = {
+          x: xData, y: yData,
+          mode: 'markers',
+          marker: { size: 10, color: colors, line: { width: 1.5, color: '#fff' } },
+          hovertemplate: '(%{x:.1f}, %{y})<extra></extra>',
+        };
+
+        let titleText = '';
+        if (currentMode === 'mse') titleText = 'Model output: z = θx';
+        else if (currentMode === '01') titleText = 'Model output: sign(θx)';
+        else titleText = 'Model output: σ(θx)';
+
+        const layout = {
+          title: { text: titleText, font: { size: 15 } },
+          xaxis: {
+            title: { text: 'x', font: { size: 13 } },
+            range: [-4, 5], zeroline: false, gridcolor: '#eee',
+          },
+          yaxis: {
+            title: { text: 'Output', font: { size: 13 } },
+            range: [-2, 2], zeroline: true, zerolinecolor: '#ccc', gridcolor: '#eee',
+          },
+          margin: { l: 50, r: 16, t: 40, b: 44 },
+          paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',
+          showlegend: false, hovermode: 'closest',
+        };
+
+        return { data: [modelTrace, scatterTrace], layout };
+      }
+
+      function buildRightPlot1D(theta) {
+        const thetaRange = linspace(-3, 3, 500);
+        const lossValues = thetaRange.map(t => averageLoss1D(t));
+
+        const lossTrace = {
+          x: thetaRange, y: lossValues,
+          mode: 'lines',
+          line: { color: '#333', width: 2.5 },
+          hoverinfo: 'x+y',
+        };
+
+        const currentLoss = averageLoss1D(theta);
+        const markerTrace = {
+          x: [theta], y: [currentLoss],
+          mode: 'markers',
+          marker: { size: 12, color: '#2ecc71', line: { width: 2, color: '#fff' } },
+          hovertemplate: 'θ=%{x:.1f}, J=%{y:.2f}<extra></extra>',
+        };
+
+        let titleText = '';
+        if (currentMode === 'mse') titleText = 'J(θ): MSE loss';
+        else if (currentMode === '01') titleText = 'J(θ): 0-1 loss';
+        else titleText = 'J(θ): NLL';
+
+        const layout = {
+          title: { text: titleText, font: { size: 15 } },
+          xaxis: {
+            title: { text: 'θ', font: { size: 13 } },
+            range: [-3, 3], zeroline: false, gridcolor: '#eee',
+          },
+          yaxis: {
+            title: { text: 'J(θ)', font: { size: 13 } },
+            range: [-1, 8], zeroline: true, zerolinecolor: '#ccc', gridcolor: '#eee',
+          },
+          margin: { l: 50, r: 16, t: 40, b: 44 },
+          paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',
+          showlegend: false, hovermode: 'closest',
+        };
+
+        return { data: [lossTrace, markerTrace], layout };
+      }
+
+      // ============================================================
+      // 2D PLOTS (3D surfaces)
+      // ============================================================
+      const surfaceColorscale = [
+        [0, '#7eafd4'], [0.4, '#c8dce8'],
+        [0.5, '#f0f0f0'],
+        [0.6, '#e8c8c8'], [1, '#d47e7e'],
+      ];
+
+      const lossColorscale = [[0, 'blue'], [1, 'red']];
+
+      // Single-color colorscale for 0-1 classifier
+      const flatColorscale = [[0, '#a8c8e0'], [1, '#a8c8e0']];
+
+      function buildLeftPlot2D(t1, t2) {
+        const is01 = currentMode === '01';
+        const N = is01 ? 400 : 80;
+        const gx = linspace(-2, 2, N);
+        const gy = linspace(-2, 2, N);
+
+        const zGrid = [];
+        for (let j = 0; j < N; j++) {
+          const row = [];
+          for (let i = 0; i < N; i++) {
+            row.push(modelOutput2D(gx[i], gy[j], t1, t2));
+          }
+          zGrid.push(row);
+        }
+
+        const surface = {
+          x: gx, y: gy, z: zGrid,
+          type: 'surface',
+          colorscale: currentMode === 'mse' ? flatColorscale : surfaceColorscale,
+          cmin: currentMode === 'mse' ? undefined : 0,
+          cmax: currentMode === 'mse' ? undefined : 1,
+          showscale: false,
+          opacity: is01 ? 1 : 0.75,
+          hoverinfo: 'skip',
+        };
+
+        // Data point marker (pinned at true label)
+        const d = data2D[0];
+        const scatter = {
+          x: [d.x1], y: [d.x2], z: [d.y],
+          type: 'scatter3d', mode: 'markers',
+          marker: { size: 5, color: '#e74c3c', line: { color: '#fff', width: 0.5 } },
+          hovertemplate: '(%{x:.1f}, %{y:.1f}, %{z:.2f})<extra>label=1</extra>',
+        };
+
+        let titleText = '';
+        if (currentMode === 'mse') titleText = 'z = θ₁x₁ + θ₂x₂';
+        else if (currentMode === '01') titleText = 'ŷ = sign(θ₁x₁ + θ₂x₂)';
+        else titleText = 'ŷ = σ(θ₁x₁ + θ₂x₂)';
+
+        const layout = {
+          title: { text: titleText, font: { size: 15 } },
+          scene: {
+            xaxis: { title: 'x₁', range: [-2, 2], autorange: false, gridcolor: '#e0e0e0' },
+            yaxis: { title: 'x₂', range: [-2, 2], autorange: false, gridcolor: '#e0e0e0' },
+            zaxis: { title: 'z', range: currentMode === 'mse' ? [-10, 10] : [-0.5, 1.5], autorange: false, gridcolor: '#e0e0e0' },
+            aspectmode: 'manual', aspectratio: { x: 1, y: 1, z: 1 },
+            camera: { eye: { x: 0, y: -2, z: 1.2 }, up: { x: 0, y: 0, z: 1 } },
+            bgcolor: '#fafafa',
+          },
+          margin: { l: 0, r: 0, t: 40, b: 0 },
+          paper_bgcolor: '#fafafa',
+          showlegend: false,
+        };
+
+        return { data: [surface, scatter], layout };
+      }
+
+      function buildRightPlot2D(t1, t2) {
+        const is01 = currentMode === '01';
+        const N = is01 ? 400 : 80;
+        const g = linspace(-3, 3, N);
+
+        const Z = [];
+        for (let j = 0; j < N; j++) {
+          const row = [];
+          for (let i = 0; i < N; i++) {
+            row.push(averageLoss2D(g[i], g[j]));
+          }
+          Z.push(row);
+        }
+
+        const surface = {
+          x: g, y: g, z: Z,
+          type: 'surface',
+          colorscale: lossColorscale,
+          contours: is01 ? undefined : { z: { show: true, usecolormap: true, project: { z: true } } },
+          showscale: false,
+          opacity: is01 ? 1 : undefined,
+        };
+
+        const currentLoss = averageLoss2D(t1, t2);
+        const marker = {
+          x: [t1], y: [t2], z: [currentLoss],
+          type: 'scatter3d', mode: 'markers',
+          marker: { size: 6, color: '#2ecc71' },
+          hovertemplate: 'θ₁=%{x:.1f}, θ₂=%{y:.1f}, J=%{z:.2f}<extra></extra>',
+        };
+
+        let titleText = '';
+        if (currentMode === 'mse') titleText = 'J(θ): MSE loss';
+        else if (currentMode === '01') titleText = 'J(θ): 0-1 loss';
+        else titleText = 'J(θ): NLL';
+
+        const layout = {
+          title: { text: titleText, font: { size: 15 } },
+          scene: {
+            xaxis: { title: 'θ₁', gridcolor: '#e0e0e0' },
+            yaxis: { title: 'θ₂', gridcolor: '#e0e0e0' },
+            zaxis: { title: 'J(θ)', gridcolor: '#e0e0e0',
+              range: is01 ? [-0.1, 1.1] : undefined,
+              autorange: is01 ? false : undefined,
+            },
+            camera: { eye: { x: 1.5, y: -1.5, z: 1.5 } },
+            bgcolor: '#fafafa',
+          },
+          margin: { l: 0, r: 0, t: 40, b: 0 },
+          paper_bgcolor: '#fafafa',
+          showlegend: false,
+        };
+
+        return { data: [surface, marker], layout };
+      }
+
+      // ============================================================
+      // Update logic
+      // ============================================================
+      function fullPlot() {
+        const theta = parseFloat(document.getElementById('theta').value);
+        document.getElementById('theta_value').textContent = theta.toFixed(1);
+
+        if (currentDim === '1d') {
+          const currentLoss = averageLoss1D(theta);
+          document.getElementById('infoLoss').textContent = currentLoss.toFixed(3);
+          const left = buildLeftPlot1D(theta);
+          const right = buildRightPlot1D(theta);
+          Plotly.newPlot('plotLeft', left.data, left.layout, cfg);
+          Plotly.newPlot('plotRight', right.data, right.layout, cfg);
+        } else {
+          const t2 = parseFloat(document.getElementById('theta2').value);
+          document.getElementById('theta2_value').textContent = t2.toFixed(1);
+          const currentLoss = averageLoss2D(theta, t2);
+          document.getElementById('infoLoss').textContent = currentLoss.toFixed(3);
+          const left = buildLeftPlot2D(theta, t2);
+          const right = buildRightPlot2D(theta, t2);
+          Plotly.newPlot('plotLeft', left.data, left.layout, cfg);
+          Plotly.newPlot('plotRight', right.data, right.layout, cfg);
+        }
+        prevDim = currentDim;
+      }
+
+      // Helper: build just the surface z-grid for the left 2D plot
+      function buildLeftZGrid(t1, t2) {
+        const is01 = currentMode === '01';
+        const N = is01 ? 400 : 80;
+        const gx = linspace(-2, 2, N);
+        const gy = linspace(-2, 2, N);
+        const zGrid = [];
+        for (let j = 0; j < N; j++) {
+          const row = [];
+          for (let i = 0; i < N; i++) row.push(modelOutput2D(gx[i], gy[j], t1, t2));
+          zGrid.push(row);
+        }
+        return zGrid;
+      }
+
+      // Helper: build just the loss z-grid for the right 2D plot
+      function buildRightZGrid(t1, t2) {
+        const N = currentMode === '01' ? 400 : 80;
+        const g = linspace(-3, 3, N);
+        const Z = [];
+        for (let j = 0; j < N; j++) {
+          const row = [];
+          for (let i = 0; i < N; i++) row.push(averageLoss2D(g[i], g[j]));
+          Z.push(row);
+        }
+        return Z;
+      }
+
+      function update() {
+        const theta = parseFloat(document.getElementById('theta').value);
+        document.getElementById('theta_value').textContent = theta.toFixed(1);
+
+        if (currentDim === '1d') {
+          const currentLoss = averageLoss1D(theta);
+          document.getElementById('infoLoss').textContent = currentLoss.toFixed(3);
+          const left = buildLeftPlot1D(theta);
+          const right = buildRightPlot1D(theta);
+          Plotly.react('plotLeft', left.data, left.layout, cfg);
+          Plotly.react('plotRight', right.data, right.layout, cfg);
+        } else {
+          const t2 = parseFloat(document.getElementById('theta2').value);
+          document.getElementById('theta2_value').textContent = t2.toFixed(1);
+          const currentLoss = averageLoss2D(theta, t2);
+          document.getElementById('infoLoss').textContent = currentLoss.toFixed(3);
+          // Update only surface z-data and marker position via restyle (preserves camera)
+          Plotly.restyle('plotLeft', { z: [buildLeftZGrid(theta, t2)] }, [0]);
+          Plotly.restyle('plotRight', { z: [buildRightZGrid(theta, t2)] }, [0]);
+          Plotly.restyle('plotRight', { x: [[theta]], y: [[t2]], z: [[currentLoss]] }, [1]);
+        }
+      }
+
+      // --- Init ---
+      fullPlot();
+
+      window.addEventListener('resize', () => {
+        Plotly.Plots.resize(document.getElementById('plotLeft'));
+        Plotly.Plots.resize(document.getElementById('plotRight'));
+      });
+    </script>
+  </body>
+</html>

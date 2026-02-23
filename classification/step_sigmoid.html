@@ -3,377 +3,396 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Step vs Sigmoid Function Demo</title>
+    <title>Step vs Sigmoid</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
-      body, html {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        overflow: hidden;
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      html, body {
+        width: 100%; height: 100%;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        background: #fafafa; color: #333;
       }
 
-      .container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 90vh;
+      .container { display: flex; height: 100%; }
+
+      .sidebar {
+        width: 240px; min-width: 240px;
+        padding: 24px 20px;
+        background: #fff;
+        border-right: 1px solid #e0e0e0;
+        display: flex; flex-direction: column;
+        gap: 18px;
+        overflow-y: auto;
       }
 
-      .plots-container {
-        display: flex;
-        justify-content: center;
-        align-items: stretch;
-        height: 80vh;
-        width: 100%;
+      .sidebar h1 { font-size: 20px; font-weight: 600; color: #222; }
+      .sidebar .eq { font-size: 15px; color: #888; margin-top: 2px; }
+
+      .control-group label {
+        display: block; font-size: 15px; font-weight: 500;
+        color: #555; margin-bottom: 6px;
       }
 
-      .plot-container {
-        flex: 0 0 50%;   /* each takes 50% */
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        box-sizing: border-box;
+      .control-group .val {
+        font-family: "SF Mono", Menlo, monospace;
+        font-size: 15px; color: #222; float: right;
       }
 
-      .plot-title {
-        font-size: 16px;
-        font-weight: bold;
-        margin: 10px 0;
-        text-align: center;
+      input[type="range"] {
+        -webkit-appearance: none; width: 100%; height: 6px;
+        border-radius: 3px; background: #e0e0e0; outline: none;
       }
 
-      #plot-step,
-      #plot-sigmoid {
-        flex: 1 1 auto;
-        width: 100%;
-        height: 100%;
-        min-height: 0;
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none; width: 16px; height: 16px;
+        border-radius: 50%; background: #555; cursor: pointer;
+        border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2);
       }
 
-      .slider-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin: 20px;
+      .control-group select {
+        width: 100%; padding: 8px 10px;
+        border: 1px solid #ddd; border-radius: 4px;
+        background: #fff; font-size: 14px;
+        font-family: inherit; cursor: pointer; outline: none;
       }
 
-      .slider-group {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        margin-right: 20px;
+      .info {
+        margin-top: auto; padding-top: 14px;
+        border-top: 1px solid #e0e0e0;
+        font-size: 14px; color: #aaa; line-height: 1.8;
       }
 
-      .footer {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
-        background-color: #f8f9fa;
-        color: #6c757d;
-        text-align: center;
-        padding: 10px 0;
-        margin-top: 20px;
-        margin-bottom: 5vh;
+      .info a {
+        color: #007bff; text-decoration: none;
       }
+      .info a:hover { text-decoration: underline; }
 
-      .footer a {
-        color: #007bff;
-        text-decoration: none;
-      }
-      .footer a:hover {
-        text-decoration: underline;
-      }
-
-      .dropdown-container {
-        margin: 0 20px;
-        text-align: center;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-      }
+      .plots { flex: 1; display: flex; height: 100%; min-width: 0; }
+      .plots > div { flex: 1; height: 100%; min-width: 0; }
     </style>
   </head>
   <body>
     <div class="container">
-
-      <div class="plots-container">
-        <div class="plot-container">
-          <div class="plot-title">Step Function</div>
-          <div id="plot-step"></div>
+      <div class="sidebar">
+        <div>
+          <h1>Step vs Sigmoid</h1>
+          <div class="eq" id="eqLabel">step(θx + θ₀)  vs  σ(θx + θ₀)</div>
         </div>
-        <div class="plot-container">
-          <div class="plot-title">Sigmoid Function</div>
-          <div id="plot-sigmoid"></div>
-        </div>
-      </div>
 
-      <!-- Sliders for 2D -->
-      <div id="sliders-2d" class="slider-container">
-        <div class="dropdown-container">
-          <label for="plot-selector-2d">Choose dimension:</label>
-          <select id="plot-selector-2d" onchange="switchPlot()">
-            <option value="2d">1d feature</option>
-            <option value="3d">2d feature</option>
+        <div class="control-group">
+          <label>Feature Dimension</label>
+          <select id="dimSelect" onchange="setDim(this.value)">
+            <option value="1d">1D</option>
+            <option value="2d">2D</option>
           </select>
         </div>
-        <div class="slider-group">
-          <label for="theta">θ:</label>
-          <input type="range" id="theta" min="-10" max="10" value="-3" step="0.1" oninput="updatePlots()" />
-          <span id="theta_value">-3</span>
+
+        <div class="control-group" id="thetaGroup">
+          <label id="thetaLabel">θ <span class="val" id="theta_val">-3.0</span></label>
+          <input type="range" id="theta" min="-10" max="10" value="-3" step="0.1" oninput="onSlider()" />
         </div>
-        <div class="slider-group">
-          <label for="theta_0">θ₀:</label>
-          <input type="range" id="theta_0" min="-10" max="10" value="0" step="0.1" oninput="updatePlots()" />
-          <span id="theta_0_value">0</span>
+
+        <div class="control-group" id="theta2Group" style="display:none">
+          <label>θ₂ <span class="val" id="theta2_val">1.0</span></label>
+          <input type="range" id="theta2" min="-10" max="10" value="1" step="0.1" oninput="onSlider()" />
+        </div>
+
+        <div class="control-group">
+          <label>θ₀ <span class="val" id="theta0_val">0.0</span></label>
+          <input type="range" id="theta0" min="-10" max="10" value="0" step="0.1" oninput="onSlider()" />
+        </div>
+
+        <div class="info">
+          Built with ❤️ by <a href="https://shenshen.mit.edu" target="_blank">Shen²</a>
+          &nbsp;|&nbsp;
+          <a href="https://github.com/shensquared/demos" target="_blank">Report a Bug</a>
         </div>
       </div>
 
-      <!-- Sliders for 3D -->
-      <div id="sliders-3d" class="slider-container" style="display: none">
-        <div class="dropdown-container">
-          <label for="plot-selector-3d">Choose dimension:</label>
-          <select id="plot-selector-3d" onchange="switchPlot()">
-            <option value="2d">1d feature</option>
-            <option value="3d">2d feature</option>
-          </select>
-        </div>
-        <div class="slider-group">
-          <label for="theta_1">θ₁:</label>
-          <input type="range" id="theta_1" min="-10" max="10" value="-3" step="0.1" oninput="updatePlots()" />
-          <span id="theta_1_value">-3</span>
-        </div>
-        <div class="slider-group">
-          <label for="theta_2">θ₂:</label>
-          <input type="range" id="theta_2" min="-10" max="10" value="1" step="0.1" oninput="updatePlots()" />
-          <span id="theta_2_value">1</span>
-        </div>
-        <div class="slider-group">
-          <label for="theta_0_3d">θ₀:</label>
-          <input type="range" id="theta_0_3d" min="-10" max="10" value="0" step="0.1" oninput="updatePlots()" />
-          <span id="theta_0_3d_value">0</span>
-        </div>
+      <div class="plots">
+        <div id="plotLeft"></div>
+        <div id="plotRight"></div>
       </div>
-    </div>
-
-    <div class="footer">
-      Built with ❤️ by&nbsp;<a href="https://shenshen.mit.edu" target="_blank">Shen²</a>
-      <span>&nbsp;|&nbsp;</span>
-      <a href="https://github.com/shensquared/demos" target="_blank">Report a Bug</a>
     </div>
 
     <script>
-      const fixedCameraSettings = {
-        eye: { x: 1.8, y: 1.8, z: 0.3 },
-        center: { x: 0, y: 0, z: 0 },
-        up: { x: 0, y: 0, z: 1 },
-        projection: { type: "perspective" }
-      };
+      let currentDim = '1d';
+      const cfg = { displayModeBar: false, responsive: true };
 
-      const step = (x, theta, theta_0) => (theta * x + theta_0 >= 0 ? 1 : 0);
-      const sigmoid = (x, theta, theta_0) => 1 / (1 + Math.exp(-(theta * x + theta_0)));
-      const step3D = (x1, x2, t1, t2, t0) => (t1 * x1 + t2 * x2 + t0 >= 0 ? 1 : 0);
-      const sigmoid3D = (x1, x2, t1, t2, t0) => 1 / (1 + Math.exp(-(t1 * x1 + t2 * x2 + t0)));
+      // --- Helpers ---
+      function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
 
-      function generateStepData2D(theta, theta_0) {
-        let x = [], y = [];
-        for (let i = -10; i <= 8; i += 0.01) {
-          x.push(i);
-          y.push(step(i, theta, theta_0));
-        }
-        return { x, y };
+      function linspace(a, b, n) {
+        const arr = [], step = (b - a) / (n - 1);
+        for (let i = 0; i < n; i++) arr.push(a + step * i);
+        return arr;
       }
 
-      function generateSigmoidData2D(theta, theta_0) {
-        let x = [], y = [];
-        for (let i = -10; i <= 8; i += 0.01) {
-          x.push(i);
-          y.push(sigmoid(i, theta, theta_0));
-        }
-        return { x, y };
+      // --- Responsive annotation font size (scales with plot width) ---
+      function annotFontSize() {
+        const w = document.getElementById('plotLeft').clientWidth || 400;
+        return Math.max(14, Math.min(22, Math.round(w / 25)));
       }
 
-      function generateVerticalLines2D(theta, theta_0) {
-        if (theta === 0) return [];
-        let jump = -theta_0 / theta;
-        if (jump < -10 || jump > 8) return [];
-        return [{
-          x: [jump, jump], y: [0, 1], mode: "lines", type: "scatter",
-          line: { color: "black", width: 2, dash: "dash" }, showlegend: false
-        }];
+      // --- Dimension switching ---
+      function setDim(dim) {
+        currentDim = dim;
+        document.getElementById('theta2Group').style.display = dim === '2d' ? '' : 'none';
+        const t = parseFloat(document.getElementById('theta').value).toFixed(1);
+        document.getElementById('thetaLabel').innerHTML = dim === '2d'
+          ? 'θ₁ <span class="val" id="theta_val">' + t + '</span>'
+          : 'θ <span class="val" id="theta_val">' + t + '</span>';
+        document.getElementById('eqLabel').textContent = dim === '1d'
+          ? 'step(θx + θ₀)  vs  σ(θx + θ₀)'
+          : 'step(θ₁x₁ + θ₂x₂ + θ₀)  vs  σ(…)';
+        fullPlot();
       }
 
-      function generateStepData3D(t1, t2, t0) {
-        let z = [], gridX1 = [], gridX2 = [];
-        for (let i = -2; i <= 2; i += 0.05) {
-          gridX1.push(i); let row = [];
-          for (let j = -2; j <= 2; j += 0.05) {
-            if (gridX2.length < 81) gridX2.push(j);
-            row.push(step3D(j, i, t1, t2, t0));
-          }
-          z.push(row);
-        }
-        return { x1: gridX1, x2: gridX2, z };
+      function getParams() {
+        const t = parseFloat(document.getElementById('theta').value);
+        const t0 = parseFloat(document.getElementById('theta0').value);
+        const t2 = parseFloat(document.getElementById('theta2').value);
+        return { t, t2, t0 };
       }
 
-      function generateSigmoidData3D(t1, t2, t0) {
-        let z = [], gridX1 = [], gridX2 = [];
-        for (let i = -2; i <= 2; i += 0.1) {
-          gridX1.push(i); let row = [];
-          for (let j = -2; j <= 2; j += 0.1) {
-            if (gridX2.length < 41) gridX2.push(j);
-            row.push(sigmoid3D(j, i, t1, t2, t0));
-          }
-          z.push(row);
-        }
-        return { x1: gridX1, x2: gridX2, z };
-      }
+      // ============================================================
+      // 1D plots
+      // ============================================================
+      function build1D() {
+        const { t, t0 } = getParams();
+        const xs = linspace(-5, 5, 800);
+        const yStep = xs.map(x => (t * x + t0 >= 0 ? 1 : 0));
+        const ySig = xs.map(x => sigmoid(t * x + t0));
 
-      function getMode() {
-        const s2dVisible = document.getElementById("sliders-2d").style.display !== "none";
-        const selector = s2dVisible ? document.getElementById("plot-selector-2d")
-                                    : document.getElementById("plot-selector-3d");
-        return selector.value;
-      }
+        // Decision boundary
+        const boundary = t !== 0 ? -t0 / t : null;
+        const inRange = boundary !== null && boundary >= -5 && boundary <= 5;
 
-      function updatePlots() {
-        const mode = getMode();
-        if (mode === "2d") {
-          const theta = parseFloat(document.getElementById("theta").value);
-          const theta_0 = parseFloat(document.getElementById("theta_0").value);
-          
-          // Update displayed values
-          document.getElementById("theta_value").textContent = theta;
-          document.getElementById("theta_0_value").textContent = theta_0;
+        const stepTraces = [
+          { x: xs, y: yStep, mode: 'lines', line: { color: '#3a7ebf', width: 2.5 }, hoverinfo: 'x+y' },
+        ];
+        const sigTraces = [
+          { x: xs, y: ySig, mode: 'lines', line: { color: '#3a7ebf', width: 2.5 }, hoverinfo: 'x+y' },
+        ];
 
-          const stepData = generateStepData2D(theta, theta_0);
-          const verticals = generateVerticalLines2D(theta, theta_0);
-          const sigmoidData = generateSigmoidData2D(theta, theta_0);
-
-          const testX = 2;
-          const sigmoidPrediction = sigmoid(testX, theta, theta_0);
-          const stepPrediction = step(testX, theta, theta_0);
-          const pointColor = sigmoidPrediction > 0.5 ? "red" : "blue";
-
-          const layout = {
-            xaxis: { title: "x", range: [-10, 8] },
-            yaxis: { title: "", range: [-0.1, 1.1] },
-            margin: { l: 50, r: 50, t: 50, b: 50 },
-            showlegend: false, autosize: true
+        if (inRange) {
+          const bndTrace = {
+            x: [boundary, boundary], y: [0, 1],
+            mode: 'lines', line: { color: '#999', width: 1.5, dash: 'dash' },
+            hoverinfo: 'skip',
           };
+          stepTraces.push(bndTrace);
+          sigTraces.push({ ...bndTrace });
+        }
 
-           const stepPoint = {
-             x: [testX], y: [stepPrediction], mode: "markers",
-             marker: { size: 20, color: pointColor, symbol: "circle", line: { color: "gold", width: 2 } },
-             showlegend: false
-           };
+        // Test point at x = 1
+        const testX = 1;
+        const stepPred = (t * testX + t0 >= 0) ? 1 : 0;
+        const sigPred = sigmoid(t * testX + t0);
+        const stepColor = stepPred >= 0.5 ? '#e74c3c' : '#3498db';
+        const sigColor = sigPred >= 0.5 ? '#e74c3c' : '#3498db';
 
-          Plotly.react("plot-step", [
-            { x: stepData.x, y: stepData.y, mode: "lines", line: { width: 2 } },
-            ...verticals, stepPoint
-          ], { ...layout, title: "step(θx + θ₀)" }, {responsive: true});
+        const mkPoint = (x, y, color) => ({
+          x: [x], y: [y], mode: 'markers',
+          marker: { size: 16, color, line: { width: 2, color: '#fff' } },
+          hovertemplate: 'x=%{x:.1f}, ŷ=%{y:.2f}<extra></extra>',
+        });
 
-           Plotly.react("plot-sigmoid", [
-             { x: sigmoidData.x, y: sigmoidData.y, mode: "lines", line: { width: 2 } },
-             { x: [testX], y: [sigmoidPrediction], mode: "markers",
-               marker: { size: 20, color: pointColor, line: { color: "gold", width: 2 } }, showlegend: false }
-           ], { ...layout, title: "sigmoid(θx + θ₀)" }, {responsive: true});
-        } else {
-          createPlots3D();
+        stepTraces.push(mkPoint(testX, stepPred, stepColor));
+        sigTraces.push(mkPoint(testX, sigPred, sigColor));
+
+        const fs = annotFontSize();
+        const mkAnnotation = (y, text) => ({
+          x: -2, y, text,
+          xanchor: 'left', yanchor: 'bottom',
+          xshift: 12, yshift: 8,
+          showarrow: false,
+          font: { size: fs, family: 'SF Mono, Menlo, monospace', color: '#333' },
+          bgcolor: 'rgba(255,255,255,0.85)',
+          borderpad: 4,
+        });
+
+        const baseLayout = {
+          xaxis: { title: { text: 'x', font: { size: 13 } }, range: [-5, 5], zeroline: false, gridcolor: '#eee' },
+          yaxis: { title: { text: '', font: { size: 13 } }, range: [-0.1, 1.1], zeroline: true, zerolinecolor: '#ccc', gridcolor: '#eee' },
+          margin: { l: 50, r: 16, t: 40, b: 44 },
+          paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',
+          showlegend: false, hovermode: 'closest',
+        };
+
+        return {
+          left: {
+            data: stepTraces,
+            layout: { ...baseLayout, title: { text: 'step(θx + θ₀)', font: { size: 15 } },
+              annotations: [mkAnnotation(stepPred, `feature x = 1<br>predicted class: ${stepPred >= 0.5 ? 'positive' : 'negative'}`)] },
+          },
+          right: {
+            data: sigTraces,
+            layout: { ...baseLayout, title: { text: 'σ(θx + θ₀)', font: { size: 15 } },
+              annotations: [mkAnnotation(sigPred, `feature x = 1<br>predicted class: ${sigPred >= 0.5 ? 'positive' : 'negative'}`)] },
+          },
+        };
+      }
+
+      // ============================================================
+      // 2D plots (3D surfaces)
+      // ============================================================
+      const surfaceColorscale = [
+        [0, '#7eafd4'], [0.4, '#c8dce8'],
+        [0.5, '#f0f0f0'],
+        [0.6, '#e8c8c8'], [1, '#d47e7e'],
+      ];
+
+      function build2D() {
+        const { t, t2, t0 } = getParams();
+
+        // Step surface — high res for clean cut
+        const Nstep = 400;
+        const gStep = linspace(-2, 2, Nstep);
+        const zStep = [];
+        for (let j = 0; j < Nstep; j++) {
+          const row = [];
+          for (let i = 0; i < Nstep; i++) {
+            row.push(t * gStep[i] + t2 * gStep[j] + t0 >= 0 ? 1 : 0);
+          }
+          zStep.push(row);
+        }
+
+        // Sigmoid surface
+        const Nsig = 80;
+        const gSig = linspace(-2, 2, Nsig);
+        const zSig = [];
+        for (let j = 0; j < Nsig; j++) {
+          const row = [];
+          for (let i = 0; i < Nsig; i++) {
+            row.push(sigmoid(t * gSig[i] + t2 * gSig[j] + t0));
+          }
+          zSig.push(row);
+        }
+
+        const mkSurface = (gx, gy, z) => ({
+          x: gx, y: gy, z,
+          type: 'surface',
+          colorscale: surfaceColorscale,
+          cmin: 0, cmax: 1,
+          showscale: false,
+          opacity: 0.85,
+          hoverinfo: 'skip',
+        });
+
+        const mkLayout = (title) => ({
+          title: { text: title, font: { size: 15 } },
+          scene: {
+            xaxis: { title: 'x₁', range: [-2, 2], autorange: false, gridcolor: '#e0e0e0' },
+            yaxis: { title: 'x₂', range: [-2, 2], autorange: false, gridcolor: '#e0e0e0' },
+            zaxis: { title: '', range: [-0.1, 1.1], autorange: false, gridcolor: '#e0e0e0' },
+            aspectmode: 'manual', aspectratio: { x: 1, y: 1, z: 0.6 },
+            camera: { eye: { x: 0, y: -2, z: 1.2 }, up: { x: 0, y: 0, z: 1 } },
+            bgcolor: '#fafafa',
+          },
+          margin: { l: 0, r: 0, t: 40, b: 0 },
+          paper_bgcolor: '#fafafa',
+          showlegend: false,
+        });
+
+        // Test point at x = [1, 1]
+        const tx1 = 1, tx2 = 1;
+        const stepPred = (t * tx1 + t2 * tx2 + t0 >= 0) ? 1 : 0;
+        const sigPred = sigmoid(t * tx1 + t2 * tx2 + t0);
+        const stepColor = stepPred >= 0.5 ? '#e74c3c' : '#3498db';
+        const sigColor = sigPred >= 0.5 ? '#e74c3c' : '#3498db';
+
+        const mkPoint3D = (x, y, z, color) => ({
+          x: [x], y: [y], z: [z],
+          type: 'scatter3d', mode: 'markers',
+          marker: { size: 8, color, line: { color: '#fff', width: 0.5 } },
+          hovertemplate: '(%{x:.1f}, %{y:.1f}) ŷ=%{z:.2f}<extra></extra>',
+        });
+
+        const fs = annotFontSize();
+        const mkAnnotation3D = (x, y, z, text) => ({
+          x, y, z, text,
+          showarrow: true, arrowhead: 0, arrowsize: 1, arrowcolor: '#999',
+          ax: 50, ay: -40,
+          font: { size: fs, family: 'SF Mono, Menlo, monospace', color: '#333' },
+          bgcolor: 'rgba(255,255,255,0.85)',
+          borderpad: 4,
+        });
+
+        const mkLayout3D = (title, ann) => {
+          const l = mkLayout(title);
+          l.scene.annotations = [ann];
+          return l;
+        };
+
+        return {
+          left: {
+            data: [mkSurface(gStep, gStep, zStep), mkPoint3D(tx1, tx2, stepPred, stepColor)],
+            layout: mkLayout3D('step(θ₁x₁ + θ₂x₂ + θ₀)', mkAnnotation3D(tx1, tx2, stepPred, `feature x = [1,1]<br>predicted class: ${stepPred >= 0.5 ? 'positive' : 'negative'}`)),
+          },
+          right: {
+            data: [mkSurface(gSig, gSig, zSig), mkPoint3D(tx1, tx2, sigPred, sigColor)],
+            layout: mkLayout3D('σ(θ₁x₁ + θ₂x₂ + θ₀)', mkAnnotation3D(tx1, tx2, sigPred, `feature x = [1,1]<br>predicted class: ${sigPred >= 0.5 ? 'positive' : 'negative'}`)),
+          },
+          zStep, zSig, stepPred, sigPred, stepColor, sigColor,
+        };
+      }
+
+      // ============================================================
+      // Update logic
+      // ============================================================
+      function updateLabels() {
+        const { t, t2, t0 } = getParams();
+        document.getElementById('theta_val').textContent = t.toFixed(1);
+        document.getElementById('theta0_val').textContent = t0.toFixed(1);
+        if (currentDim === '2d') {
+          document.getElementById('theta2_val').textContent = t2.toFixed(1);
         }
       }
 
-      function createPlots3D() {
-        const t1 = parseFloat(document.getElementById("theta_1").value);
-        const t2 = parseFloat(document.getElementById("theta_2").value);
-        const t0 = parseFloat(document.getElementById("theta_0_3d").value);
-        
-        // Update displayed values
-        document.getElementById("theta_1_value").textContent = t1;
-        document.getElementById("theta_2_value").textContent = t2;
-        document.getElementById("theta_0_3d_value").textContent = t0;
-
-        const stepData = generateStepData3D(t1, t2, t0);
-        const sigmoidData = generateSigmoidData3D(t1, t2, t0);
-
-        const testX1 = 1, testX2 = 1;
-        const sigmoidPrediction = sigmoid3D(testX1, testX2, t1, t2, t0);
-        const stepPrediction = step3D(testX1, testX2, t1, t2, t0);
-        const pointColor = sigmoidPrediction > 0.5 ? "red" : "blue";
-
-        const layout = (title) => ({
-          title,
-          scene: {
-            xaxis: { title: "x₁", range: [-2, 2] },
-            yaxis: { title: "x₂", range: [-2, 2] },
-            zaxis: { title, range: [-0.1, 1.1] },
-            aspectmode: "cube",
-            camera: fixedCameraSettings
-          },
-          margin: { l: 0, r: 0, t: 50, b: 0 }
-        });
-
-        const surface = (data) => ({
-          x: data.x1, y: data.x2, z: data.z,
-          type: "surface",
-          colorscale: [[0, "rgb(0,0,255)"], [1, "rgb(255,0,0)"]],
-          showscale: false
-        });
-
-        const verticalLine = (x, y) => ({
-          x: [x, x], y: [y, y], z: [-0.1, 1.1],
-          mode: "lines", type: "scatter3d",
-          line: { color: "black", width: 3, dash: "dash" },
-          showlegend: false
-        });
-
-         const testPointStep = {
-           x: [testX1], y: [testX2], z: [stepPrediction],
-           mode: "markers", type: "scatter3d",
-           marker: { size: 20, color: pointColor, symbol: "circle", line: { color: "gold", width: 2 } },
-           showlegend: false
-         };
-
-         const testPointSigmoid = {
-           x: [testX1], y: [testX2], z: [sigmoidPrediction],
-           mode: "markers", type: "scatter3d",
-           marker: { size: 20, color: pointColor, line: { color: "gold", width: 2 } },
-           showlegend: false
-         };
-
-        Plotly.react("plot-step",
-          [surface(stepData), verticalLine(testX1, testX2), testPointStep],
-          layout("step(θ₁x₁ + θ₂x₂ + θ₀)"), {responsive: true}
-        );
-        Plotly.react("plot-sigmoid",
-          [surface(sigmoidData), verticalLine(testX1, testX2), testPointSigmoid],
-          layout("sigmoid(θ₁x₁ + θ₂x₂ + θ₀)"), {responsive: true}
-        );
+      function fullPlot() {
+        updateLabels();
+        if (currentDim === '1d') {
+          const { left, right } = build1D();
+          Plotly.newPlot('plotLeft', left.data, left.layout, cfg);
+          Plotly.newPlot('plotRight', right.data, right.layout, cfg);
+        } else {
+          const { left, right } = build2D();
+          Plotly.newPlot('plotLeft', left.data, left.layout, cfg);
+          Plotly.newPlot('plotRight', right.data, right.layout, cfg);
+        }
       }
 
-      function switchPlot() {
-        const selector2d = document.getElementById("plot-selector-2d");
-        const selector3d = document.getElementById("plot-selector-3d");
-        const mode2dVisible = document.getElementById("sliders-2d").style.display !== "none";
-        const activeSelector = mode2dVisible ? selector2d : selector3d;
-        const mode = activeSelector.value;
-
-        selector2d.value = mode;
-        selector3d.value = mode;
-
-        document.getElementById("sliders-2d").style.display = mode === "2d" ? "flex" : "none";
-        document.getElementById("sliders-3d").style.display = mode === "3d" ? "flex" : "none";
-        updatePlots();
+      function onSlider() {
+        updateLabels();
+        if (currentDim === '1d') {
+          const { left, right } = build1D();
+          Plotly.react('plotLeft', left.data, left.layout, cfg);
+          Plotly.react('plotRight', right.data, right.layout, cfg);
+        } else {
+          const r = build2D();
+          Plotly.restyle('plotLeft', { z: [r.zStep] }, [0]);
+          Plotly.restyle('plotRight', { z: [r.zSig] }, [0]);
+          Plotly.restyle('plotLeft', { z: [[r.stepPred]], 'marker.color': [r.stepColor] }, [1]);
+          Plotly.restyle('plotRight', { z: [[r.sigPred]], 'marker.color': [r.sigColor] }, [1]);
+          // Update 3D annotations
+          Plotly.relayout('plotLeft', { 'scene.annotations[0].z': r.stepPred, 'scene.annotations[0].text': `feature x = [1,1]<br>predicted class: ${r.stepPred >= 0.5 ? 'positive' : 'negative'}` });
+          Plotly.relayout('plotRight', { 'scene.annotations[0].z': r.sigPred, 'scene.annotations[0].text': `feature x = [1,1]<br>predicted class: ${r.sigPred >= 0.5 ? 'positive' : 'negative'}` });
+        }
       }
 
-      window.onresize = () => {
-        Plotly.Plots.resize(document.getElementById("plot-step"));
-        Plotly.Plots.resize(document.getElementById("plot-sigmoid"));
-      };
+      // --- Init ---
+      fullPlot();
 
-      window.onload = switchPlot;
+      // Resize plots and rescale annotations
+      let resizeTimer;
+      window.addEventListener('resize', () => {
+        Plotly.Plots.resize(document.getElementById('plotLeft'));
+        Plotly.Plots.resize(document.getElementById('plotRight'));
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => fullPlot(), 150);
+      });
     </script>
   </body>
 </html>
