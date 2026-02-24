@@ -87,11 +87,11 @@
     <div class="header">
       <div class="header-scenario">
         Single training point: <strong>x = 1, y = +1</strong> &nbsp;—&nbsp;
-        increasing θ drives g(1) → 1 and loss → 0, but θ grows without bound
+        increasing θ always reduces the loss, so NLL has no finite minimizer
       </div>
       <div class="loss-display">
         NLL loss: <span id="loss_value">—</span>
-        <span class="overfit-label" id="overfit_label">⚠ overfitting!</span>
+        <span class="overfit-label" id="overfit_label">↓ loss → 0</span>
       </div>
     </div>
     <div class="plots-container">
@@ -111,6 +111,11 @@
       </div>
     </div>
     <script>
+      function formatG(g) {
+        const s = g.toFixed(3);
+        return s === "1.000" ? "> 0.999" : s;
+      }
+
       function sigmoid(x, theta, theta0) {
         return 1 / (1 + Math.exp(-(theta * x + theta0)));
       }
@@ -183,7 +188,7 @@
               xanchor: g_at1 > 0.85 ? 'right' : 'left',
               yanchor: 'bottom',
               xshift: g_at1 > 0.85 ? -10 : 10,
-              text: `g(1) = ${g_at1.toFixed(3)}`,
+              text: `g(1) = ${formatG(g_at1)}`,
               showarrow: false,
               font: { size: 12, color: markerColor(g_at1) },
               bgcolor: 'rgba(255,255,255,0.7)'
@@ -208,7 +213,7 @@
 
         let layoutRight = {
           margin: { l: 55, r: 20, t: 30, b: 50 },
-          title: { text: "NLL loss — lower is better, but can decrease forever", font: { size: 13 } },
+          title: { text: "NLL loss — decreases toward 0, but never reaches it", font: { size: 13 } },
           xaxis: { title: "g(1): sigmoid output at x = 1", range: [0, 1] },
           yaxis: { title: "−log(g(1))   [NLL loss]", range: [0, 10] },
           showlegend: false,
@@ -223,7 +228,7 @@
           annotations: [
             {
               x: 0.925, y: 9.2,
-              text: "overfit<br>zone",
+              text: "loss → 0",
               showarrow: false,
               font: { size: 11, color: '#cc0000' },
               align: 'center'
