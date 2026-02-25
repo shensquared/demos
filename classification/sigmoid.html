@@ -38,25 +38,6 @@
         width: 95vw;
         height: 90vh;
       }
-      .footer {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
-        background-color: #f8f9fa;
-        color: #6c757d;
-        text-align: center;
-        padding: 10px 0;
-        margin-top: 20px;
-        margin-bottom: 5vh;
-      }
-      .footer a {
-        color: #007bff;
-        text-decoration: none;
-      }
-      .footer a:hover {
-        text-decoration: underline;
-      }
       .dropdown-container {
         margin-bottom: 20px;
         margin-top: 20px;
@@ -143,22 +124,22 @@
           <span id="theta_0_3d_value">0</span>
         </div>
         <button id="toggleZ0" onclick="toggleZ0Surface()" style="display: none">
-          Toggle z=0.5 Surface
+          Toggle σ = 0.5 Plane
         </button>
       </div>
-    </div>
-    <div class="footer">
-      Built with ❤️ by&nbsp;<a href="https://shenshen.mit.edu" target="_blank"
-        >Shen²</a
-      >
-      <span>&nbsp;|&nbsp;</span>
-      <a href="https://github.com/shensquared/demos" target="_blank"
-        >Report a Bug</a
-      >
     </div>
 
     <script>
       let z0SurfaceVisible = false;
+      const halfLine = {
+        type: 'line', xref: 'paper', x0: 0, x1: 1, y0: 0.5, y1: 0.5,
+        line: { color: 'rgba(140,140,140,.5)', width: 1.5, dash: 'dash' },
+      };
+      const surfaceColorscale = [
+        [0, '#7eafd4'], [0.4, '#c8dce8'],
+        [0.5, '#f0f0f0'],
+        [0.6, '#e8c8c8'], [1, '#d47e7e'],
+      ];
       const fixedCameraSettings = {
         eye: { x: 1.5, y: 1.5, z: 1.5 },
         center: { x: 0, y: 0, z: 0 },
@@ -179,7 +160,7 @@
       function generateSigmoidData2D(theta, theta_0) {
         let x = [];
         let y = [];
-        for (let i = -10; i <= 10; i += 0.1) {
+        for (let i = -10; i <= 10; i += 0.02) {
           x.push(i);
           y.push(sigmoid(i, theta, theta_0));
         }
@@ -188,24 +169,20 @@
 
       // Generate data points for 3D sigmoid function, with x1 and x2 limited to [-2, 2]
       function generateSigmoidData3D(theta_1, theta_2, theta_0) {
-        let x1 = [];
-        let x2 = [];
-        let z = [];
         let gridX1 = [];
         let gridX2 = [];
+        let z = [];
 
+        for (let i = -2; i <= 2; i += 0.1) {
+          gridX2.push(i);
+        }
         for (let i = -2; i <= 2; i += 0.1) {
           gridX1.push(i);
           let zRow = [];
-          for (let j = -2; j <= 2; j += 0.1) {
-            if (gridX2.length < (2 / 0.1) * 2 + 1) gridX2.push(j);
-            zRow.push(sigmoid3D(j, i, theta_1, theta_2, theta_0));
+          for (let j = 0; j < gridX2.length; j++) {
+            zRow.push(sigmoid3D(gridX2[j], i, theta_1, theta_2, theta_0));
           }
-          // console.log("zRow");
-          // console.log(zRow);
           z.push(zRow);
-          // console.log("z");
-          // console.log(z);
         }
         return { x1: gridX1, x2: gridX2, z: z };
       }
@@ -218,16 +195,17 @@
           xaxis: { title: "x", range: [-10, 10] },
           yaxis: { title: "sigmoid(θx + θ₀)", range: [0, 1] },
           margin: { l: 50, r: 10, t: 50, b: 50 },
+          shapes: [halfLine],
         };
 
         Plotly.newPlot(
           "plot",
-          [{ x: data.x, y: data.y, mode: "lines" }],
+          [{ x: data.x, y: data.y, mode: "lines", line: { color: '#3a7ebf' } }],
           layout
         );
       }
 
-      // Plot 3D sigmoid with axis labels and z=0.5 surface
+      // Plot 3D sigmoid with axis labels and σ=0.5 surface
       function createPlot3D() {
         var data = generateSigmoidData3D(-3, 1, 0); // Initial θ₁ = -3, θ₂ = 1, θ₀ = 0
         var z0data = generateZ05SurfaceData(); // Generate the z=0.5 surface
@@ -251,40 +229,38 @@
               y: data.x2,
               z: data.z,
               type: "surface",
-              colorscale: [
-                [0, "rgb(0, 0, 255)"], // Blue
-                [1, "rgb(255, 0, 0)"], // Red
-              ], // Custom blue-to-red colorscale
-              showscale: false, // Hide the color scale legend
+              colorscale: surfaceColorscale,
+              cmin: 0, cmax: 1,
+              showscale: false,
             },
-            z0data, // Add the z=0.5 surface
+            z0data,
           ],
           layout
         );
       }
 
-      // Generate z=0.5 surface data
+      // Generate σ=0.5 surface data (flat plane at z=0.5)
       function generateZ05SurfaceData() {
-        let x = [];
-        let y = [];
+        let grid = [];
         let z = [];
         for (let i = -2; i <= 2; i += 0.1) {
-          x.push(i);
+          grid.push(i);
           let zRow = [];
           for (let j = -2; j <= 2; j += 0.1) {
-            zRow.push(0.5); // All points on the z=0.5 plane
+            zRow.push(0.5);
           }
           z.push(zRow);
         }
         return {
-          x: x,
-          y: x,
+          x: grid,
+          y: grid,
           z: z,
           type: "surface",
+          colorscale: [[0, 'rgba(140,140,140,.3)'], [1, 'rgba(140,140,140,.3)']],
           showscale: false,
-          opacity: 0.5,
-          name: "z05Surface",
-          visible: z0SurfaceVisible, // Use the current visibility state
+          opacity: 0.4,
+          hoverinfo: 'skip',
+          visible: z0SurfaceVisible,
         };
       }
 
@@ -306,12 +282,13 @@
         var data = generateSigmoidData2D(theta, theta_0);
         var layout = {
           title: "Sigmoid Function: sigmoid(θx + θ₀)",
-          xaxis: { title: "x" },
+          xaxis: { title: "x", range: [-10, 10] },
           yaxis: { title: "sigmoid(θx + θ₀)", range: [0, 1] },
           margin: { l: 50, r: 10, t: 50, b: 50 },
+          shapes: [halfLine],
         };
 
-        Plotly.react("plot", [{ x: data.x, y: data.y, mode: "lines" }], layout);
+        Plotly.react("plot", [{ x: data.x, y: data.y, mode: "lines", line: { color: '#3a7ebf' } }], layout);
       }
 
       // Update 3D plot when sliders change
@@ -328,7 +305,14 @@
           theta_0.toFixed(1);
 
         var data = generateSigmoidData3D(theta_1, theta_2, theta_0);
-        var z0data = generateZ05SurfaceData(); // Regenerate the z=0.5 surface with the current visibility state
+        var z0data = generateZ05SurfaceData();
+
+        // Preserve current camera angle if user has rotated the plot
+        var currentCamera = fixedCameraSettings;
+        var plotEl = document.getElementById("plot3d");
+        if (plotEl._fullLayout && plotEl._fullLayout.scene) {
+          currentCamera = plotEl._fullLayout.scene._scene.getCamera();
+        }
 
         var layout = {
           title: "Sigmoid Function: sigmoid(θ₁x₁ + θ₂x₂ + θ₀)",
@@ -336,9 +320,10 @@
             xaxis: { title: "x₁", range: [-2, 2] },
             yaxis: { title: "x₂", range: [-2, 2] },
             zaxis: { title: "sigmoid(θ₁x₁ + θ₂x₂ + θ₀)", range: [0, 1] },
-            aspectmode: "cube", // Keep axis scales equal
-            camera: fixedCameraSettings, // Keep camera view fixed
+            aspectmode: "cube",
+            camera: currentCamera,
           },
+          margin: { l: 0, r: 0, t: 50, b: 0 },
         };
 
         Plotly.react(
@@ -349,16 +334,14 @@
               y: data.x2,
               z: data.z,
               type: "surface",
-              colorscale: [
-                [0, "rgb(0, 0, 255)"], // Blue
-                [1, "rgb(255, 0, 0)"], // Red
-              ], // Custom blue-to-red colorscale
-              showscale: false, // Hide the color scale legend
+              colorscale: surfaceColorscale,
+              cmin: 0, cmax: 1,
+              showscale: false,
             },
             z0data,
           ],
           layout
-        ); // Reapply the z=0.5 plane with its visibility state
+        );
       }
 
       // Switch between 2D and 3D plots
@@ -392,5 +375,10 @@
         switchPlot();
       };
     </script>
+    <div style="position:fixed;bottom:0;width:100%;text-align:center;padding:6px 0;font-size:13px;color:#888;background:#fafafa;">
+      <a href="https://github.com/shensquared/demos" target="_blank" style="color:#007bff;text-decoration:none;">Source</a>
+      <span style="margin:0 6px;">|</span>
+      <a href="https://github.com/shensquared/demos/issues" target="_blank" style="color:#007bff;text-decoration:none;">Report a Bug</a>
+    </div>
   </body>
 </html>

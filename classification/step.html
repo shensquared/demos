@@ -148,17 +148,18 @@
       </div>
     </div>
     <div class="footer">
-      Built with ❤️ by&nbsp;<a href="https://shenshen.mit.edu" target="_blank"
-        >Shen²</a
-      >
+      <a href="https://github.com/shensquared/demos" target="_blank">Source</a>
       <span>&nbsp;|&nbsp;</span>
-      <a href="https://github.com/shensquared/demos" target="_blank"
-        >Report a Bug</a
-      >
+      <a href="https://github.com/shensquared/demos/issues" target="_blank">Report a Bug</a>
     </div>
 
     <script>
       let z0SurfaceVisible = false;
+      const surfaceColorscale = [
+        [0, '#7eafd4'], [0.4, '#c8dce8'],
+        [0.5, '#f0f0f0'],
+        [0.6, '#e8c8c8'], [1, '#d47e7e'],
+      ];
       const fixedCameraSettings = {
         eye: { x: 1.5, y: 1.5, z: 1.5 },
         center: { x: 0, y: 0, z: 0 },
@@ -267,11 +268,9 @@
               y: data.x2,
               z: data.z,
               type: "surface",
-              colorscale: [
-                [0, "rgb(0, 0, 255)"], // Blue
-                [1, "rgb(255, 0, 0)"], // Red
-              ], // Custom blue-to-red colorscale
-              showscale: false, // Hide the color scale legend
+              colorscale: surfaceColorscale,
+              cmin: 0, cmax: 1,
+              showscale: false,
             },
             z0data, // Add the z=0.5 surface
           ],
@@ -369,11 +368,9 @@
               y: data.x2,
               z: data.z,
               type: "surface",
-              colorscale: [
-                [0, "rgb(0, 0, 255)"], // Blue
-                [1, "rgb(255, 0, 0)"], // Red
-              ], // Custom blue-to-red colorscale
-              showscale: false, // Hide the color scale legend
+              colorscale: surfaceColorscale,
+              cmin: 0, cmax: 1,
+              showscale: false,
             },
             z0data,
           ],
