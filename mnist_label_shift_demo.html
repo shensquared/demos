@@ -371,34 +371,6 @@
             margin-top: 12px;
         }
 
-        /* Summary */
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-        .summary-stat {
-            padding: 12px;
-            border: 1px solid var(--rule-light);
-            text-align: center;
-        }
-        .summary-stat .num {
-            font-family: var(--mono);
-            font-size: 24px;
-            font-weight: 600;
-            line-height: 1.2;
-        }
-        .summary-stat .lbl {
-            font-size: 11px;
-            color: var(--ink-light);
-            margin-top: 2px;
-        }
-        .summary-stat.g { background: var(--good-bg); }
-        .summary-stat.g .num { color: var(--good); }
-        .summary-stat.b { background: var(--bad-bg); }
-        .summary-stat.b .num { color: var(--bad); }
-
         .insight-box {
             padding: 14px 16px;
             border-left: 3px solid var(--ink);
@@ -433,7 +405,6 @@
         @media (max-width: 1100px) {
             .app { grid-template-columns: 300px 1fr; }
             .two-col { grid-template-columns: 1fr; }
-            .summary-grid { grid-template-columns: repeat(2, 1fr); }
         }
         @media (max-width: 800px) {
             .app { grid-template-columns: 1fr; }
@@ -750,7 +721,7 @@ async function startTraining() {
     networkTrained = true;
     document.getElementById('testButton').disabled = false;
     document.getElementById('trainingResult').innerHTML =
-        `<div class="status ok" style="margin-top:10px;">Done — ${(finalTrainAcc * 100).toFixed(1)}% train accuracy</div>`;
+        `<div class="status ok" style="margin-top:10px;">Training complete</div>`;
     document.getElementById('totalAccuracy').textContent = `${(finalTrainAcc * 100).toFixed(1)}%`;
 }
 
@@ -911,20 +882,7 @@ function showLabelShiftSummary() {
     document.getElementById('placeholderCard').style.display = 'none';
     document.getElementById('summaryCard').style.display = '';
 
-    const analyzed = Object.keys(classResults).map(Number);
-    const majR = analyzed.filter(d => MAJORITY_CLASSES.has(d));
-    const minR = analyzed.filter(d => !MAJORITY_CLASSES.has(d));
-    const avgMaj = majR.reduce((s, d) => s + classResults[d].accuracy, 0) / majR.length;
-    const avgMin = minR.reduce((s, d) => s + classResults[d].accuracy, 0) / minR.length;
-    const overall = (avgMaj * 3 + avgMin * 7) / 10;
-
     document.getElementById('shiftAnalysis').innerHTML = `
-        <div class="summary-grid">
-            <div class="summary-stat g"><div class="num">${(finalTrainAcc*100).toFixed(1)}%</div><div class="lbl">Train Acc</div></div>
-            <div class="summary-stat g"><div class="num">${(avgMaj*100).toFixed(1)}%</div><div class="lbl">Majority Test</div></div>
-            <div class="summary-stat b"><div class="num">${(avgMin*100).toFixed(1)}%</div><div class="lbl">Minority Test</div></div>
-            <div class="summary-stat"><div class="num">${(overall*100).toFixed(1)}%</div><div class="lbl">Overall Test</div></div>
-        </div>
         <div class="insight-box">
             <strong>P(Y) changed between train and test.</strong>
             <ul>
