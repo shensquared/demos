@@ -3,8 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Activation Function Demo with Weighted Plot</title>
-    <!-- Include Plotly.js -->
+    <title>Two-Layer Network Demo</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
       body,
@@ -13,37 +12,57 @@
         padding: 0;
         height: 100%;
         overflow: hidden;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        background-color: #fafafa;
+        color: #333;
       }
-      /* Header at the top with dropdown */
-      .header {
+      .top-bar {
+        display: grid;
+        grid-template-columns: 50% 50%;
         width: 100vw;
-        text-align: center;
-        padding: 10px;
-        background-color: #ddd;
-        font-family: sans-serif;
+        background-color: #f0f0f0;
+        border-bottom: 1px solid #ddd;
+        font-size: 14px;
       }
-      .grid-container {
+      .top-bar-left, .top-bar-right {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px 10px;
+        font-weight: 600;
+        color: #555;
+        letter-spacing: 0.3px;
+        gap: 8px;
+      }
+      .top-bar-left {
+        border-right: 1px solid #ddd;
+      }
+      .top-bar select {
+        font-size: 14px;
+        font-weight: 400;
+        padding: 2px 8px;
+        border-radius: 4px;
+        border: 1px solid #bbb;
+      }
+      .main-container {
         display: grid;
         grid-template-columns: 50% 50%;
         grid-template-rows: 1fr 1fr;
         width: 100vw;
-        height: 90vh; /* slightly less to accommodate header */
+        height: calc(100vh - 60px);
       }
       .grid-item {
-        padding: 10px;
+        padding: 4px 10px;
       }
-      /* Left column items: the two activation function plots (sigmoid or relu) */
       .left-column {
         grid-column: 1;
       }
-      /* First plot on the left (cell 1) */
       #cell-1 {
         grid-row: 1;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
       }
-      /* Second plot on the left (cell 2) */
       #cell-2 {
         grid-row: 2;
         display: flex;
@@ -58,14 +77,40 @@
       .slider-container {
         display: flex;
         justify-content: space-around;
-        padding: 10px;
+        padding: 4px 10px;
       }
       .slider-group {
         display: flex;
         flex-direction: column;
         align-items: center;
+        font-size: 14px;
       }
-      /* Right column: weighted plot centered vertically */
+      .slider-group label {
+        font-weight: 500;
+        color: #555;
+        margin-bottom: 2px;
+      }
+      .slider-group span {
+        font-size: 13px;
+        color: #888;
+        margin-top: 1px;
+      }
+      input[type="range"] {
+        accent-color: #1565c0;
+      }
+      .footer {
+        text-align: center;
+        padding: 4px 0;
+        font-size: 12px;
+        color: #999;
+      }
+      .footer a {
+        color: #1565c0;
+        text-decoration: none;
+      }
+      .footer a:hover {
+        text-decoration: underline;
+      }
       .right-column {
         grid-column: 2;
         grid-row: 1 / span 2;
@@ -74,79 +119,40 @@
         justify-content: center;
         align-items: center;
       }
-      .footer {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
-        background-color: #f8f9fa;
-        color: #6c757d;
-        text-align: center;
-        padding: 10px 0;
-        grid-column: span 2;
-      }
-      .footer a {
-        color: #007bff;
-        text-decoration: none;
-      }
-      .footer a:hover {
-        text-decoration: underline;
-      }
     </style>
   </head>
   <body>
-    <!-- Header with dropdown to select activation function -->
-    <div class="header">
-      <label for="activationSelect">First-layer Activation Function: </label>
-      <select id="activationSelect" onchange="changeActivation()">
-        <option value="sigmoid" selected>Sigmoid</option>
-        <option value="relu">ReLU</option>
-      </select>
+    <div class="top-bar">
+      <div class="top-bar-left">
+        Layer 1: two neurons
+        <select id="activationSelect" onchange="changeActivation()">
+          <option value="sigmoid" selected>Sigmoid</option>
+          <option value="relu">ReLU</option>
+        </select>
+      </div>
+      <div class="top-bar-right">Layer 2 preactivation</div>
     </div>
 
-    <div class="grid-container">
+    <div class="main-container">
+
       <!-- Left column, first row: First activation function plot and sliders -->
       <div id="cell-1" class="grid-item left-column">
         <div class="plot-container" id="plot3d"></div>
         <div class="slider-container">
           <div class="slider-group">
-            <label for="theta_11">θ₁₁</label>
-            <input
-              type="range"
-              id="theta_11"
-              min="-5"
-              max="5"
-              value="5"
-              step="0.1"
-              oninput="updatez1()"
-            />
+            <label>&theta;&#x2081;&#x2081;</label>
+            <input type="range" id="theta_11" min="-5" max="5" value="5" step="0.1" oninput="updatez1()" />
             <span id="theta_11_value">5</span>
           </div>
           <div class="slider-group">
-            <label for="theta_12">θ₁₂</label>
-            <input
-              type="range"
-              id="theta_12"
-              min="-5"
-              max="5"
-              value="5"
-              step="0.1"
-              oninput="updatez1()"
-            />
-            <span id="theta_12_value">5</span>
+            <label>&theta;&#x2081;&#x2082;</label>
+            <input type="range" id="theta_12" min="-5" max="5" value="-5" step="0.1" oninput="updatez1()" />
+            <span id="theta_12_value">-5</span>
           </div>
           <div class="slider-group">
-            <label for="theta_10">θ₁₀</label>
-            <input
-              type="range"
-              id="theta_10"
-              min="-1"
-              max="1"
-              value="-1"
-              step="0.1"
-              oninput="updatez1()"
-            />
-            <span id="theta_10_value">-1</span>
+            <label>&theta;&#x2081;&#x2080;</label>
+            <input type="range" id="theta_10" min="-5" max="5" value="1" step="0.1" oninput="updatez1()" />
+            <span id="theta_10_value">1</span>
           </div>
         </div>
       </div>
@@ -156,127 +162,89 @@
         <div class="plot-container" id="plot3d_2"></div>
         <div class="slider-container">
           <div class="slider-group">
-            <label for="theta_21">θ₂₁</label>
-            <input
-              type="range"
-              id="theta_21"
-              min="-5"
-              max="5"
-              value="-5"
-              step="0.1"
-              oninput="updatez2()"
-            />
+            <label>&theta;&#x2082;&#x2081;</label>
+            <input type="range" id="theta_21" min="-5" max="5" value="-5" step="0.1" oninput="updatez2()" />
             <span id="theta_21_value">-5</span>
           </div>
           <div class="slider-group">
-            <label for="theta_22">θ₂₂</label>
-            <input
-              type="range"
-              id="theta_22"
-              min="-5"
-              max="5"
-              value="-5"
-              step="0.1"
-              oninput="updatez2()"
-            />
-            <span id="theta_22_value">-5</span>
+            <label>&theta;&#x2082;&#x2082;</label>
+            <input type="range" id="theta_22" min="-5" max="5" value="5" step="0.1" oninput="updatez2()" />
+            <span id="theta_22_value">5</span>
           </div>
           <div class="slider-group">
-            <label for="theta_20">θ₂₀</label>
-            <input
-              type="range"
-              id="theta_20"
-              min="-1"
-              max="1"
-              value="-1"
-              step="0.1"
-              oninput="updatez2()"
-            />
-            <span id="theta_20_value">-1</span>
+            <label>&theta;&#x2082;&#x2080;</label>
+            <input type="range" id="theta_20" min="-5" max="5" value="1" step="0.1" oninput="updatez2()" />
+            <span id="theta_20_value">1</span>
           </div>
         </div>
       </div>
 
-      <!-- Right column, spanning both rows: Weighted plot, centered vertically -->
+      <!-- Right column, spanning both rows: Weighted output -->
       <div class="grid-item right-column">
         <div class="plot-container" id="plot_weighted"></div>
         <div class="slider-container">
           <div class="slider-group">
-            <label for="w1">w₁</label>
-            <input
-              type="range"
-              id="w1"
-              min="-5"
-              max="5"
-              value="5"
-              step="0.1"
-              oninput="update_layer2()"
-            />
-            <span id="w1_value">5</span>
+            <label>w&#x2081;</label>
+            <input type="range" id="w1" min="-5" max="5" value="1" step="0.1" oninput="update_layer2()" />
+            <span id="w1_value">1</span>
           </div>
           <div class="slider-group">
-            <label for="w2">w₂</label>
-            <input
-              type="range"
-              id="w2"
-              min="-5"
-              max="5"
-              value="5"
-              step="0.1"
-              oninput="update_layer2()"
-            />
-            <span id="w2_value">5</span>
+            <label>w&#x2082;</label>
+            <input type="range" id="w2" min="-5" max="5" value="1" step="0.1" oninput="update_layer2()" />
+            <span id="w2_value">1</span>
           </div>
           <div class="slider-group">
-            <label for="w0">w₀</label>
-            <input
-              type="range"
-              id="w0"
-              min="-5"
-              max="5"
-              value="-4"
-              step="0.1"
-              oninput="update_layer2()"
-            />
-            <span id="w0_value">-4</span>
+            <label>w&#x2080;</label>
+            <input type="range" id="w0" min="-5" max="5" value="-1" step="0.1" oninput="update_layer2()" />
+            <span id="w0_value">-1</span>
           </div>
         </div>
       </div>
     </div>
 
     <div class="footer">
-      Built with ❤️ by&nbsp;<a href="https://shenshen.mit.edu" target="_blank">Shen²</a>
+      <a href="https://github.com/shensquared/demos" target="_blank">Source</a>
       <span>&nbsp;|&nbsp;</span>
-      <a href="https://github.com/shensquared/demos" target="_blank">Report a Bug</a>
+      <a href="https://github.com/shensquared/demos/issues" target="_blank">Report a Bug</a>
     </div>
 
     <script>
-      // Global variable for activation function
+      // Lec04 colorscale: blue -> white -> red
+      var demoColorscale = [
+        [0.0, '#7eafd4'],
+        [0.4, '#c8dce8'],
+        [0.5, '#f0f0f0'],
+        [0.6, '#e8c8c8'],
+        [1.0, '#d47e7e']
+      ];
+
       var activationFunction = "sigmoid";
 
-      // Change activation based on dropdown selection and update the plots
       function changeActivation() {
         activationFunction = document.getElementById("activationSelect").value;
         updatez1();
         updatez2();
       }
 
-      // Fixed camera settings for 3D plots
       const fixedCameraSettings = {
         eye: { x: 1.5, y: 1.5, z: 1.5 },
         center: { x: 0, y: 0, z: 0 },
         up: { x: 0, y: 0, z: 1 },
       };
 
-      // Increase grid resolution for a smoother surface
+      const axisStyle = {
+        gridcolor: '#e0e0e0',
+        zerolinecolor: '#ccc',
+        backgroundcolor: '#fafafa',
+      };
+
       const gridStep = 0.05;
       const numPoints = Math.floor(4 / gridStep) + 1;
       const x1Grid = Array.from({ length: numPoints }, (_, i) => -2 + i * gridStep);
       const x2Grid = Array.from({ length: numPoints }, (_, i) => -2 + i * gridStep);
 
-      let z1Data, z2Data; // Store data for weighted plot
+      let z1Data, z2Data;
 
-      // Compute activation value based on the selected function
       function computeActivation(x1, x2, theta1, theta2, theta0) {
         const linear = theta1 * x1 + theta2 * x2 + theta0;
         if (activationFunction === "sigmoid") {
@@ -286,7 +254,6 @@
         }
       }
 
-      // Generate data for the first activation function plot (z₁)
       function generatez1_2(theta_11, theta_12, theta_10) {
         let z = [];
         for (let i = 0; i < x1Grid.length; i++) {
@@ -296,10 +263,9 @@
           }
           z.push(zRow);
         }
-        return { x1: x1Grid, y: x2Grid, z: z, showscale: false };
+        return { z: z };
       }
 
-      // Generate data for the second activation function plot (z₂)
       function generatez2(theta_21, theta_22, theta_20) {
         let z = [];
         for (let i = 0; i < x1Grid.length; i++) {
@@ -309,42 +275,79 @@
           }
           z.push(zRow);
         }
-        return { x1: x1Grid, y: x2Grid, z: z, showscale: false };
+        return { z: z };
       }
 
-      // Create/update the weighted 3D plot (w₁z₁ + w₂z₂ + w₀)
+      function makeLayout(zTitle, zRange) {
+        return {
+          margin: { l: 0, r: 0, t: 0, b: 0 },
+          paper_bgcolor: '#fafafa',
+          scene: {
+            xaxis: {
+              title: "x\u2081",
+              range: [-2, 2],
+              tickmode: "array",
+              tickvals: [-1, 0, 1],
+              ...axisStyle
+            },
+            yaxis: {
+              title: "x\u2082",
+              range: [-2, 2],
+              tickmode: "array",
+              tickvals: [-1, 0, 1],
+              ...axisStyle
+            },
+            zaxis: {
+              title: zTitle,
+              range: zRange,
+              ...axisStyle
+            },
+            aspectmode: "cube",
+            camera: fixedCameraSettings
+          }
+        };
+      }
+
       function update_layer2() {
         var w1 = parseFloat(document.getElementById("w1").value);
         var w2 = parseFloat(document.getElementById("w2").value);
         var w0 = parseFloat(document.getElementById("w0").value);
         let zWeighted = [];
+        let zMin = Infinity, zMax = -Infinity;
         for (let i = 0; i < z1Data.length; i++) {
           let zRow = [];
           for (let j = 0; j < z1Data[i].length; j++) {
-            zRow.push(w1 * z1Data[i][j] + w2 * z2Data[i][j] + w0);
+            var val = w1 * z1Data[i][j] + w2 * z2Data[i][j] + w0;
+            zRow.push(val);
+            if (val < zMin) zMin = val;
+            if (val > zMax) zMax = val;
           }
           zWeighted.push(zRow);
         }
+        // Auto-range with some padding
+        var pad = (zMax - zMin) * 0.1 || 1;
         var layout = {
           margin: { l: 0, r: 0, t: 0, b: 0 },
+          paper_bgcolor: '#fafafa',
           scene: {
-            xaxis: { 
-              title: "x₁", 
+            xaxis: {
+              title: "x\u2081",
               range: [-2, 2],
               tickmode: "array",
-              tickvals: [-1, 0, 1]
+              tickvals: [-1, 0, 1],
+              ...axisStyle
             },
-            yaxis: { 
-              title: "x₂", 
+            yaxis: {
+              title: "x\u2082",
               range: [-2, 2],
               tickmode: "array",
-              tickvals: [-1, 0, 1]
+              tickvals: [-1, 0, 1],
+              ...axisStyle
             },
-            zaxis: { 
-              title: "w₁z₁ + w₂z₂ + w₀", 
-              range: [-5, 5],
-              tickmode: "array",
-              tickvals: [-1, 0, 1]
+            zaxis: {
+              title: "w\u2081a\u2081 + w\u2082a\u2082 + w\u2080",
+              range: [zMin - pad, zMax + pad],
+              ...axisStyle
             },
             aspectmode: "cube",
             camera: fixedCameraSettings
@@ -356,97 +359,49 @@
           z: zWeighted,
           type: "surface",
           showscale: false,
+          colorscale: demoColorscale
         }], layout);
         document.getElementById("w1_value").textContent = w1;
         document.getElementById("w2_value").textContent = w2;
         document.getElementById("w0_value").textContent = w0;
       }
 
-      // Create the first 3D plot (z₁)
       function createz1() {
         var theta_11 = parseFloat(document.getElementById("theta_11").value);
         var theta_12 = parseFloat(document.getElementById("theta_12").value);
         var theta_10 = parseFloat(document.getElementById("theta_10").value);
         var data = generatez1_2(theta_11, theta_12, theta_10);
         z1Data = data.z;
-        var layout = {
-          margin: { l: 0, r: 0, t: 0, b: 0 },
-          scene: {
-            xaxis: { 
-              title: "x₁", 
-              range: [-2, 2],
-              tickmode: "array",
-              tickvals: [-1, 0, 1]
-            },
-            yaxis: { 
-              title: "x₂", 
-              range: [-2, 2],
-              tickmode: "array",
-              tickvals: [-1, 0, 1]
-            },
-            zaxis: { 
-              title: "z₁ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") +
-                     "(θ₁₁x₁ + θ₁₂x₂ + θ₁₀)", 
-              range: [0, activationFunction === "sigmoid" ? 1 : 10],
-              tickmode: "array",
-              tickvals: [-1, 0, 1]
-            },
-            aspectmode: "cube",
-            showscale: false
-          }
-        };
+        var fname = activationFunction === "sigmoid" ? "\u03c3" : "ReLU";
+        var zRange = [0, activationFunction === "sigmoid" ? 1 : 10];
+        var layout = makeLayout(
+          "a\u2081 = " + fname + "(\u03b8\u2081\u2081x\u2081 + \u03b8\u2081\u2082x\u2082 + \u03b8\u2081\u2080)",
+          zRange
+        );
         Plotly.newPlot("plot3d", [{
-          x: x1Grid,
-          y: x2Grid,
-          z: data.z,
-          type: "surface",
-          showscale: false
+          x: x1Grid, y: x2Grid, z: data.z,
+          type: "surface", showscale: false, colorscale: demoColorscale
         }], layout);
       }
 
-      // Create the second 3D plot (z₂)
       function createz2() {
         var theta_21 = parseFloat(document.getElementById("theta_21").value);
         var theta_22 = parseFloat(document.getElementById("theta_22").value);
         var theta_20 = parseFloat(document.getElementById("theta_20").value);
         var data = generatez2(theta_21, theta_22, theta_20);
         z2Data = data.z;
-        var layout = {
-          margin: { l: 0, r: 0, t: 0, b: 0 },
-          scene: {
-            xaxis: { 
-              title: "x₁", 
-              range: [-2, 2],
-              tickmode: "array",
-              tickvals: [-1, 0, 1]
-            },
-            yaxis: { 
-              title: "x₂", 
-              range: [-2, 2],
-              tickmode: "array",
-              tickvals: [-1, 0, 1]
-            },
-            zaxis: { 
-              title: "z₂ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") +
-                     "(θ₂₁x₁ + θ₂₂x₂ + θ₂₀)", 
-              range: [0, activationFunction === "sigmoid" ? 1 : 10],
-              tickmode: "array",
-              tickvals: [-1, 0, 1]
-            },
-            aspectmode: "cube",
-            camera: fixedCameraSettings
-          }
-        };
+        var fname = activationFunction === "sigmoid" ? "\u03c3" : "ReLU";
+        var zRange = [0, activationFunction === "sigmoid" ? 1 : 10];
+        var layout = makeLayout(
+          "a\u2082 = " + fname + "(\u03b8\u2082\u2081x\u2081 + \u03b8\u2082\u2082x\u2082 + \u03b8\u2082\u2080)",
+          zRange
+        );
         Plotly.newPlot("plot3d_2", [{
-          x: x1Grid,
-          y: x2Grid,
-          z: data.z,
-          type: "surface",
-          showscale: false
+          x: x1Grid, y: x2Grid, z: data.z,
+          type: "surface", showscale: false, colorscale: demoColorscale
         }], layout);
       }
 
-      // Update the first 3D plot (z₁)
       function updatez1() {
         var theta_11 = parseFloat(document.getElementById("theta_11").value);
         var theta_12 = parseFloat(document.getElementById("theta_12").value);
@@ -456,43 +411,19 @@
         document.getElementById("theta_10_value").textContent = theta_10;
         var data = generatez1_2(theta_11, theta_12, theta_10);
         z1Data = data.z;
-        var layout = {
-          margin: { l: 0, r: 0, t: 0, b: 0 },
-          scene: {
-            xaxis: { 
-              title: "x₁", 
-              range: [-2, 2],
-              tickmode: "array",
-              tickvals: [-1, 0, 1]
-            },
-            yaxis: { 
-              title: "x₂", 
-              range: [-2, 2],
-              tickmode: "array",
-              tickvals: [-1, 0, 1]
-            },
-            zaxis: { 
-              title: "z₁ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") +
-                     "(θ₁₁x₁ + θ₁₂x₂ + θ₁₀)", 
-              range: [0, activationFunction === "sigmoid" ? 1 : 10],
-              tickmode: "array",
-              tickvals: [-1, 0, 1]
-            },
-            aspectmode: "cube",
-            showscale: false
-          }
-        };
+        var fname = activationFunction === "sigmoid" ? "\u03c3" : "ReLU";
+        var zRange = [0, activationFunction === "sigmoid" ? 1 : 10];
+        var layout = makeLayout(
+          "a\u2081 = " + fname + "(\u03b8\u2081\u2081x\u2081 + \u03b8\u2081\u2082x\u2082 + \u03b8\u2081\u2080)",
+          zRange
+        );
         Plotly.react("plot3d", [{
-          x: x1Grid,
-          y: x2Grid,
-          z: data.z,
-          type: "surface",
-          showscale: false
+          x: x1Grid, y: x2Grid, z: data.z,
+          type: "surface", showscale: false, colorscale: demoColorscale
         }], layout);
         update_layer2();
       }
 
-      // Update the second 3D plot (z₂)
       function updatez2() {
         var theta_21 = parseFloat(document.getElementById("theta_21").value);
         var theta_22 = parseFloat(document.getElementById("theta_22").value);
@@ -502,43 +433,19 @@
         document.getElementById("theta_20_value").textContent = theta_20;
         var data = generatez2(theta_21, theta_22, theta_20);
         z2Data = data.z;
-        var layout = {
-          margin: { l: 0, r: 0, t: 0, b: 0 },
-          scene: {
-            xaxis: { 
-              title: "x₁", 
-              range: [-2, 2],
-              tickmode: "array",
-              tickvals: [-1, 0, 1]
-            },
-            yaxis: { 
-              title: "x₂", 
-              range: [-2, 2],
-              tickmode: "array",
-              tickvals: [-1, 0, 1]
-            },
-            zaxis: { 
-              title: "z₂ = " + (activationFunction === "sigmoid" ? "σ" : "ReLU") +
-                     "(θ₂₁x₁ + θ₂₂x₂ + θ₂₀)", 
-              range: [0, activationFunction === "sigmoid" ? 1 : 10],
-              tickmode: "array",
-              tickvals: [-1, 0, 1]
-            },
-            aspectmode: "cube",
-            camera: fixedCameraSettings
-          }
-        };
+        var fname = activationFunction === "sigmoid" ? "\u03c3" : "ReLU";
+        var zRange = [0, activationFunction === "sigmoid" ? 1 : 10];
+        var layout = makeLayout(
+          "a\u2082 = " + fname + "(\u03b8\u2082\u2081x\u2081 + \u03b8\u2082\u2082x\u2082 + \u03b8\u2082\u2080)",
+          zRange
+        );
         Plotly.react("plot3d_2", [{
-          x: x1Grid,
-          y: x2Grid,
-          z: data.z,
-          type: "surface",
-          showscale: false
+          x: x1Grid, y: x2Grid, z: data.z,
+          type: "surface", showscale: false, colorscale: demoColorscale
         }], layout);
         update_layer2();
       }
 
-      // Initialize the plots on window load
       window.onload = function () {
         document.getElementById("theta_11_value").textContent = document.getElementById("theta_11").value;
         document.getElementById("theta_12_value").textContent = document.getElementById("theta_12").value;
@@ -554,7 +461,6 @@
         update_layer2();
       };
 
-      // Optional: Resize plots on window resize
       window.addEventListener("resize", function () {
         Plotly.Plots.resize(document.getElementById("plot3d"));
         Plotly.Plots.resize(document.getElementById("plot3d_2"));
