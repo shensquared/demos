@@ -140,17 +140,17 @@
         <div class="plot-container" id="plot3d"></div>
         <div class="slider-container">
           <div class="slider-group">
-            <label>&theta;&#x2081;&#x2081;</label>
+            <label>w&#x2081;&#x2081;</label>
             <input type="range" id="theta_11" min="-5" max="5" value="5" step="0.1" oninput="updatez1()" />
             <span id="theta_11_value">5</span>
           </div>
           <div class="slider-group">
-            <label>&theta;&#x2081;&#x2082;</label>
+            <label>w&#x2081;&#x2082;</label>
             <input type="range" id="theta_12" min="-5" max="5" value="-5" step="0.1" oninput="updatez1()" />
             <span id="theta_12_value">-5</span>
           </div>
           <div class="slider-group">
-            <label>&theta;&#x2081;&#x2080;</label>
+            <label>w&#x2081;&#x2080;</label>
             <input type="range" id="theta_10" min="-5" max="5" value="1" step="0.1" oninput="updatez1()" />
             <span id="theta_10_value">1</span>
           </div>
@@ -162,17 +162,17 @@
         <div class="plot-container" id="plot3d_2"></div>
         <div class="slider-container">
           <div class="slider-group">
-            <label>&theta;&#x2082;&#x2081;</label>
+            <label>w&#x2082;&#x2081;</label>
             <input type="range" id="theta_21" min="-5" max="5" value="-5" step="0.1" oninput="updatez2()" />
             <span id="theta_21_value">-5</span>
           </div>
           <div class="slider-group">
-            <label>&theta;&#x2082;&#x2082;</label>
+            <label>w&#x2082;&#x2082;</label>
             <input type="range" id="theta_22" min="-5" max="5" value="5" step="0.1" oninput="updatez2()" />
             <span id="theta_22_value">5</span>
           </div>
           <div class="slider-group">
-            <label>&theta;&#x2082;&#x2080;</label>
+            <label>w&#x2082;&#x2080;</label>
             <input type="range" id="theta_20" min="-5" max="5" value="1" step="0.1" oninput="updatez2()" />
             <span id="theta_20_value">1</span>
           </div>
@@ -375,7 +375,7 @@
         var fname = activationFunction === "sigmoid" ? "\u03c3" : "ReLU";
         var zRange = [0, activationFunction === "sigmoid" ? 1 : 10];
         var layout = makeLayout(
-          "a\u2081 = " + fname + "(\u03b8\u2081\u2081x\u2081 + \u03b8\u2081\u2082x\u2082 + \u03b8\u2081\u2080)",
+          "a\u2081 = " + fname + "(w\u2081\u2081x\u2081 + w\u2081\u2082x\u2082 + w\u2081\u2080)",
           zRange
         );
         Plotly.newPlot("plot3d", [{
@@ -393,7 +393,7 @@
         var fname = activationFunction === "sigmoid" ? "\u03c3" : "ReLU";
         var zRange = [0, activationFunction === "sigmoid" ? 1 : 10];
         var layout = makeLayout(
-          "a\u2082 = " + fname + "(\u03b8\u2082\u2081x\u2081 + \u03b8\u2082\u2082x\u2082 + \u03b8\u2082\u2080)",
+          "a\u2082 = " + fname + "(w\u2082\u2081x\u2081 + w\u2082\u2082x\u2082 + w\u2082\u2080)",
           zRange
         );
         Plotly.newPlot("plot3d_2", [{
@@ -414,7 +414,7 @@
         var fname = activationFunction === "sigmoid" ? "\u03c3" : "ReLU";
         var zRange = [0, activationFunction === "sigmoid" ? 1 : 10];
         var layout = makeLayout(
-          "a\u2081 = " + fname + "(\u03b8\u2081\u2081x\u2081 + \u03b8\u2081\u2082x\u2082 + \u03b8\u2081\u2080)",
+          "a\u2081 = " + fname + "(w\u2081\u2081x\u2081 + w\u2081\u2082x\u2082 + w\u2081\u2080)",
           zRange
         );
         Plotly.react("plot3d", [{
@@ -436,7 +436,7 @@
         var fname = activationFunction === "sigmoid" ? "\u03c3" : "ReLU";
         var zRange = [0, activationFunction === "sigmoid" ? 1 : 10];
         var layout = makeLayout(
-          "a\u2082 = " + fname + "(\u03b8\u2082\u2081x\u2081 + \u03b8\u2082\u2082x\u2082 + \u03b8\u2082\u2080)",
+          "a\u2082 = " + fname + "(w\u2082\u2081x\u2081 + w\u2082\u2082x\u2082 + w\u2082\u2080)",
           zRange
         );
         Plotly.react("plot3d_2", [{
