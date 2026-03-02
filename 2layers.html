@@ -140,17 +140,17 @@
         <div class="plot-container" id="plot3d"></div>
         <div class="slider-container">
           <div class="slider-group">
-            <label>w&#x2081;&#x2081;</label>
+            <label id="label_11">w&#x2081;&#x2081;</label>
             <input type="range" id="theta_11" min="-5" max="5" value="5" step="0.1" oninput="updatez1()" />
             <span id="theta_11_value">5</span>
           </div>
           <div class="slider-group">
-            <label>w&#x2081;&#x2082;</label>
+            <label id="label_12">w&#x2081;&#x2082;</label>
             <input type="range" id="theta_12" min="-5" max="5" value="-5" step="0.1" oninput="updatez1()" />
             <span id="theta_12_value">-5</span>
           </div>
           <div class="slider-group">
-            <label>w&#x2081;&#x2080;</label>
+            <label id="label_10">w&#x2081;&#x2080;</label>
             <input type="range" id="theta_10" min="-5" max="5" value="1" step="0.1" oninput="updatez1()" />
             <span id="theta_10_value">1</span>
           </div>
@@ -162,17 +162,17 @@
         <div class="plot-container" id="plot3d_2"></div>
         <div class="slider-container">
           <div class="slider-group">
-            <label>w&#x2082;&#x2081;</label>
+            <label id="label_21">w&#x2082;&#x2081;</label>
             <input type="range" id="theta_21" min="-5" max="5" value="-5" step="0.1" oninput="updatez2()" />
             <span id="theta_21_value">-5</span>
           </div>
           <div class="slider-group">
-            <label>w&#x2082;&#x2082;</label>
+            <label id="label_22">w&#x2082;&#x2082;</label>
             <input type="range" id="theta_22" min="-5" max="5" value="5" step="0.1" oninput="updatez2()" />
             <span id="theta_22_value">5</span>
           </div>
           <div class="slider-group">
-            <label>w&#x2082;&#x2080;</label>
+            <label id="label_20">w&#x2082;&#x2080;</label>
             <input type="range" id="theta_20" min="-5" max="5" value="1" step="0.1" oninput="updatez2()" />
             <span id="theta_20_value">1</span>
           </div>
@@ -184,17 +184,17 @@
         <div class="plot-container" id="plot_weighted"></div>
         <div class="slider-container">
           <div class="slider-group">
-            <label>w&#x2081;</label>
+            <label id="label_w1">w&#x2081;</label>
             <input type="range" id="w1" min="-5" max="5" value="1" step="0.1" oninput="update_layer2()" />
             <span id="w1_value">1</span>
           </div>
           <div class="slider-group">
-            <label>w&#x2082;</label>
+            <label id="label_w2">w&#x2082;</label>
             <input type="range" id="w2" min="-5" max="5" value="1" step="0.1" oninput="update_layer2()" />
             <span id="w2_value">1</span>
           </div>
           <div class="slider-group">
-            <label>w&#x2080;</label>
+            <label id="label_w0">w&#x2080;</label>
             <input type="range" id="w0" min="-5" max="5" value="-1" step="0.1" oninput="update_layer2()" />
             <span id="w0_value">-1</span>
           </div>
@@ -220,8 +220,29 @@
 
       var activationFunction = "sigmoid";
 
+      function weightSymbol() {
+        return activationFunction === "sigmoid" ? "\u03B8" : "w";
+      }
+
+      function updateLabels() {
+        var s = weightSymbol();
+        // Layer 1 neuron 1
+        document.getElementById("label_11").textContent = s + "\u2081\u2081";
+        document.getElementById("label_12").textContent = s + "\u2081\u2082";
+        document.getElementById("label_10").textContent = s + "\u2081\u2080";
+        // Layer 1 neuron 2
+        document.getElementById("label_21").textContent = s + "\u2082\u2081";
+        document.getElementById("label_22").textContent = s + "\u2082\u2082";
+        document.getElementById("label_20").textContent = s + "\u2082\u2080";
+        // Layer 2
+        document.getElementById("label_w1").textContent = s + "\u2081";
+        document.getElementById("label_w2").textContent = s + "\u2082";
+        document.getElementById("label_w0").textContent = s + "\u2080";
+      }
+
       function changeActivation() {
         activationFunction = document.getElementById("activationSelect").value;
+        updateLabels();
         updatez1();
         updatez2();
       }
@@ -345,7 +366,7 @@
               ...axisStyle
             },
             zaxis: {
-              title: "w\u2081a\u2081 + w\u2082a\u2082 + w\u2080",
+              title: weightSymbol() + "\u2081a\u2081 + " + weightSymbol() + "\u2082a\u2082 + " + weightSymbol() + "\u2080",
               range: [zMin - pad, zMax + pad],
               ...axisStyle
             },
@@ -373,9 +394,10 @@
         var data = generatez1_2(theta_11, theta_12, theta_10);
         z1Data = data.z;
         var fname = activationFunction === "sigmoid" ? "\u03c3" : "ReLU";
+        var s = weightSymbol();
         var zRange = [0, activationFunction === "sigmoid" ? 1 : 10];
         var layout = makeLayout(
-          "a\u2081 = " + fname + "(w\u2081\u2081x\u2081 + w\u2081\u2082x\u2082 + w\u2081\u2080)",
+          "a\u2081 = " + fname + "(" + s + "\u2081\u2081x\u2081 + " + s + "\u2081\u2082x\u2082 + " + s + "\u2081\u2080)",
           zRange
         );
         Plotly.newPlot("plot3d", [{
@@ -391,9 +413,10 @@
         var data = generatez2(theta_21, theta_22, theta_20);
         z2Data = data.z;
         var fname = activationFunction === "sigmoid" ? "\u03c3" : "ReLU";
+        var s = weightSymbol();
         var zRange = [0, activationFunction === "sigmoid" ? 1 : 10];
         var layout = makeLayout(
-          "a\u2082 = " + fname + "(w\u2082\u2081x\u2081 + w\u2082\u2082x\u2082 + w\u2082\u2080)",
+          "a\u2082 = " + fname + "(" + s + "\u2082\u2081x\u2081 + " + s + "\u2082\u2082x\u2082 + " + s + "\u2082\u2080)",
           zRange
         );
         Plotly.newPlot("plot3d_2", [{
@@ -412,9 +435,10 @@
         var data = generatez1_2(theta_11, theta_12, theta_10);
         z1Data = data.z;
         var fname = activationFunction === "sigmoid" ? "\u03c3" : "ReLU";
+        var s = weightSymbol();
         var zRange = [0, activationFunction === "sigmoid" ? 1 : 10];
         var layout = makeLayout(
-          "a\u2081 = " + fname + "(w\u2081\u2081x\u2081 + w\u2081\u2082x\u2082 + w\u2081\u2080)",
+          "a\u2081 = " + fname + "(" + s + "\u2081\u2081x\u2081 + " + s + "\u2081\u2082x\u2082 + " + s + "\u2081\u2080)",
           zRange
         );
         Plotly.react("plot3d", [{
@@ -434,9 +458,10 @@
         var data = generatez2(theta_21, theta_22, theta_20);
         z2Data = data.z;
         var fname = activationFunction === "sigmoid" ? "\u03c3" : "ReLU";
+        var s = weightSymbol();
         var zRange = [0, activationFunction === "sigmoid" ? 1 : 10];
         var layout = makeLayout(
-          "a\u2082 = " + fname + "(w\u2082\u2081x\u2081 + w\u2082\u2082x\u2082 + w\u2082\u2080)",
+          "a\u2082 = " + fname + "(" + s + "\u2082\u2081x\u2081 + " + s + "\u2082\u2082x\u2082 + " + s + "\u2082\u2080)",
           zRange
         );
         Plotly.react("plot3d_2", [{
@@ -447,6 +472,14 @@
       }
 
       window.onload = function () {
+        // Allow ?embed=sigmoid or ?embed=relu to set default activation
+        var params = new URLSearchParams(window.location.search);
+        var embed = params.get("embed");
+        if (embed === "sigmoid" || embed === "relu") {
+          activationFunction = embed;
+          document.getElementById("activationSelect").value = embed;
+        }
+        updateLabels();
         document.getElementById("theta_11_value").textContent = document.getElementById("theta_11").value;
         document.getElementById("theta_12_value").textContent = document.getElementById("theta_12").value;
         document.getElementById("theta_10_value").textContent = document.getElementById("theta_10").value;
