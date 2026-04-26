@@ -339,20 +339,20 @@ def plot_values(values=None, horizon=2, policy="optimal", color_scheme="bw", sav
                         # Adjust right triangle text slightly to the left to avoid going out of bounds
                         if action == 'right':
                             center_x -= 0.05
-                        ax.text(center_x, center_y, format_number(value), 
-                               ha='center', va='center', fontsize=35, fontfamily='DejaVu Sans')
+                        ax.text(center_x, center_y, format_number(value),
+                               ha='center', va='center', fontsize=35, fontfamily='Palatino')
                 else:
                     # V-values: just show the value in the center
                     value = values.get(state, 0)
                     color = get_color(value)
                     rect = plt.Rectangle((x, y), 1, 1, facecolor=color, edgecolor='black')
                     ax.add_patch(rect)
-                    ax.text(x+0.5, y+0.5, format_number(value), 
-                           ha='center', va='center', fontsize=40, fontweight='bold', fontfamily='DejaVu Sans')  # Increased font size for V-values
+                    ax.text(x+0.5, y+0.5, format_number(value),
+                           ha='center', va='center', fontsize=40, fontfamily='Palatino')
             else:
                 # Just show state number
-                ax.text(x+0.5, y+0.5, str(state), 
-                       ha='center', va='center', fontsize=12, fontweight='bold', fontfamily='DejaVu Sans')
+                ax.text(x+0.5, y+0.5, str(state),
+                       ha='center', va='center', fontsize=12, fontfamily='Palatino')
                 
                 # Draw dashed lines for empty grid with more narrow spacing
                 ax.plot([x, x+1], [y+1, y], 'k', linestyle=(0, (3, 5)), linewidth=1)  # Top-right to bottom-left
@@ -371,16 +371,17 @@ def plot_values(values=None, horizon=2, policy="optimal", color_scheme="bw", sav
         plt.show()
 
 
-def plot_custom_grid(values_dict=None, save_path=None, highlight=None):
+def plot_custom_grid(values_dict=None, save_path=None, highlight=None, show_grey_zeros=False):
     """
     Create an empty transparent grid and plot specified (state, action) values.
-    
+
     Args:
         values_dict: Dictionary mapping (state, action) -> value
                     Example: {(1, 'up'): 0.5, (2, 'right'): 1.2, (3, 'down'): -0.3}
         save_path: Optional path to save the plot
         highlight: Optional tuple (state, action) to highlight with background color #e4efc7
-    
+        show_grey_zeros: If True, show "0" in light grey for entries not in values_dict
+
     Returns:
         fig, ax: matplotlib figure and axes objects (if save_path is None)
     """
@@ -447,15 +448,18 @@ def plot_custom_grid(values_dict=None, save_path=None, highlight=None):
                                 linestyle=(0, (3, 5)), linewidth=1)  # More narrow dashed lines
                 ax.add_patch(polygon)
                 
-                # Only add text if value is non-zero (i.e., was explicitly set)
+                # Add text: explicit values in black, unvisited as grey "0" if requested
+                center_x = sum(p[0] for p in triangle) / 3
+                center_y = sum(p[1] for p in triangle) / 3
+                if action == 'right':
+                    center_x -= 0.05
                 if (state, action) in values_dict:
-                    center_x = sum(p[0] for p in triangle) / 3
-                    center_y = sum(p[1] for p in triangle) / 3
-                    # Adjust right triangle text slightly to the left to avoid going out of bounds
-                    if action == 'right':
-                        center_x -= 0.05
-                    ax.text(center_x, center_y, format_number(value), 
-                           ha='center', va='center', fontsize=35, fontfamily='DejaVu Sans')
+                    ax.text(center_x, center_y, format_number(value),
+                           ha='center', va='center', fontsize=35, fontfamily='Palatino')
+                elif show_grey_zeros:
+                    ax.text(center_x, center_y, '0',
+                           ha='center', va='center', fontsize=35, fontfamily='Palatino',
+                           color='#bbbbbb')
     
     if save_path:
         # Create directory if it doesn't exist (matching plot_values behavior)
