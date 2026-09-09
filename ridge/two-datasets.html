@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Two Datasets, One Tiny Perturbation</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fafafa;
+            color: #333;
+            overflow: hidden;
+        }
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding: 10px 14px 8px;
+            gap: 8px;
+        }
+        .topbar {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .mode-group {
+            display: flex;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .mode-group button {
+            padding: 7px 16px;
+            font-size: 15px;
+            font-family: inherit;
+            border: none;
+            background: #fff;
+            color: #777;
+            cursor: pointer;
+            transition: all .15s;
+        }
+        .mode-group button:not(:last-child) { border-right: 1px solid #ddd; }
+        .mode-group button.active { background: #555; color: #fff; }
+        .eq {
+            flex: 1;
+            min-width: 0;
+            font-size: 15px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .eq .a { color: #cc3b2f; }
+        .eq .b { color: #3c78d8; }
+        .eq .sep { color: #bbb; margin: 0 10px; }
+        .main {
+            flex: 1;
+            display: flex;
+            gap: 14px;
+            min-height: 0;
+        }
+        .tables {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            justify-content: center;
+        }
+        table {
+            border-collapse: collapse;
+            font-size: 13px;
+            font-variant-numeric: tabular-nums;
+            background: #fff;
+            border: 1px solid #e4e4e4;
+            border-radius: 4px;
+            transition: opacity .2s;
+        }
+        table.dim { opacity: 0.3; }
+        caption {
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 0 0 4px 2px;
+        }
+        table.a caption { color: #cc3b2f; }
+        table.b caption { color: #3c78d8; }
+        th, td {
+            padding: 3px 9px;
+            text-align: right;
+        }
+        th {
+            font-weight: 500;
+            color: #888;
+            border-bottom: 1px solid #e4e4e4;
+        }
+        td .pert { color: #111; font-weight: 600; }
+        #plot { flex: 1; min-width: 0; }
+        .legend {
+            font-size: 12px;
+            color: #666;
+            white-space: nowrap;
+        }
+        .legend .dot {
+            display: inline-block;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            margin: 0 4px 0 10px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="topbar">
+            <div class="mode-group" id="modeGroup">
+                <button data-mode="a">dataset A</button>
+                <button data-mode="b">dataset B</button>
+                <button data-mode="both">both</button>
+            </div>
+            <div class="eq" id="eq"></div>
+            <div class="legend">
+                <span class="dot" style="background:#cc3b2f"></span>A
+                <span class="dot" style="background:#3c78d8"></span>B
+            </div>
+        </div>
+        <div class="main">
+            <div class="tables">
+                <table class="a" id="tableA"></table>
+                <table class="b" id="tableB"></table>
+            </div>
+            <div id="plot"></div>
+        </div>
+    </div>
+
+    <script>
+        // HW1 Worcester-temperature data: x1 = Cambridge, x2 = Boston, y = Worcester (°F).
+        // A is the rounded readings; B is the precise readings, a measurement-noise-sized perturbation of A.
+        const DATA = {
+            a: { x1: [78, 79, 81, 82], x2: [76, 78, 82, 84], y: [78, 77, 80, 83],
+                 color: '#cc3b2f', light: '#f4c7c3', label: 'A' },
+            b: { x1: [78.001, 78.998, 81.002, 82.002], x2: [75.994, 77.997, 82.009, 84.006], y: [78, 77, 80, 83],
+                 color: '#3c78d8', light: '#c9daf8', label: 'B' },
+        };
+
+        // OLS with offset, the way HW1's sklearn fit does it: centre x and y, solve the
+        // 2×2 normal equations by pseudo-inverse, recover the offset from the means.
+        // Dataset A is exactly collinear once the offset column is in (x2 = 2·x1 − 80 on
+        // every row), so its plane is one of infinitely many; the pseudo-inverse returns
+        // the minimum-norm one, which is what HW1 showed.
+        function fitPlane(d) {
+            const n = d.y.length;
+            const mean = v => v.reduce((s, x) => s + x, 0) / n;
+            const m1 = mean(d.x1), m2 = mean(d.x2), my = mean(d.y);
+            let a = 0, b = 0, c = 0, r1 = 0, r2 = 0;
+            for (let i = 0; i < n; i++) {
+                const u = d.x1[i] - m1, v = d.x2[i] - m2, w = d.y[i] - my;
+                a += u * u; b += u * v; c += v * v; r1 += u * w; r2 += v * w;
+            }
+            // eigen-decompose the symmetric 2×2 [[a,b],[b,c]]
+            const tr = a + c, det = a * c - b * b, disc = Math.sqrt(Math.max(tr * tr / 4 - det, 0));
+            const l1 = tr / 2 + disc, l2 = tr / 2 - disc;
+            const e1 = Math.abs(b) > 1e-12 ? [l1 - c, b] : (a >= c ? [1, 0] : [0, 1]);
+            const n1 = Math.hypot(e1[0], e1[1]); e1[0] /= n1; e1[1] /= n1;
+            const e2 = [-e1[1], e1[0]];
+            const tol = 1e-10 * l1;
+            let t1 = 0, t2 = 0;
+            for (const [lam, e] of [[l1, e1], [l2, e2]]) {
+                if (lam <= tol) continue;
+                const p = (e[0] * r1 + e[1] * r2) / lam;
+                t1 += p * e[0]; t2 += p * e[1];
+            }
+            return { theta: [t1, t2, my - t1 * m1 - t2 * m2], singular: l2 <= tol };
+        }
+        const FIT = { a: fitPlane(DATA.a), b: fitPlane(DATA.b) };
+        const THETA = { a: FIT.a.theta, b: FIT.b.theta };
+
+        // Plane patch over the data box; plotly clips it to the fixed z-range below.
+        const X1 = [77.5, 82.5], X2 = [75.5, 84.5], ZR = [-300, 450];
+        function planeTrace(key) {
+            const th = THETA[key], d = DATA[key];
+            const gx = [], gy = [], gz = [];
+            const G = 24;
+            for (let i = 0; i <= G; i++) gx.push(X1[0] + i * (X1[1] - X1[0]) / G);
+            for (let j = 0; j <= G; j++) gy.push(X2[0] + j * (X2[1] - X2[0]) / G);
+            for (let j = 0; j <= G; j++) {
+                const row = [];
+                for (let i = 0; i <= G; i++) row.push(th[0] * gx[i] + th[1] * gy[j] + th[2]);
+                gz.push(row);
+            }
+            return {
+                type: 'surface', x: gx, y: gy, z: gz,
+                colorscale: [[0, d.light], [1, d.color]],
+                opacity: 0.55, showscale: false, hoverinfo: 'skip',
+                name: 'plane ' + d.label,
+            };
+        }
+        function pointsTrace(key) {
+            const d = DATA[key];
+            return {
+                type: 'scatter3d', mode: 'markers',
+                x: d.x1, y: d.x2, z: d.y,
+                marker: { size: 7, color: d.color, line: { color: '#fff', width: 1.5 } },
+                hovertemplate: '(%{x}, %{y}) → %{z}<extra>' + d.label + '</extra>',
+                name: 'data ' + d.label,
+            };
+        }
+
+        const axisStyle = {
+            titlefont: { size: 14, color: '#333' },
+            tickfont: { size: 10, color: '#999' },
+            nticks: 5,
+            gridcolor: '#ddd',
+        };
+        const layout = {
+            scene: {
+                xaxis: { title: 'Cambridge (x₁)', range: X1, ...axisStyle },
+                yaxis: { title: 'Boston (x₂)', range: X2, ...axisStyle },
+                zaxis: { title: 'Worcester (y)', range: ZR, ...axisStyle },
+                camera: { eye: { x: 1.45, y: 1.1, z: 0.5 } },
+                aspectmode: 'manual',
+                aspectratio: { x: 1.4, y: 1.4, z: 1 },
+            },
+            margin: { l: 0, r: 0, t: 0, b: 0 },
+            showlegend: false,
+            paper_bgcolor: '#fafafa',
+        };
+
+        function fmtEq(key) {
+            const th = THETA[key];
+            const s = v => (v < 0 ? '− ' : '+ ') + Math.abs(v).toFixed(3);
+            let eq = `y = ${th[0].toFixed(3)} x₁ ${s(th[1])} x₂ ${s(th[2])}`;
+            if (FIT[key].singular) eq += ' <span style="color:#999;font-size:13px">(XᵀX singular; min-norm plane, as in HW1)</span>';
+            return eq;
+        }
+
+        function renderTables() {
+            for (const key of ['a', 'b']) {
+                const d = DATA[key], other = DATA[key === 'a' ? 'b' : 'a'];
+                const t = document.getElementById('table' + key.toUpperCase());
+                let html = `<caption>dataset ${d.label}</caption><tr><th>Cambridge</th><th>Boston</th><th>Worcester</th></tr>`;
+                for (let i = 0; i < 4; i++) {
+                    const cell = (v, o) => (v === o ? String(v) : `<span class="pert">${v}</span>`);
+                    html += `<tr><td>${cell(d.x1[i], other.x1[i])}</td><td>${cell(d.x2[i], other.x2[i])}</td><td>${d.y[i]}</td></tr>`;
+                }
+                t.innerHTML = html;
+            }
+        }
+
+        let mode = 'a';
+        function render() {
+            const keys = mode === 'both' ? ['a', 'b'] : [mode];
+            const traces = [];
+            for (const k of keys) traces.push(planeTrace(k));
+            for (const k of keys) traces.push(pointsTrace(k));
+            Plotly.react('plot', traces, layout, { responsive: true, displayModeBar: false });
+
+            document.querySelectorAll('#modeGroup button').forEach(b =>
+                b.classList.toggle('active', b.dataset.mode === mode));
+            document.getElementById('tableA').classList.toggle('dim', !keys.includes('a'));
+            document.getElementById('tableB').classList.toggle('dim', !keys.includes('b'));
+            document.getElementById('eq').innerHTML = keys
+                .map(k => `<span class="${k}">${fmtEq(k)}</span>`)
+                .join('<span class="sep">|</span>');
+        }
+
+        document.querySelectorAll('#modeGroup button').forEach(b =>
+            b.addEventListener('click', () => { mode = b.dataset.mode; render(); }));
+
+        const params = new URLSearchParams(window.location.search);
+        if (['a', 'b', 'both'].includes(params.get('mode'))) mode = params.get('mode');
+
+        renderTables();
+        render();
+        window.addEventListener('resize', () => Plotly.Plots.resize(document.getElementById('plot')));
+    </script>
+</body>
+</html>
