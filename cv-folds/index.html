@@ -108,7 +108,7 @@
     <div class="app">
       <div class="topbar">
         <h1>K-Fold Cross-Validation</h1>
-        <div class="status" id="status">Each step fits ridge (degree-8 polynomial features) on four folds and scores the held-out fold.</div>
+        <div class="status" id="status"></div>
         <div class="controls">
           <button class="btn primary" id="btnStep">Step</button>
           <button class="btn" id="btnRun">Run all</button>
@@ -136,72 +136,30 @@
     </div>
 
     <script>
-      // ---------- fixed dataset (shuffled order = fold order) ----------
-      // y = sin(2πx) + fixed noise, 15 points, 5 folds of 3
-      const DATA_X = [0.0509, 0.9844, 0.6254, 0.5081, 0.1163, 0.5730, 0.8855,
-                      0.3817, 0.1530, 0.2476, 0.2983, 0.4182, 0.6880, 0.7734, 0.8551];
-      const DATA_Y = [0.0604, -0.5156, -0.6914, -0.0036, 0.6277, -0.5669, -0.8357,
-                      0.7455, 1.1205, 0.7641, 0.8642, 0.4619, -0.7094, -1.2369, -1.0173];
-      const N = 15, K = 5, PER = 3, DEGREE = 8;
-      const LAMBDAS = [0, 0.01, 1];
-      const LAM_LABELS = ['0', '0.01', '1'];
+      // ---------- fixed dataset (listed order = fold order) ----------
+      // 9 points, 3 folds of 3. Roughly y = 0.6x plus noise, chosen so that the
+      // OLS slope swings from fold to fold and a moderate lambda wins the sweep.
+      const DATA_X = [0.34, 0.23, 0.76, 0.50, 0.83, 0.90, 0.37, 0.20, 0.14];
+      const DATA_Y = [0.74, 0.56, 1.50, 0.70, 0.99, 0.30, 0.38, 0.53, 0.07];
+      const N = 9, K = 3, PER = 3;
+      const LAMBDAS = [0, 0.1, 1];
+      const LAM_LABELS = ['0', '0.1', '1'];
 
       const trainCol = '#3a7ebf', valCol = '#2ecc71',
             fitCol = '#674ea7', errCol = '#f1c40f';
       const cfg = { displayModeBar: false, responsive: true };
 
       // ---------- ridge regression, closed form ----------
-      // J(θ) = (1/n) Σ (θ·φ(x) − y)² + λ ‖θ_(1:)‖²   (offset not penalized)
-      // normal equations: (Φᵀφ + nλR) θ = Φᵀy with R = diag(0, 1, …, 1)
-      function buildPhi(xs) {
-        return xs.map(x => {
-          const u = 2 * x - 1; // map [0,1] to [-1,1] for conditioning
-          const row = [1];
-          for (let d = 1; d <= DEGREE; d++) row.push(Math.pow(u, d));
-          return row;
-        });
-      }
-
-      function solveLinear(A, b) {
-        const n = A.length;
-        const M = A.map((row, i) => [...row, b[i]]);
-        for (let c = 0; c < n; c++) {
-          let p = c;
-          for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
-          [M[c], M[p]] = [M[p], M[c]];
-          const piv = M[c][c];
-          if (Math.abs(piv) < 1e-14) continue;
-          for (let r = 0; r < n; r++) {
-            if (r === c) continue;
-            const f = M[r][c] / piv;
-            for (let k = c; k <= n; k++) M[r][k] -= f * M[c][k];
-          }
-        }
-        return M.map((row, i) => (Math.abs(row[i]) < 1e-14 ? 0 : row[n] / row[i]));
-      }
-
+      // hypothesis h(x) = θx, no offset, as in lecture
+      // J(θ) = (1/n) Σ (θx − y)² + λθ²   →   θ = Σxy / (Σx² + nλ)
       function ridgeFit(xs, ys, lambda) {
-        const Phi = buildPhi(xs);
-        const n = Phi.length, d = Phi[0].length;
-        const A = Array.from({ length: d }, () => new Array(d).fill(0));
-        const b = new Array(d).fill(0);
-        for (let i = 0; i < n; i++) {
-          for (let j = 0; j < d; j++) {
-            b[j] += Phi[i][j] * ys[i];
-            for (let k = 0; k < d; k++) A[j][k] += Phi[i][j] * Phi[i][k];
-          }
-        }
-        for (let j = 1; j < d; j++) A[j][j] += n * lambda;
-        return solveLinear(A, b);
-      }
-
-      function predict(theta, xs) {
-        return buildPhi(xs).map(row => row.reduce((s, v, j) => s + v * theta[j], 0));
+        let sxx = 0, sxy = 0;
+        for (let i = 0; i < xs.length; i++) { sxx += xs[i] * xs[i]; sxy += xs[i] * ys[i]; }
+        return sxy / (sxx + xs.length * lambda);
       }
 
       function mseOf(theta, xs, ys) {
-        const p = predict(theta, xs);
-        return p.reduce((s, v, i) => s + (v - ys[i]) ** 2, 0) / xs.length;
+        return xs.reduce((s, x, i) => s + (theta * x - ys[i]) ** 2, 0) / xs.length;
       }
 
       function foldIdx(f) {
@@ -262,7 +220,7 @@
         runTimer = setInterval(() => {
           step();
           if (allDone()) stopRun();
-        }, 300);
+        }, 500);
       }
 
       function reset() {
@@ -295,11 +253,12 @@
         if (!last) {
           el.textContent = jumped
             ? 'λ = ' + LAM_LABELS[li] + ' selected. Step runs fold 1 of ' + K + '.'
-            : 'Each step fits ridge (degree-8 polynomial features) on four folds and scores the held-out fold.';
+            : 'Each step fits h(x) = θx by ridge on two folds and scores the held-out fold.';
           return;
         }
         let msg = 'λ = ' + LAM_LABELS[last.li] + ', fold ' + (last.fi + 1) + ' of ' + K +
-                  '. Train MSE ' + fmt(last.trainMse) + ', val MSE ' + fmt(last.valMse) + '.';
+                  '. θ = ' + last.theta.toFixed(2) +
+                  ', train MSE ' + fmt(last.trainMse) + ', val MSE ' + fmt(last.valMse) + '.';
         if (last.fi === K - 1) msg += ' Avg val MSE ' + fmt(avgE[last.li]) + '.';
         if (allDone()) {
           const best = avgE.indexOf(Math.min(...avgE));
@@ -326,9 +285,8 @@
       function drawFit() {
         const traces = [];
         if (last) {
-          const gx = Array.from({ length: 241 }, (_, i) => i / 240);
           traces.push({
-            x: gx, y: predict(last.theta, gx),
+            x: [0, 1], y: [0, last.theta],
             type: 'scatter', mode: 'lines',
             line: { color: fitCol, width: 2.5 },
             hoverinfo: 'skip',
@@ -338,14 +296,14 @@
         traces.push({
           x: trI.map(i => DATA_X[i]), y: trI.map(i => DATA_Y[i]),
           type: 'scatter', mode: 'markers',
-          marker: { size: 8, color: trainCol, line: { color: '#fff', width: 1.5 } },
+          marker: { size: 9, color: trainCol, line: { color: '#fff', width: 1.5 } },
           hovertemplate: '(%{x:.2f}, %{y:.2f})<extra>train</extra>',
         });
         if (last) {
           traces.push({
             x: last.val.map(i => DATA_X[i]), y: last.val.map(i => DATA_Y[i]),
             type: 'scatter', mode: 'markers',
-            marker: { size: 11, color: valCol, line: { color: '#fff', width: 1.5 } },
+            marker: { size: 12, color: valCol, line: { color: '#fff', width: 1.5 } },
             hovertemplate: '(%{x:.2f}, %{y:.2f})<extra>validation</extra>',
           });
         }
@@ -354,19 +312,21 @@
           : 'data, ' + N + ' points';
         Plotly.react('plotFit', traces, {
           title: { text: title, font: { size: 13, color: '#555' }, y: 0.98 },
-          xaxis: { title: { text: 'x', font: { size: 13 } }, range: [-0.03, 1.03], zeroline: false, gridcolor: '#eee' },
-          yaxis: { title: { text: 'y', font: { size: 13 } }, range: [-2.6, 2.6], zeroline: false, gridcolor: '#eee' },
+          xaxis: { title: { text: 'x', font: { size: 13 } }, range: [0, 1], zeroline: false, gridcolor: '#eee' },
+          yaxis: { title: { text: 'y', font: { size: 13 } }, range: [-0.2, 1.9], zeroline: false, gridcolor: '#eee' },
           margin: { l: 46, r: 10, t: 30, b: 40 },
           paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',
           showlegend: false, hovermode: 'closest',
         }, cfg);
       }
 
+      const FOLD_LABELS = Array.from({ length: K }, (_, f) => 'fold ' + (f + 1));
+
       function drawBars() {
         const errs = foldE[dispLi()];
         const xs = [], ys = [];
         for (let f = 0; f < K; f++) {
-          if (errs[f] !== undefined) { xs.push('fold ' + (f + 1)); ys.push(errs[f]); }
+          if (errs[f] !== undefined) { xs.push(FOLD_LABELS[f]); ys.push(errs[f]); }
         }
         const shapes = [], annotations = [];
         if (avgE[dispLi()] !== null) {
@@ -382,8 +342,7 @@
             font: { size: 11, color: '#333' },
           });
         }
-        const FOLD_LABELS = ['fold 1', 'fold 2', 'fold 3', 'fold 4', 'fold 5'];
-        // invisible anchor keeps all five slots on the axis while bars accumulate
+        // invisible anchor keeps all fold slots on the axis while bars accumulate
         const anchor = {
           x: FOLD_LABELS, y: FOLD_LABELS.map(() => null),
           type: 'scatter', mode: 'markers', hoverinfo: 'skip', showlegend: false,
@@ -401,7 +360,7 @@
             range: [-0.5, K - 0.5],
             tickfont: { size: 11 }, fixedrange: true,
           },
-          yaxis: { rangemode: 'tozero', zeroline: false, gridcolor: '#eee', tickfont: { size: 11 } },
+          yaxis: { range: [0, 1.0], zeroline: false, gridcolor: '#eee', tickfont: { size: 11 } },
           margin: { l: 40, r: 10, t: 30, b: 40 },
           paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',
           showlegend: false, bargap: 0.35,
@@ -415,14 +374,14 @@
           if (avgE[j] !== null) { xs.push(LAM_LABELS[j]); ys.push(avgE[j]); }
         }
         const traces = [{
-          // invisible anchor keeps all three λ slots on the axis from the start
+          // invisible anchor keeps all λ slots on the axis from the start
           x: LAM_LABELS, y: LAM_LABELS.map(() => null),
           type: 'scatter', mode: 'markers', hoverinfo: 'skip', showlegend: false,
         }, {
           x: xs, y: ys,
           type: 'scatter', mode: 'lines+markers',
           line: { color: '#999', width: 1.5 },
-          marker: { size: 9, color: errCol, line: { color: '#fff', width: 1.5 } },
+          marker: { size: 10, color: errCol, line: { color: '#fff', width: 1.5 } },
           hovertemplate: 'λ = %{x}<br>avg val MSE %{y:.3f}<extra></extra>',
         }];
         const annotations = [];
@@ -431,11 +390,11 @@
           traces.push({
             x: [LAM_LABELS[best]], y: [avgE[best]],
             type: 'scatter', mode: 'markers',
-            marker: { size: 17, color: 'rgba(0,0,0,0)', line: { color: valCol, width: 3 } },
+            marker: { size: 19, color: 'rgba(0,0,0,0)', line: { color: valCol, width: 3 } },
             hoverinfo: 'skip',
           });
           annotations.push({
-            x: best, y: Math.log10(avgE[best]),
+            x: best, y: avgE[best],
             text: 'lowest avg error',
             showarrow: true, arrowhead: 2, arrowcolor: valCol,
             ax: 0, ay: -32,
@@ -451,8 +410,8 @@
             fixedrange: true, tickfont: { size: 11 },
           },
           yaxis: {
-            title: { text: 'avg val MSE (log)', font: { size: 13 } },
-            type: 'log', range: [-1.4, 1.15], dtick: 1,
+            title: { text: 'avg val MSE', font: { size: 13 } },
+            range: [0, 0.55],
             zeroline: false, gridcolor: '#eee', tickfont: { size: 11 },
           },
           margin: { l: 52, r: 14, t: 30, b: 40 },
@@ -493,6 +452,10 @@
       document.getElementById('btnReset').addEventListener('click', reset);
 
       render();
+
+      // ?steps=N pre-runs N steps (handy for screenshots)
+      const preSteps = parseInt(new URLSearchParams(window.location.search).get('steps') || '0', 10);
+      for (let s = 0; s < preSteps; s++) step();
 
       window.addEventListener('resize', () => {
         ['plotFit', 'plotBars', 'plotAvg'].forEach(id =>
