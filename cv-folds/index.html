@@ -108,7 +108,7 @@
     <div class="app">
       <div class="topbar">
         <h1>K-Fold Cross-Validation</h1>
-        <div class="status" id="status">Each step fits ridge on four folds and scores the held-out fold.</div>
+        <div class="status" id="status">Each step fits ridge (degree-8 polynomial features) on four folds and scores the held-out fold.</div>
         <div class="controls">
           <button class="btn primary" id="btnStep">Step</button>
           <button class="btn" id="btnRun">Run all</button>
@@ -143,8 +143,8 @@
       const DATA_Y = [0.0604, -0.5156, -0.6914, -0.0036, 0.6277, -0.5669, -0.8357,
                       0.7455, 1.1205, 0.7641, 0.8642, 0.4619, -0.7094, -1.2369, -1.0173];
       const N = 15, K = 5, PER = 3, DEGREE = 8;
-      const LAMBDAS = [0, 0.001, 0.01, 0.1, 1, 10];
-      const LAM_LABELS = ['0', '0.001', '0.01', '0.1', '1', '10'];
+      const LAMBDAS = [0, 0.01, 1];
+      const LAM_LABELS = ['0', '0.01', '1'];
 
       const trainCol = '#3a7ebf', valCol = '#2ecc71',
             fitCol = '#674ea7', errCol = '#f1c40f';
@@ -295,7 +295,7 @@
         if (!last) {
           el.textContent = jumped
             ? 'λ = ' + LAM_LABELS[li] + ' selected. Step runs fold 1 of ' + K + '.'
-            : 'Each step fits ridge on four folds and scores the held-out fold.';
+            : 'Each step fits ridge (degree-8 polynomial features) on four folds and scores the held-out fold.';
           return;
         }
         let msg = 'λ = ' + LAM_LABELS[last.li] + ', fold ' + (last.fi + 1) + ' of ' + K +
@@ -415,7 +415,7 @@
           if (avgE[j] !== null) { xs.push(LAM_LABELS[j]); ys.push(avgE[j]); }
         }
         const traces = [{
-          // invisible anchor keeps all six λ slots on the axis from the start
+          // invisible anchor keeps all three λ slots on the axis from the start
           x: LAM_LABELS, y: LAM_LABELS.map(() => null),
           type: 'scatter', mode: 'markers', hoverinfo: 'skip', showlegend: false,
         }, {
