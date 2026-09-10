@@ -173,21 +173,17 @@
         }
 
         .tick-marks {
-            display: flex;
-            justify-content: space-between;
-            padding: 2px 0 0 0;
             position: relative;
+            height: 18px;
+            margin: 2px 10px 0 10px;  /* thumb is 20px wide: its centre spans 10px..(100% - 10px) of the track */
         }
         .tick-marks span {
-            font-size: 11px;
-            color: #999;
-            text-align: center;
-            width: 0;
-            overflow: visible;
+            position: absolute;
+            transform: translateX(-50%);
+            font-size: 13px;
+            color: #666;
             white-space: nowrap;
         }
-        .tick-marks span:first-child { text-align: left; }
-        .tick-marks span:last-child { text-align: right; }
 
         /* Embed mode */
         body.embed {
@@ -216,16 +212,7 @@
                     <span class="hint">θ magnitude penalty dominates →</span>
                 </div>
                 <input type="range" id="lambda-slider" class="slider" min="0" max="1000" step="1" value="0">
-                <div class="tick-marks">
-                    <span>0</span>
-                    <span>10⁻¹⁰</span>
-                    <span>⁻⁸</span>
-                    <span>⁻⁶</span>
-                    <span>⁻⁴</span>
-                    <span>⁻²</span>
-                    <span>10⁰</span>
-                    <span>10¹</span>
-                </div>
+                <div class="tick-marks" id="tick-marks"></div>
             </div>
         </div>
     </div>
@@ -288,7 +275,7 @@
 
         // Solve ridge analytically: theta* = (X^TX + n*lambda*I)^{-1} X^T Y
         function solveRidge(lambda) {
-            const lam = Math.max(lambda, 1e-10);
+            const lam = lambda;
             let a11 = 0, a12 = 0, a22 = 0, b1 = 0, b2 = 0;
             for (const pt of dataPoints) {
                 a11 += pt.x1 * pt.x1;
@@ -541,6 +528,21 @@
             if (p === 0) return 0;
             return Math.pow(10, -10 + 11 * p / 1000);
         }
+        function lambdaToSlider(lambda) {
+            return (Math.log10(lambda) + 10) * 1000 / 11;
+        }
+        // Tick labels sit where the slider actually maps them (log scale), not evenly spaced.
+        // Slider position 0 is λ = 0, which coincides with the 10⁻¹⁰ tick.
+        (function renderTicks() {
+            const box = document.getElementById('tick-marks');
+            [[0, '0'], [1e-8, '10⁻⁸'], [1e-6, '10⁻⁶'], [1e-4, '10⁻⁴'], [1e-2, '10⁻²'], [1, '10⁰'], [10, '10¹']]
+                .forEach(([lam, label]) => {
+                    const span = document.createElement('span');
+                    span.textContent = label;
+                    span.style.left = (lam === 0 ? 0 : lambdaToSlider(lam) / 10) + '%';
+                    box.appendChild(span);
+                });
+        })();
 
         function update() {
             const p = parseFloat(lambdaSlider.value);
@@ -560,9 +562,11 @@
                 `h = ${theta1.toFixed(3)} x₁ + ${theta2.toFixed(3)} x₂`;
 
             // Update right panel: norm and MSE
+            const offChart = Math.max(Math.abs(theta1), Math.abs(theta2)) > tMax;
             document.getElementById('obj-stats').innerHTML =
                 `<span class="norm-val">‖θ*‖ = ${norm.toFixed(3)}</span> &nbsp; ` +
-                `<span class="j-val">J(θ*) = ${jMse.toFixed(2)}</span>`;
+                `<span class="j-val">J(θ*) = ${jMse.toFixed(2)}</span>` +
+                (offChart ? ` &nbsp; <span style="color: #674ea7;">◆ θ*<sub>ridge</sub> is off the chart</span>` : '');
 
             // Update data plot: hypothesis plane changes with theta
             Plotly.react('data-plot', createDataPlot(), dataLayout);
@@ -573,7 +577,8 @@
             Plotly.restyle('obj-plot', {
                 x: [[theta1]],
                 y: [[theta2]],
-                z: [[jRidge + 0.5]]
+                z: [[jRidge + 0.5]],
+                visible: !offChart
             }, 5);  // trace 5 = minimum marker
         }
 
