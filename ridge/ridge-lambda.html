@@ -101,7 +101,7 @@
             color: #cc8800;
         }
         .norm-val {
-            color: #3c78d8;
+            color: #674ea7;
         }
         .col-vec {
             display: inline-flex;
@@ -244,10 +244,10 @@
         <div class="panel">
             <h3>Objective in θ-space</h3>
             <div class="subtitle">
-                <span class="legend-swatch" style="background: #bbb;"></span>MSE &nbsp;
-                <span class="legend-swatch" style="background: #ffd966;"></span>Ridge (MSE + λ‖θ‖²) &nbsp;
-                <span style="color: #3c78d8;">◆</span> θ*<sub>ridge</sub>
-                <br><span id="obj-stats" style="color: #666; font-size: 22px;"><span class="norm-val">‖θ*‖ = 0.990</span> &nbsp; <span class="j-val">MSE = 5.14</span></span>
+                <span class="legend-swatch" style="background: #bbb;"></span>J(θ) (MSE) &nbsp;
+                <span class="legend-swatch" style="background: #ffd966;"></span>J<sub>ridge</sub>(θ) = J(θ) + λ‖θ‖² &nbsp;
+                <span style="color: #674ea7;">◆</span> θ*<sub>ridge</sub>
+                <br><span id="obj-stats" style="color: #666; font-size: 22px;"><span class="norm-val">‖θ*‖ = 0.990</span> &nbsp; <span class="j-val">J(θ*) = 5.14</span></span>
             </div>
             <div id="obj-plot" class="plot"></div>
         </div>
@@ -497,7 +497,7 @@
             x: [initMin.t1],
             y: [initMin.t2],
             z: [ridgeCost(initMin.t1, initMin.t2, 0) + 0.5],
-            marker: { size: 10, color: '#3c78d8', symbol: 'diamond' },
+            marker: { size: 10, color: '#674ea7', symbol: 'diamond' },
             hoverinfo: 'skip'
         };
 
@@ -562,7 +562,7 @@
             // Update right panel: norm and MSE
             document.getElementById('obj-stats').innerHTML =
                 `<span class="norm-val">‖θ*‖ = ${norm.toFixed(3)}</span> &nbsp; ` +
-                `<span class="j-val">MSE = ${jMse.toFixed(2)}</span>`;
+                `<span class="j-val">J(θ*) = ${jMse.toFixed(2)}</span>`;
 
             // Update data plot: hypothesis plane changes with theta
             Plotly.react('data-plot', createDataPlot(), dataLayout);

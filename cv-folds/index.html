@@ -259,8 +259,8 @@
         }
         let msg = 'λ = ' + LAM_LABELS[last.li] + ', fold ' + (last.fi + 1) + ' of ' + K +
                   '. θ = ' + last.theta.toFixed(2) +
-                  ', train MSE ' + fmt(last.trainMse) + ', val MSE ' + fmt(last.valMse) + '.';
-        if (last.fi === K - 1) msg += ' Avg val MSE ' + fmt(avgE[last.li]) + '.';
+                  ', train error ' + fmt(last.trainMse) + ', val error ' + fmt(last.valMse) + '.';
+        if (last.fi === K - 1) msg += ' Avg val error ' + fmt(avgE[last.li]) + '.';
         if (allDone()) {
           const best = avgE.indexOf(Math.min(...avgE));
           msg = 'Sweep complete. λ = ' + LAM_LABELS[best] + ' has the lowest average val error.';
@@ -351,9 +351,9 @@
         Plotly.react('plotBars', [anchor, {
           x: xs, y: ys, type: 'bar',
           marker: { color: errCol },
-          hovertemplate: '%{x}<br>val MSE %{y:.3f}<extra></extra>',
+          hovertemplate: '%{x}<br>val error %{y:.3f}<extra></extra>',
         }], {
-          title: { text: 'per-fold val MSE, λ = ' + LAM_LABELS[dispLi()], font: { size: 13, color: '#555' }, y: 0.98 },
+          title: { text: 'per-fold val error (MSE), λ = ' + LAM_LABELS[dispLi()], font: { size: 13, color: '#555' }, y: 0.98 },
           xaxis: {
             type: 'category',
             categoryorder: 'array',
@@ -383,7 +383,7 @@
           type: 'scatter', mode: 'lines+markers',
           line: { color: '#999', width: 1.5 },
           marker: { size: 10, color: errCol, line: { color: '#fff', width: 1.5 } },
-          hovertemplate: 'λ = %{x}<br>avg val MSE %{y:.3f}<extra></extra>',
+          hovertemplate: 'λ = %{x}<br>avg val error %{y:.3f}<extra></extra>',
         }];
         const annotations = [];
         if (allDone()) {
@@ -403,7 +403,7 @@
           });
         }
         Plotly.react('plotAvg', traces, {
-          title: { text: 'average val MSE per λ', font: { size: 13, color: '#555' }, y: 0.98 },
+          title: { text: 'average val error per λ', font: { size: 13, color: '#555' }, y: 0.98 },
           xaxis: {
             title: { text: 'λ', font: { size: 13 } },
             type: 'category', categoryorder: 'array', categoryarray: LAM_LABELS,
@@ -411,7 +411,7 @@
             fixedrange: true, tickfont: { size: 11 },
           },
           yaxis: {
-            title: { text: 'avg val MSE', font: { size: 13 } },
+            title: { text: 'avg val error', font: { size: 13 } },
             range: [0, 0.65],
             zeroline: false, gridcolor: '#eee', tickfont: { size: 11 },
           },

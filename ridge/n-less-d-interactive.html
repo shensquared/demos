@@ -263,7 +263,7 @@
             x: [theta1],
             y: [theta2],
             z: [0.15],
-            marker: { size: 12, color: '#3c78d8', symbol: 'diamond' },
+            marker: { size: 12, color: '#674ea7', symbol: 'diamond' },
             hoverinfo: 'skip'
         };
 
@@ -402,7 +402,8 @@
             Plotly.restyle('loss-plot', {
                 x: [[theta1]],
                 y: [[theta2]],
-                z: [[j + 0.15]]
+                z: [[j + 0.15]],
+                'marker.color': thetaColor
             }, 2);
 
             // Update feature plot
