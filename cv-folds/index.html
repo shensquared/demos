@@ -138,12 +138,13 @@
     <script>
       // ---------- fixed dataset (listed order = fold order) ----------
       // 9 points, 3 folds of 3. Roughly y = 0.6x plus noise, chosen so that the
-      // OLS slope swings from fold to fold and a moderate lambda wins the sweep.
+      // OLS slope swings from fold to fold and a moderate lambda wins the sweep
+      // (avg val MSE 0.385, 0.233, 0.412, 0.546 for the four lambdas below).
       const DATA_X = [0.34, 0.23, 0.76, 0.50, 0.83, 0.90, 0.37, 0.20, 0.14];
       const DATA_Y = [0.74, 0.56, 1.50, 0.70, 0.99, 0.30, 0.38, 0.53, 0.07];
       const N = 9, K = 3, PER = 3;
-      const LAMBDAS = [0, 0.1, 1];
-      const LAM_LABELS = ['0', '0.1', '1'];
+      const LAMBDAS = [0, 0.1, 1, 10];
+      const LAM_LABELS = ['0', '0.1', '1', '10'];
 
       const trainCol = '#3a7ebf', valCol = '#2ecc71',
             fitCol = '#674ea7', errCol = '#f1c40f';
@@ -411,7 +412,7 @@
           },
           yaxis: {
             title: { text: 'avg val MSE', font: { size: 13 } },
-            range: [0, 0.55],
+            range: [0, 0.65],
             zeroline: false, gridcolor: '#eee', tickfont: { size: 11 },
           },
           margin: { l: 52, r: 14, t: 30, b: 40 },
