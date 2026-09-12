@@ -11,6 +11,7 @@ from mpl_toolkits.mplot3d import Axes3D
 #
 #   3d_plane_clean.png  the four cities and the hypothesis plane, nothing else
 #   3d_loss_clean.png   the same, plus the vertical gap from each city to the plane
+#   3d_plane_bare.png   the hypothesis plane alone, no cities
 #
 # The hypothesis is h(x) = theta1*x1 + theta2*x2, a hyperplane through the origin
 # with no offset, matching the "for now, ignoring the offset" framing on the linear
@@ -40,7 +41,7 @@ def h(px, py):
     return THETA[0] * px + THETA[1] * py
 
 
-def render(show_gaps, out):
+def render(show_gaps, show_points, out):
     # Every city sits above the plane, so drawing the points and gap lines over it is
     # the geometrically correct order. computed_zorder=False makes matplotlib honor
     # that instead of deriving its own, which otherwise chops the gap lines in half.
@@ -72,14 +73,15 @@ def render(show_gaps, out):
                        linewidth=2, depthshade=False, zorder=6)
 
     # Create scatter plot with large, easy-to-see points
-    ax.scatter(points[:, 0], points[:, 1], points[:, 2],
-               s=300,           # Large marker size
-               c=colors,        # Different colors
-               alpha=1.0,
-               depthshade=False,  # keep the far cities as vivid as the near ones
-               edgecolors='black',  # Black edges for contrast
-               linewidth=2,      # Edge line width
-               zorder=10)
+    if show_points:
+        ax.scatter(points[:, 0], points[:, 1], points[:, 2],
+                   s=300,           # Large marker size
+                   c=colors,        # Different colors
+                   alpha=1.0,
+                   depthshade=False,  # keep the far cities as vivid as the near ones
+                   edgecolors='black',  # Black edges for contrast
+                   linewidth=2,      # Edge line width
+                   zorder=10)
 
     # Set axis limits with extra padding for arrows
     ax.set_xlim(-0.5, 5.5)
@@ -153,5 +155,6 @@ print(f"theta = {THETA}")
 for (px, py, pz), c in zip(points, colors):
     print(f"  {c:<7} y={pz:<4} h(x)={h(px, py):.3f}  gap={pz - h(px, py):+.3f}")
 
-render(False, '3d_plane_clean.png')
-render(True, '3d_loss_clean.png')
+render(False, True, '3d_plane_clean.png')
+render(True, True, '3d_loss_clean.png')
+render(False, False, '3d_plane_bare.png')
