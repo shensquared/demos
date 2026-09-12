@@ -1,17 +1,33 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Two Datasets, One Tiny Perturbation</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
     <style>
+        /* Locked tokens. The mark colours stay as they are, since a mark only has
+           to clear 3:1; their text tints are darkened to pass AA as body copy. */
+        :root {
+            --a-mark: #cc3b2f;   /* mirrored in the JS DATA object below, for Plotly */
+            --b-mark: #3c78d8;
+            --a-text: #cc3b2f;
+            --b-text: #3372d6;
+            --ink: #2b2b2b;
+            --ink-2: #555555;
+            --muted: #5f6672;
+            --rule: #e2e2e2;
+        }
+
         * { box-sizing: border-box; }
         html, body {
             margin: 0;
             height: 100%;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #fafafa;
-            color: #333;
+            color: var(--ink);
             overflow: hidden;
         }
         .app {
@@ -38,23 +54,28 @@
             font-family: inherit;
             border: none;
             background: #fff;
-            color: #777;
+            color: var(--ink-2);
             cursor: pointer;
-            transition: all .15s;
+            transition: background-color .15s ease, color .15s ease;
         }
         .mode-group button:not(:last-child) { border-right: 1px solid #ddd; }
         .mode-group button.active { background: #555; color: #fff; }
+        .mode-group button:hover:not(.active) { background: #f2f2f2; }
+        /* The buttons had no focus indicator at all, so keyboard use was invisible. */
+        .mode-group button:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+        @media (prefers-reduced-motion: reduce) { .mode-group button { transition: none; } }
         .eq {
             flex: 1;
             min-width: 0;
-            font-size: 15px;
+            font-size: 16px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        .eq .a { color: #cc3b2f; }
-        .eq .b { color: #3c78d8; }
-        .eq .sep { color: #bbb; margin: 0 10px; }
+        .eq .a { color: var(--a-text); }
+        .eq .b { color: var(--b-text); }
+        .eq .sep { color: var(--muted); margin: 0 10px; }
+        .katex { font-size: 1.1em; }
         .main {
             flex: 1;
             display: flex;
@@ -69,7 +90,7 @@
         }
         table {
             border-collapse: collapse;
-            font-size: 13px;
+            font-size: 15px;
             font-variant-numeric: tabular-nums;
             background: #fff;
             border: 1px solid #e4e4e4;
@@ -79,26 +100,26 @@
         table.dim { opacity: 0.3; }
         caption {
             text-align: left;
-            font-size: 13px;
+            font-size: 15px;
             font-weight: 600;
             padding: 0 0 4px 2px;
         }
-        table.a caption { color: #cc3b2f; }
-        table.b caption { color: #3c78d8; }
+        table.a caption { color: var(--a-text); }
+        table.b caption { color: var(--b-text); }
         th, td {
             padding: 3px 9px;
             text-align: right;
         }
         th {
             font-weight: 500;
-            color: #888;
-            border-bottom: 1px solid #e4e4e4;
+            color: var(--muted);
+            border-bottom: 1px solid var(--rule);
         }
         td .pert { color: #111; font-weight: 600; }
         #plot { flex: 1; min-width: 0; }
         .legend {
-            font-size: 12px;
-            color: #666;
+            font-size: 14px;
+            color: var(--ink-2);
             white-space: nowrap;
         }
         .legend .dot {
@@ -121,8 +142,8 @@
             </div>
             <div class="eq" id="eq"></div>
             <div class="legend">
-                <span class="dot" style="background:#cc3b2f"></span>A
-                <span class="dot" style="background:#3c78d8"></span>B
+                <span class="dot" style="background:var(--a-mark)"></span>A
+                <span class="dot" style="background:var(--b-mark)"></span>B
             </div>
         </div>
         <div class="main">
@@ -207,18 +228,21 @@
             };
         }
 
+        // Plotly's <sub> tags render real subscripts in 3D scenes; Unicode ₁ ₂ come out
+        // as specks. Ticks use the page's sans so they match the tables.
         const axisStyle = {
-            titlefont: { size: 14, color: '#333' },
-            tickfont: { size: 10, color: '#999' },
+            titlefont: { size: 16, color: '#2b2b2b' },
+            tickfont: { size: 13, color: '#5f6672' },  // 13px at 5.8:1; the old 11px #999 measured 2.9:1
             nticks: 5,
-            gridcolor: '#ddd',
+            gridcolor: '#dcdcdc',
         };
         const layout = {
+            font: { family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" },
             scene: {
-                xaxis: { title: 'Cambridge (x₁)', range: X1, ...axisStyle },
-                yaxis: { title: 'Boston (x₂)', range: X2, ...axisStyle },
+                xaxis: { title: 'Cambridge (x<sub>1</sub>)', range: X1, ...axisStyle },
+                yaxis: { title: 'Boston (x<sub>2</sub>)', range: X2, ...axisStyle },
                 zaxis: { title: 'Worcester (y)', range: ZR, ...axisStyle },
-                camera: { eye: { x: 1.45, y: 1.1, z: 0.5 } },
+                camera: { eye: { x: 1.85, y: 1.4, z: 0.64 } },
                 aspectmode: 'manual',
                 aspectratio: { x: 1.4, y: 1.4, z: 1 },
             },
@@ -229,9 +253,9 @@
 
         function fmtEq(key) {
             const th = THETA[key];
-            const s = v => (v < 0 ? '− ' : '+ ') + Math.abs(v).toFixed(3);
-            let eq = `h = ${th[0].toFixed(3)} x₁ ${s(th[1])} x₂ ${s(th[2])}`;
-            if (FIT[key].singular) eq += ' <span style="color:#999;font-size:13px">(XᵀX singular; min-norm plane, as in HW1)</span>';
+            const s = v => (v < 0 ? '- ' : '+ ') + Math.abs(v).toFixed(3);
+            let eq = katex.renderToString(String.raw`h = ${th[0].toFixed(3)}\,x_1 ${s(th[1])}\,x_2 ${s(th[2])}`);
+            if (FIT[key].singular) eq += ` <span style="color:#999;font-size:13px">(${katex.renderToString('X^TX')} singular; min-norm plane, as in HW1)</span>`;
             return eq;
         }
 
@@ -273,7 +297,15 @@
 
         renderTables();
         render();
-        window.addEventListener('resize', () => Plotly.Plots.resize(document.getElementById('plot')));
+        // A window listener misses the reflow that matters here: the KaTeX fonts land
+        // after the plot is drawn and change the height of the equation row, which
+        // resizes the plot's box without the window ever changing.
+        const plotEl = document.getElementById('plot');
+        if (window.ResizeObserver) {
+            new ResizeObserver(() => Plotly.Plots.resize(plotEl)).observe(plotEl);
+        } else {
+            window.addEventListener('resize', () => Plotly.Plots.resize(plotEl));
+        }
     </script>
 </body>
 </html>
