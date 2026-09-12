@@ -37,9 +37,12 @@ THETA = (0.25, 1.5)
 # Pure per-axis scaling into the drawing cube. An offset would move the plane off
 # the origin and break the "for now, ignoring the offset" framing on the slides.
 CUBE = 4.5
-# How far each axis runs back past zero. The plane drops to -1.61 at the far
-# negative corner of its patch, so the cube floor has to clear that.
-AX_MIN = -2.0
+# How far the hypothesis plane reaches back past the origin. The axes are drawn only
+# in the positive direction: what shows the plane passing through the origin is the
+# plane continuing past the point where they meet, not any negative axis furniture.
+# The plane sits at 0.805 * PLANE_MIN at the far corner of its patch, so the cube
+# floor has to clear that, and reaching further back costs empty space below.
+PLANE_MIN = -2.0
 s1, s2, sy = CUBE / TEMP.max(), CUBE / POP.max(), CUBE / ENERGY.max()
 X1, X2, Y = TEMP * s1, POP * s2, ENERGY * sy
 # The same hypothesis expressed in plotted units
@@ -53,46 +56,27 @@ def h(px, py):
 
 
 def axes_frame(ax):
-    """The shared cube: no ticks, no box, three black axes crossing at the origin.
+    """The shared cube: no ticks, no box, three black axes out of the origin.
 
-    The negative arms are load-bearing. With each axis running only 0 to 5 the origin
-    is the corner where three arrows meet, so a plane through it looks like it is
-    resting on that corner. Carrying every axis back past zero turns the origin into
-    a visible crossing, which is what lets a plane through it read as passing through
-    rather than stopping there.
+    Positive arms only. The limits reach below zero so the plane's patch is never
+    clipped, but nothing is drawn down there.
     """
-    ax.set_xlim(AX_MIN - 0.3, 5.5)
-    ax.set_ylim(AX_MIN - 0.3, 5.5)
-    ax.set_zlim(AX_MIN - 0.3, 5.5)
+    ax.set_xlim(PLANE_MIN - 0.3, 5.5)
+    ax.set_ylim(PLANE_MIN - 0.3, 5.5)
+    ax.set_zlim(PLANE_MIN - 0.3, 5.5)
     for setter in ('set_xlabel', 'set_ylabel', 'set_zlabel'):
         getattr(ax, setter)('')
     for setter in ('set_xticks', 'set_yticks', 'set_zticks'):
         getattr(ax, setter)([])
-    # Positive arms in full black. Negative arms thinner and grey: they are only
-    # there to make the origin read as a crossing, and at full weight they cut
-    # across the plane and compete with the content in front of it.
     ax.plot([0, 5], [0, 0], [0, 0], 'k-', linewidth=2, zorder=8)
     ax.plot([0, 0], [0, 5], [0, 0], 'k-', linewidth=2, zorder=8)
     ax.plot([0, 0], [0, 0], [0, 5], 'k-', linewidth=2, zorder=8)
-    ax.plot([AX_MIN, 0], [0, 0], [0, 0], color='#9a9a9a', linewidth=1.1, zorder=8)
-    ax.plot([0, 0], [AX_MIN, 0], [0, 0], color='#9a9a9a', linewidth=1.1, zorder=8)
-    ax.plot([0, 0], [0, 0], [AX_MIN, 0], color='#9a9a9a', linewidth=1.1, zorder=8)
     ax.plot([5, 4.7], [0, 0.2], [0, 0], 'k-', linewidth=2, zorder=8)
     ax.plot([5, 4.7], [0, -0.2], [0, 0], 'k-', linewidth=2, zorder=8)
     ax.plot([0, 0.2], [5, 4.7], [0, 0], 'k-', linewidth=2, zorder=8)
     ax.plot([0, -0.2], [5, 4.7], [0, 0], 'k-', linewidth=2, zorder=8)
     ax.plot([0, 0.2], [0, 0], [5, 4.7], 'k-', linewidth=2, zorder=8)
     ax.plot([0, -0.2], [0, 0], [5, 4.7], 'k-', linewidth=2, zorder=8)
-    # Arrowheads on the negative ends too. Without them the arms stop dead partway
-    # across the plane and read as stray marks lying on its surface rather than as
-    # axes continuing past the origin.
-    GREY = dict(color='#9a9a9a', linewidth=1.1, zorder=8)
-    ax.plot([AX_MIN, AX_MIN + 0.3], [0, 0.2], [0, 0], **GREY)
-    ax.plot([AX_MIN, AX_MIN + 0.3], [0, -0.2], [0, 0], **GREY)
-    ax.plot([0, 0.2], [AX_MIN, AX_MIN + 0.3], [0, 0], **GREY)
-    ax.plot([0, -0.2], [AX_MIN, AX_MIN + 0.3], [0, 0], **GREY)
-    ax.plot([0, 0.2], [0, 0], [AX_MIN, AX_MIN + 0.3], **GREY)
-    ax.plot([0, -0.2], [0, 0], [AX_MIN, AX_MIN + 0.3], **GREY)
     ax.view_init(elev=20, azim=45)
     ax.grid(False)
     ax.set_box_aspect([1, 1, 1])
@@ -123,7 +107,10 @@ def render(show_plane, show_points, show_gaps, out):
         # inside the patch rather than near its corner. A patch that starts at or
         # just before x=0, y=0 reads as a quadrant resting on the origin, not as a
         # plane passing through it.
-        gx, gy = np.meshgrid(np.linspace(AX_MIN, 4.6, 2), np.linspace(AX_MIN, 4.6, 2))
+        # Two points per axis, so the mesh is just the four corners. A plane is flat,
+        # so that defines it exactly, and it avoids an internal wireframe.
+        gx, gy = np.meshgrid(np.linspace(PLANE_MIN, 4.6, 2),
+                             np.linspace(PLANE_MIN, 4.6, 2))
         ax.plot_surface(gx, gy, h(gx, gy),
                         color='#cccccc', alpha=0.55, shade=False,
                         edgecolor='#9a9a9a', linewidth=1.2, zorder=1)
