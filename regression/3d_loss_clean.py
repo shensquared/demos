@@ -216,51 +216,58 @@ def render_J(out):
     best = np.linalg.lstsq(np.column_stack([TEMP, POP]), ENERGY, rcond=None)[0]
     jmin = J(best[0], best[1])
 
-    # The demo's window, theta1 over -1..5 and theta2 over -1..7, both centred on
-    # theta*. No cut: the surface is drawn whole, so its rim stays a clean rectangle.
-    g1 = np.linspace(-1.0, 5.0, 80)
-    g2 = np.linspace(-1.0, 7.0, 80)
+    # Equal spans, both centred on theta* = (2, 3), so the bowl comes out symmetric.
+    # Unequal spans get squeezed against each other inside a square box, which tilts
+    # the basin and makes one weight look steeper than it is.
+    SPAN = 4.0
+    g1 = np.linspace(2.0 - SPAN, 2.0 + SPAN, 80)
+    g2 = np.linspace(3.0 - SPAN, 3.0 + SPAN, 80)
     G1, G2 = np.meshgrid(g1, g2)
     Z = J(G1, G2)
 
     warm = LinearSegmentedColormap.from_list('warm', ['#ffd966', '#f6b26b', '#cc4125'])
 
-    fig = plt.figure(figsize=(8, 6.5))
+    fig = plt.figure(figsize=(8, 8))
     # computed_zorder=False: the marker sits exactly on the surface at the basin, and
     # matplotlib's own depth sort loses it inside the surface it is resting on.
     ax = fig.add_subplot(111, projection='3d', computed_zorder=False)
     ax.plot_surface(G1, G2, Z, cmap=warm, rstride=2, cstride=2,
-                    linewidth=0, antialiased=True, alpha=0.9, zorder=1)
+                    linewidth=0, antialiased=True, alpha=1.0, zorder=1)
     # Lifted a hair off the floor so it does not z-fight with the surface under it.
     ax.scatter([best[0]], [best[1]], [jmin + 0.25], s=150, c='#674ea7',
                edgecolors='black', linewidth=1.5, depthshade=False, zorder=10)
 
-    ax.set_xlim(-1, 5)
-    ax.set_ylim(-1, 7)
+    ax.set_xlim(2.0 - SPAN, 2.0 + SPAN)
+    ax.set_ylim(3.0 - SPAN, 3.0 + SPAN)
     ax.set_zlim(0, float(Z.max()))
-    ax.set_xlabel(r'$\theta_1$', fontsize=19, labelpad=14)
-    ax.set_ylabel(r'$\theta_2$', fontsize=19, labelpad=14)
+    # Small pads and a margin around the axes. With the ticks gone and the box
+    # stretched in z, a large pad pushes these two off the canvas, and a tight
+    # bounding box cannot recover pixels that were never drawn.
+    ax.set_xlabel(r'$\theta_1$', fontsize=19, labelpad=4)
+    ax.set_ylabel(r'$\theta_2$', fontsize=19, labelpad=4)
     # set_zlabel does not survive this figure, at any labelpad or rotation tried, so
     # the name goes in axes fractions instead, beside the tick numbers it belongs to.
     ax.set_zlabel('')
     ax.text2D(1.02, 0.55, r'$J(\theta)$', transform=ax.transAxes,
               fontsize=19, ha='left', va='center')
-    ax.set_xticks([0, 2, 4])
-    ax.set_yticks([0, 2, 4, 6])
-    ax.set_zticks([0, 10, 20])
-    ax.tick_params(labelsize=14, colors='#5f6672')
+    # No ticks and no numbers. The three names carry what the reader needs, and the
+    # figure sits beside a slide that already states the scale.
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_zticks([])
+    fig.subplots_adjust(left=0.04, right=0.92, bottom=0.09, top=0.97)
     # The demo's camera sits at eye (1.8, -1.8, 0.8), which is azim 315 and elev 17.
     # Low on purpose: from up high the walls foreshorten and the basin flattens out.
     ax.view_init(elev=18, azim=315)
     # Stretched in z, so the basin reads as a bowl rather than a shallow dish. This
     # changes only how tall the drawing box is; the surface itself is untouched.
     ax.set_box_aspect([1, 1, 1.35])
-    # No grid and no panes. The colourscale already carries the height, and the
-    # walls boxed the bowl in without adding anything worth reading.
+    # No grid, and the panes hidden outright. A transparent facecolour is not enough:
+    # the pane carries its own alpha of 0.5 and that overrides the one in the colour,
+    # which is what left a half-opaque wash across the whole figure.
     ax.grid(False)
     for axis in (ax.xaxis, ax.yaxis, ax.zaxis):
-        axis.pane.set_facecolor((1, 1, 1, 0))
-        axis.pane.set_edgecolor('none')
+        axis.pane.set_visible(False)
     print('  J minimum at theta = (%.2f, %.2f), J = %.3f, top %.1f' % (
         best[0], best[1], jmin, Z.max()))
     save(fig, out)
