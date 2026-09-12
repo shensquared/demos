@@ -37,6 +37,9 @@ THETA = (0.25, 1.5)
 # Pure per-axis scaling into the drawing cube. An offset would move the plane off
 # the origin and break the "for now, ignoring the offset" framing on the slides.
 CUBE = 4.5
+# How far each axis runs back past zero. The plane drops to -1.61 at the far
+# negative corner of its patch, so the cube floor has to clear that.
+AX_MIN = -2.0
 s1, s2, sy = CUBE / TEMP.max(), CUBE / POP.max(), CUBE / ENERGY.max()
 X1, X2, Y = TEMP * s1, POP * s2, ENERGY * sy
 # The same hypothesis expressed in plotted units
@@ -50,23 +53,39 @@ def h(px, py):
 
 
 def axes_frame(ax):
-    """The shared cube: no ticks, no box, three black arrows out of the origin."""
-    ax.set_xlim(-0.5, 5.5)
-    ax.set_ylim(-0.5, 5.5)
-    ax.set_zlim(-0.5, 5.5)
+    """The shared cube: no ticks, no box, three black axes crossing at the origin.
+
+    The negative arms are load-bearing. With each axis running only 0 to 5 the origin
+    is the corner where three arrows meet, so a plane through it looks like it is
+    resting on that corner. Carrying every axis back past zero turns the origin into
+    a visible crossing, which is what lets a plane through it read as passing through
+    rather than stopping there.
+    """
+    ax.set_xlim(AX_MIN - 0.3, 5.5)
+    ax.set_ylim(AX_MIN - 0.3, 5.5)
+    ax.set_zlim(AX_MIN - 0.3, 5.5)
     for setter in ('set_xlabel', 'set_ylabel', 'set_zlabel'):
         getattr(ax, setter)('')
     for setter in ('set_xticks', 'set_yticks', 'set_zticks'):
         getattr(ax, setter)([])
-    ax.plot([0, 5], [0, 0], [0, 0], 'k-', linewidth=2, zorder=8)
-    ax.plot([0, 0], [0, 5], [0, 0], 'k-', linewidth=2, zorder=8)
-    ax.plot([0, 0], [0, 0], [0, 5], 'k-', linewidth=2, zorder=8)
+    ax.plot([AX_MIN, 5], [0, 0], [0, 0], 'k-', linewidth=2, zorder=8)
+    ax.plot([0, 0], [AX_MIN, 5], [0, 0], 'k-', linewidth=2, zorder=8)
+    ax.plot([0, 0], [0, 0], [AX_MIN, 5], 'k-', linewidth=2, zorder=8)
     ax.plot([5, 4.7], [0, 0.2], [0, 0], 'k-', linewidth=2, zorder=8)
     ax.plot([5, 4.7], [0, -0.2], [0, 0], 'k-', linewidth=2, zorder=8)
     ax.plot([0, 0.2], [5, 4.7], [0, 0], 'k-', linewidth=2, zorder=8)
     ax.plot([0, -0.2], [5, 4.7], [0, 0], 'k-', linewidth=2, zorder=8)
     ax.plot([0, 0.2], [0, 0], [5, 4.7], 'k-', linewidth=2, zorder=8)
     ax.plot([0, -0.2], [0, 0], [5, 4.7], 'k-', linewidth=2, zorder=8)
+    # Arrowheads on the negative ends too. Without them the arms stop dead partway
+    # across the plane and read as stray marks lying on its surface rather than as
+    # axes continuing past the origin.
+    ax.plot([AX_MIN, AX_MIN + 0.3], [0, 0.2], [0, 0], 'k-', linewidth=2, zorder=8)
+    ax.plot([AX_MIN, AX_MIN + 0.3], [0, -0.2], [0, 0], 'k-', linewidth=2, zorder=8)
+    ax.plot([0, 0.2], [AX_MIN, AX_MIN + 0.3], [0, 0], 'k-', linewidth=2, zorder=8)
+    ax.plot([0, -0.2], [AX_MIN, AX_MIN + 0.3], [0, 0], 'k-', linewidth=2, zorder=8)
+    ax.plot([0, 0.2], [0, 0], [AX_MIN, AX_MIN + 0.3], 'k-', linewidth=2, zorder=8)
+    ax.plot([0, -0.2], [0, 0], [AX_MIN, AX_MIN + 0.3], 'k-', linewidth=2, zorder=8)
     ax.view_init(elev=20, azim=45)
     ax.grid(False)
     ax.set_box_aspect([1, 1, 1])
@@ -93,12 +112,11 @@ def render(show_plane, show_points, show_gaps, out):
     ax = fig.add_subplot(111, projection='3d', computed_zorder=False)
 
     if show_plane:
-        # Reach back past the origin in both features, so the origin sits inside the
-        # patch instead of at its corner. A patch starting exactly at x=0, y=0 reads
-        # as a quadrant that happens to touch the origin, not as a plane passing
-        # through it. -0.5 is as far back as the cube allows: the surface reaches
-        # -0.40 at that corner against a floor at -0.50, and further would clip.
-        gx, gy = np.meshgrid(np.linspace(-0.5, 4.6, 2), np.linspace(-0.5, 4.6, 2))
+        # Reach well back past the origin in both features, so the origin sits well
+        # inside the patch rather than near its corner. A patch that starts at or
+        # just before x=0, y=0 reads as a quadrant resting on the origin, not as a
+        # plane passing through it.
+        gx, gy = np.meshgrid(np.linspace(AX_MIN, 4.6, 2), np.linspace(AX_MIN, 4.6, 2))
         ax.plot_surface(gx, gy, h(gx, gy),
                         color='#cccccc', alpha=0.55, shade=False,
                         edgecolor='#9a9a9a', linewidth=1.2, zorder=1)
