@@ -139,36 +139,48 @@ def axis_labels(ax, fig):
                 rotation_mode='anchor', ha='center', va='center', zorder=12)
 
 
-def j_axis_labels(ax, fig, g1, g2, cut):
-    """Name the two weights and the objective, in the deck's own notation.
+def j_axes_frame(ax, g1, g2, cut, m1, m2):
+    """The same three black arrowed arms the cube figures carry, for theta-space.
 
-    The J surface carries no axis arms, so these ride just outside the window on the
-    two floor edges and up the left side, rather than at the tip of anything.
+    The cube figures hang their axes off the origin. That is not available here: the
+    window sits tight around theta*, and the origin of theta-space is nowhere near
+    it. So the arms run out of the low corner of the window instead, through the
+    margin the limits already hold open, which keeps them clear of the bowl.
     """
-    fig.canvas.draw()
-    # Sit just past the two near edges of the surface, the ones facing the viewer at
-    # azim 45, where the margin held open by the limits leaves clear ground.
-    px = 0.07 * (g1.max() - g1.min())
-    py = 0.07 * (g2.max() - g2.min())
-    mid1 = 0.5 * (g1.min() + g1.max())
-    mid2 = 0.5 * (g2.min() + g2.max())
-    # J needs a wider berth than the other two. At azim 45 it belongs over the far
-    # corner, where the rim stands at full cut height, so a close label would land
-    # on the surface rather than clear of it.
-    # the edge to lie along, where the words sit, the words, the colour
+    x0, y0 = g1.min() - 0.6 * m1, g2.min() - 0.6 * m2
+    x1, y1 = g1.max(), g2.max()
+    style = dict(color='black', linewidth=2, zorder=8)
+    ax.plot([x0, x1], [y0, y0], [0, 0], **style)
+    ax.plot([x0, x0], [y0, y1], [0, 0], **style)
+    ax.plot([x0, x0], [y0, y0], [0, cut], **style)
+    # Arrowheads sized per axis. The two weights span about a third of a unit while
+    # J spans its cut height, so one shared offset would be a speck on one arm and
+    # a spike on another.
+    hx, hy, hz = 0.07 * (x1 - x0), 0.07 * (y1 - y0), 0.07 * cut
+    ax.plot([x1, x1 - hx], [y0, y0 + 0.5 * hy], [0, 0], **style)
+    ax.plot([x1, x1 - hx], [y0, y0 - 0.5 * hy], [0, 0], **style)
+    ax.plot([x0 + 0.5 * hx, x0], [y1 - hy, y1], [0, 0], **style)
+    ax.plot([x0 - 0.5 * hx, x0], [y1 - hy, y1], [0, 0], **style)
+    ax.plot([x0 + 0.5 * hx, x0], [y0, y0], [cut - hz, cut], **style)
+    ax.plot([x0 - 0.5 * hx, x0], [y0, y0], [cut - hz, cut], **style)
+    return x0, y0, x1, y1, cut
+
+
+def j_axis_labels(ax, fig, frame):
+    """Name each arm at its tip, the way the cube figures name theirs."""
+    fig.canvas.draw()  # the projection is only valid once the figure has been drawn
+    x0, y0, x1, y1, z1 = frame
+    dx, dy, dz = 0.08 * (x1 - x0), 0.08 * (y1 - y0), 0.09 * z1
+    # the arm to lie along, where the words sit, the words
     specs = [
-        (((g1.min(), g2.max() + py, 0), (g1.max(), g2.max() + py, 0)),
-         (mid1, g2.max() + py, 0), r'$\theta_1$', 'black'),
-        (((g1.max() + px, g2.min(), 0), (g1.max() + px, g2.max(), 0)),
-         (g1.max() + px, mid2, 0), r'$\theta_2$', 'black'),
-        (None, (g1.min() - 3 * px, g2.min() - 3 * py, 1.02 * cut),
-         r'$J(\theta)$', '#777777'),
+        (((x0, y0, 0), (x1, y0, 0)), (x1 + dx, y0 - 0.3 * dy, 0), r'$\theta_1$'),
+        (((x0, y0, 0), (x0, y1, 0)), (x0 - 0.3 * dx, y1 + dy, 0), r'$\theta_2$'),
+        (None, (x0, y0, z1 + dz), r'$J(\theta)$'),
     ]
-    for edge, at, words, colour in specs:
+    for edge, at, words in specs:
         angle = _label_angle(ax, edge[0], edge[1]) if edge else 0.0
         ax.text(at[0], at[1], at[2], words, fontsize=21, rotation=angle,
-                rotation_mode='anchor', ha='center', va='center',
-                color=colour, zorder=12)
+                rotation_mode='anchor', ha='center', va='center', zorder=12)
 
 
 def save(fig, out):
@@ -283,11 +295,19 @@ def render_J(out):
     # Look down into the basin and compress the vertical, so the quadratic reads as
     # a bowl. J grows fast toward the window corners, so at equal aspect and a low
     # elevation the corners tower and the whole surface renders as a spike.
-    ax.view_init(elev=38, azim=45)
+    # azim 215, not 225, for the same reason the cube sits at 35 rather than 45.
+    # The window is centred on theta*, so the minimum lies exactly on the diagonal
+    # out of the low corner; square to that diagonal it projects onto the vertical
+    # arm and the purple dot lands on the axis. Ten degrees off separates them.
+    # elev 48 rather than 38. The arm rises from a corner that projects well below
+    # the basin, so at 38 the J label and the arrow tip both land on the bowl's
+    # lower edge. Lifting the eye closes that gap, and 58 would start flattening
+    # the bowl into a disc.
+    ax.view_init(elev=48, azim=215)
     ax.grid(False)
     ax.set_box_aspect([1, 1, 0.55])
     ax._axis3don = False
-    j_axis_labels(ax, fig, g1, g2, cut)
+    j_axis_labels(ax, fig, j_axes_frame(ax, g1, g2, cut, m1, m2))
     print('  J minimum at theta = (%.3f, %.3f), J = %.4f' % (best[0], best[1], jmin))
     save(fig, out)
 
