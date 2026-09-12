@@ -13,6 +13,7 @@ matplotlib.rcParams['font.family'] = 'serif'
 matplotlib.rcParams['font.serif'] = ['Palatino', 'Palatino Linotype', 'DejaVu Serif']
 matplotlib.rcParams['mathtext.fontset'] = 'stix'
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 from PIL import Image
 from mpl_toolkits.mplot3d import Axes3D, proj3d
@@ -139,56 +140,6 @@ def axis_labels(ax, fig):
                 rotation_mode='anchor', ha='center', va='center', zorder=12)
 
 
-def j_axes_frame(ax, g1, g2, ztop, m1, m2):
-    """Three black arrowed arms for theta-space, along the two edges facing the viewer.
-
-    The cube figures hang their axes off the origin. That is not available here: the
-    window is centred on theta* and the origin of theta-space sits outside it. Running
-    all three out of one corner of the window sends one of them straight across the
-    bowl, so the two weights follow the near edges instead, meeting at the corner that
-    projects to the bottom of the frame. J rises from that same corner, drawn under the
-    surface, so the bowl hides the stretch of it that passes behind.
-    """
-    # Pushed clear of the surface, so the two weight arms and their labels sit outside
-    # the bowl's footprint rather than on top of it.
-    xN, yN = g1.max() + 1.15 * m1, g2.min() - 1.15 * m2
-    xF, yF = g1.min(), g2.max()
-    style = dict(color='black', linewidth=2, zorder=8)
-    ax.plot([xF, xN], [yN, yN], [0, 0], **style)
-    ax.plot([xN, xN], [yN, yF], [0, 0], **style)
-    # Under the surface rather than over it. Drawn on top, this arm cuts straight
-    # across the basin; at zorder 1 the bowl hides the stretch that passes behind it.
-    behind = dict(color='black', linewidth=2, zorder=1)
-    ax.plot([xN, xN], [yN, yN], [0, ztop], **behind)
-    # Arrowheads sized per axis: the weights span a handful of units while J spans
-    # hundreds, so one shared offset would be a speck on one arm and a spike on another.
-    hx, hy, hz = 0.06 * (xN - xF), 0.06 * (yF - yN), 0.06 * ztop
-    ax.plot([xN, xN - hx], [yN, yN + 0.5 * hy], [0, 0], **style)
-    ax.plot([xN, xN - hx], [yN, yN - 0.5 * hy], [0, 0], **style)
-    ax.plot([xN + 0.5 * hx, xN], [yF - hy, yF], [0, 0], **style)
-    ax.plot([xN - 0.5 * hx, xN], [yF - hy, yF], [0, 0], **style)
-    ax.plot([xN + 0.5 * hx, xN], [yN, yN], [ztop - hz, ztop], **behind)
-    ax.plot([xN - 0.5 * hx, xN], [yN, yN], [ztop - hz, ztop], **behind)
-    return xF, yF, xN, yN, ztop
-
-
-def j_axis_labels(ax, fig, frame):
-    """Name each arm at its tip, the way the cube figures name theirs."""
-    fig.canvas.draw()  # the projection is only valid once the figure has been drawn
-    xF, yF, xN, yN, ztop = frame
-    dx, dy, dz = 0.07 * (xN - xF), 0.07 * (yF - yN), 0.09 * ztop
-    # the arm to lie along, where the words sit, the words
-    specs = [
-        (((xF, yN, 0), (xN, yN, 0)), (xN + dx, yN - 0.3 * dy, 0), r'$\theta_1$'),
-        (((xN, yN, 0), (xN, yF, 0)), (xN + 0.3 * dx, yF + dy, 0), r'$\theta_2$'),
-        (None, (xN, yN, ztop + dz), r'$J(\theta)$'),
-    ]
-    for edge, at, words in specs:
-        angle = _label_angle(ax, edge[0], edge[1]) if edge else 0.0
-        ax.text(at[0], at[1], at[2], words, fontsize=21, rotation=angle,
-                rotation_mode='anchor', ha='center', va='center', zorder=12)
-
-
 def save(fig, out):
     plt.tight_layout()
     fig.savefig(out, dpi=300, bbox_inches='tight', transparent=True)
@@ -245,68 +196,70 @@ def render(show_plane, show_points, show_gaps, out):
 
 
 def render_J(out):
-    """J over the two weights, in plotted units, with its minimum marked."""
-    n = len(ENERGY)
+    """J over the two weights, drawn the way the interactive version draws it.
 
+    ridge/d2-unique-solution.html puts this same surface on the right of its split,
+    and this figure is the still of that panel. So it follows the demo rather than
+    the arrow-axis style the cube figures use: a warm colourscale, a full axes box
+    with ticks and grid, and the demo's own camera. The colour is what carries the
+    bowl at a glance; drawn flat grey the same surface reads as a sheet.
+    """
+    # Raw weights, not the cube-scaled ones. J lives in theta-space, which the
+    # drawing cube never touches, and the slide's algebra is in these units:
+    # J(theta) = 1/3 [(t1 - 2)^2 + (t2 - 3)^2 + (t1 + t2 - 5)^2], least at (2, 3).
     def J(t1, t2):
         total = 0.0
-        for a, b, c in zip(X1, X2, Y):
+        for a, b, c in zip(TEMP, POP, ENERGY):
             total = total + (t1 * a + t2 * b - c) ** 2
-        return total / n
+        return total / len(ENERGY)
 
-    # least squares minimum, and a window around it
-    A = np.column_stack([X1, X2])
-    best = np.linalg.lstsq(A, Y, rcond=None)[0]
+    best = np.linalg.lstsq(np.column_stack([TEMP, POP]), ENERGY, rcond=None)[0]
     jmin = J(best[0], best[1])
-    # theta* plus or minus 3 and 4, the proportions ridge/d2-unique-solution.html
-    # uses for the same picture. Sized off the curvature instead, the window hugged
-    # the minimum, where a paraboloid is nearly flat, and the surface read as a dish.
-    span1, span2 = 3.0, 4.0
-    g1 = np.linspace(best[0] - span1, best[0] + span1, 60)
-    g2 = np.linspace(best[1] - span2, best[1] + span2, 60)
+
+    # The demo's window, theta1 over -1..5 and theta2 over -1..7, both centred on
+    # theta*. No cut: the surface is drawn whole, so its rim stays a clean rectangle.
+    g1 = np.linspace(-1.0, 5.0, 80)
+    g2 = np.linspace(-1.0, 7.0, 80)
     G1, G2 = np.meshgrid(g1, g2)
     Z = J(G1, G2)
-    # Drawn whole, over its rectangular window. Masking everything above a height
-    # instead leaves the rim a ragged sawtooth, because the cut falls between grid
-    # cells and every cell is either kept or dropped. The box aspect below
-    # compresses the vertical, which is what keeps the basin readable without one.
-    ztop = float(Z.max())
-    print('  J window: span %.3f by %.3f, floor %.4f, top %.4f' % (
-        span1, span2, jmin, ztop))
 
-    fig = plt.figure(figsize=(10, 8))
+    warm = LinearSegmentedColormap.from_list('warm', ['#ffd966', '#f6b26b', '#cc4125'])
+
+    fig = plt.figure(figsize=(8, 6.5))
+    # computed_zorder=False: the marker sits exactly on the surface at the basin, and
+    # matplotlib's own depth sort loses it inside the surface it is resting on.
     ax = fig.add_subplot(111, projection='3d', computed_zorder=False)
-    # zorder 4: over the J arm at 1, under the two weight arms at 8.
-    ax.plot_surface(G1, G2, Z, color='#cccccc', alpha=0.5, shade=False,
-                    edgecolor='#9a9a9a', linewidth=0.4, zorder=4)
-    jmin = J(best[0], best[1])
-    ax.scatter([best[0]], [best[1]], [jmin], s=260, c='#674ea7',
-               edgecolors='black', linewidth=2, depthshade=False, zorder=10)
-    # Hold the limits wider than the surface, so the labels have somewhere to sit.
-    # Fitted tight, the bowl fills the frame edge to edge and every label lands on
-    # top of it instead of beside it.
-    m1 = 0.12 * (g1.max() - g1.min())
-    m2 = 0.12 * (g2.max() - g2.min())
-    # Asymmetric on purpose: the arms and their labels live past the two near edges.
-    ax.set_xlim(g1.min() - m1, g1.max() + 1.9 * m1)
-    ax.set_ylim(g2.min() - 1.9 * m2, g2.max() + m2)
-    ax.set_zlim(0, ztop)
-    for setter in ('set_xlabel', 'set_ylabel', 'set_zlabel'):
-        getattr(ax, setter)('')
-    for setter in ('set_xticks', 'set_yticks', 'set_zticks'):
-        getattr(ax, setter)([])
-    # azim 315 looks along the shallow diagonal of the quadratic, the same direction
-    # the interactive version looks from. Square to the steep diagonal, at 45 or 225,
-    # one corner towers and the surface reads as a ramp rather than a basin.
-    # elev 62 looks down into the basin. Lower, and the minimum lands on the bowl's
-    # own silhouette with no surface drawn below it, which reads as a point sitting on
-    # the rim rather than resting at the bottom.
-    ax.view_init(elev=62, azim=315)
-    ax.grid(False)
-    ax.set_box_aspect([1, 1, 0.75])
-    ax._axis3don = False
-    j_axis_labels(ax, fig, j_axes_frame(ax, g1, g2, ztop, m1, m2))
-    print('  J minimum at theta = (%.3f, %.3f), J = %.4f' % (best[0], best[1], jmin))
+    ax.plot_surface(G1, G2, Z, cmap=warm, rstride=2, cstride=2,
+                    linewidth=0, antialiased=True, alpha=0.9, zorder=1)
+    # Lifted a hair off the floor so it does not z-fight with the surface under it.
+    ax.scatter([best[0]], [best[1]], [jmin + 0.25], s=150, c='#674ea7',
+               edgecolors='black', linewidth=1.5, depthshade=False, zorder=10)
+
+    ax.set_xlim(-1, 5)
+    ax.set_ylim(-1, 7)
+    ax.set_zlim(0, float(Z.max()))
+    ax.set_xlabel(r'$\theta_1$', fontsize=19, labelpad=14)
+    ax.set_ylabel(r'$\theta_2$', fontsize=19, labelpad=14)
+    # set_zlabel does not survive this figure, at any labelpad or rotation tried, so
+    # the name goes in axes fractions instead, beside the tick numbers it belongs to.
+    ax.set_zlabel('')
+    ax.text2D(1.02, 0.55, r'$J(\theta)$', transform=ax.transAxes,
+              fontsize=19, ha='left', va='center')
+    ax.set_xticks([0, 2, 4])
+    ax.set_yticks([0, 2, 4, 6])
+    ax.set_zticks([0, 10, 20])
+    ax.tick_params(labelsize=14, colors='#5f6672')
+    # The demo's camera sits at eye (1.8, -1.8, 0.8), which is azim 315 and elev 17.
+    # Low on purpose: from up high the walls foreshorten and the basin flattens out.
+    ax.view_init(elev=18, azim=315)
+    ax.set_box_aspect([1, 1, 0.85])
+    # White panes and a light grid, matching the demo's plot area.
+    for axis in (ax.xaxis, ax.yaxis, ax.zaxis):
+        axis.pane.set_facecolor('white')
+        axis.pane.set_edgecolor('#dcdcdc')
+        axis._axinfo['grid'].update(color='#dcdcdc', linewidth=0.8)
+    print('  J minimum at theta = (%.2f, %.2f), J = %.3f, top %.1f' % (
+        best[0], best[1], jmin, Z.max()))
     save(fig, out)
 
 
