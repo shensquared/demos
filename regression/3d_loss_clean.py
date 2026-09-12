@@ -7,10 +7,15 @@ matplotlib.use('Agg')  # Use non-interactive backend for saving
 # so the smallest of the three gaps drew no dashes at all. Unscaled, (4, 3) is a
 # 17px dash and a 13px hole, which fits inside even the shortest gap.
 matplotlib.rcParams['lines.scale_dashes'] = False
+# The axis labels carry the deck's own words, so lean toward the deck's own look:
+# Palatino where it is installed, and a serif math font for the subscripts.
+matplotlib.rcParams['font.family'] = 'serif'
+matplotlib.rcParams['font.serif'] = ['Palatino', 'Palatino Linotype', 'DejaVu Serif']
+matplotlib.rcParams['mathtext.fontset'] = 'stix'
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
-from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d import Axes3D, proj3d
 import os
 
 # Figures for the 2-feature running example on the FA26 lec02 slides. All of them
@@ -100,6 +105,72 @@ def axes_frame(ax):
     ax._axis3don = False
 
 
+def _label_angle(ax, a, b):
+    """Screen angle of the segment a to b, in the convention Text.rotation uses.
+
+    Measured off the live projection rather than written down. Typing such angles in
+    is what left the deck's own rotated text blocks pointing the wrong way when the
+    view moved from azim 45 to azim 35, and a label that lives inside the figure
+    cannot drift away from the axis it names.
+    """
+    def screen(p):
+        x, y, _ = proj3d.proj_transform(p[0], p[1], p[2], ax.get_proj())
+        return np.array(ax.transData.transform((x, y)))
+
+    d = screen(b) - screen(a)
+    # transData is y-up, which is the convention rotation already uses
+    angle = np.degrees(np.arctan2(d[1], d[0]))
+    return (angle + 90) % 180 - 90  # keep the words upright, never inverted
+
+
+def axis_labels(ax, fig):
+    """Name each arm in the same words the slides use, angled to follow the arm."""
+    fig.canvas.draw()  # the projection is only valid once the figure has been drawn
+    origin = (0, 0, 0)
+    # arm tip, where the words sit, the words, and whether to lie along the arm
+    specs = [
+        ((5, 0, 0), (5.9, 0, -0.5), 'temperature $x_1$', True),
+        ((0, 5, 0), (0, 5.9, -0.5), 'population $x_2$', True),
+        ((0, 0, 5), (0, 0, 5.7), 'energy used $y$', False),
+    ]
+    for tip, at, words, follow in specs:
+        angle = _label_angle(ax, origin, tip) if follow else 0.0
+        ax.text(at[0], at[1], at[2], words, fontsize=19, rotation=angle,
+                rotation_mode='anchor', ha='center', va='center', zorder=12)
+
+
+def j_axis_labels(ax, fig, g1, g2, cut):
+    """Name the two weights and the objective, in the deck's own notation.
+
+    The J surface carries no axis arms, so these ride just outside the window on the
+    two floor edges and up the left side, rather than at the tip of anything.
+    """
+    fig.canvas.draw()
+    # Sit just past the two near edges of the surface, the ones facing the viewer at
+    # azim 45, where the margin held open by the limits leaves clear ground.
+    px = 0.07 * (g1.max() - g1.min())
+    py = 0.07 * (g2.max() - g2.min())
+    mid1 = 0.5 * (g1.min() + g1.max())
+    mid2 = 0.5 * (g2.min() + g2.max())
+    # J needs a wider berth than the other two. At azim 45 it belongs over the far
+    # corner, where the rim stands at full cut height, so a close label would land
+    # on the surface rather than clear of it.
+    # the edge to lie along, where the words sit, the words, the colour
+    specs = [
+        (((g1.min(), g2.max() + py, 0), (g1.max(), g2.max() + py, 0)),
+         (mid1, g2.max() + py, 0), r'$\theta_1$', 'black'),
+        (((g1.max() + px, g2.min(), 0), (g1.max() + px, g2.max(), 0)),
+         (g1.max() + px, mid2, 0), r'$\theta_2$', 'black'),
+        (None, (g1.min() - 3 * px, g2.min() - 3 * py, 1.02 * cut),
+         r'$J(\theta)$', '#777777'),
+    ]
+    for edge, at, words, colour in specs:
+        angle = _label_angle(ax, edge[0], edge[1]) if edge else 0.0
+        ax.text(at[0], at[1], at[2], words, fontsize=21, rotation=angle,
+                rotation_mode='anchor', ha='center', va='center',
+                color=colour, zorder=12)
+
+
 def save(fig, out):
     plt.tight_layout()
     fig.savefig(out, dpi=300, bbox_inches='tight', transparent=True)
@@ -112,7 +183,7 @@ def save(fig, out):
         print('  %-24s -> %s %s' % (out, out.replace('.png', '_cropped.png'), cropped.size))
 
 
-def render(show_plane, show_points, show_gaps, out, floor_drops=False):
+def render(show_plane, show_points, show_gaps, out):
     # Every city sits above the plane, so drawing points and gaps over it is the
     # correct order. computed_zorder=False makes matplotlib honor that instead of
     # deriving its own, which otherwise chops the gap lines in half.
@@ -144,18 +215,6 @@ def render(show_plane, show_points, show_gaps, out, floor_drops=False):
                        s=95, facecolors='white', edgecolors='black',
                        linewidth=2, depthshade=False, zorder=6)
 
-    # Floor drop lines, on the scatter only. Both features are binary, so the three
-    # points sit at corners of the footprint with nothing in between and the picture
-    # carries no depth cue at all; anchoring each one to the x1-x2 plane supplies it.
-    # The loss figure already has its gap lines, so these would only clutter it.
-    if floor_drops:
-        for px, py, pz in points:
-            ax.plot([px, px], [py, py], [0, pz], color='#9a9a9a',
-                    linestyle='--', dashes=(4, 3), linewidth=1.4, zorder=4)
-            ax.scatter([px], [py], [0], s=55, facecolors='white',
-                       edgecolors='#9a9a9a', linewidth=1.4,
-                       depthshade=False, zorder=5)
-
     if show_points:
         ax.scatter(points[:, 0], points[:, 1], points[:, 2],
                    s=300, c=COLORS, alpha=1.0,
@@ -163,6 +222,7 @@ def render(show_plane, show_points, show_gaps, out, floor_drops=False):
                    edgecolors='black', linewidth=2, zorder=10)
 
     axes_frame(ax)
+    axis_labels(ax, fig)
     save(fig, out)
 
 
@@ -208,8 +268,13 @@ def render_J(out):
     jmin = J(best[0], best[1])
     ax.scatter([best[0]], [best[1]], [jmin], s=260, c='#674ea7',
                edgecolors='black', linewidth=2, depthshade=False, zorder=10)
-    ax.set_xlim(g1.min(), g1.max())
-    ax.set_ylim(g2.min(), g2.max())
+    # Hold the limits wider than the surface, so the labels have somewhere to sit.
+    # Fitted tight, the bowl fills the frame edge to edge and every label lands on
+    # top of it instead of beside it.
+    m1 = 0.12 * (g1.max() - g1.min())
+    m2 = 0.12 * (g2.max() - g2.min())
+    ax.set_xlim(g1.min() - m1, g1.max() + m1)
+    ax.set_ylim(g2.min() - m2, g2.max() + m2)
     ax.set_zlim(0, cut)
     for setter in ('set_xlabel', 'set_ylabel', 'set_zlabel'):
         getattr(ax, setter)('')
@@ -222,6 +287,7 @@ def render_J(out):
     ax.grid(False)
     ax.set_box_aspect([1, 1, 0.55])
     ax._axis3don = False
+    j_axis_labels(ax, fig, g1, g2, cut)
     print('  J minimum at theta = (%.3f, %.3f), J = %.4f' % (best[0], best[1], jmin))
     save(fig, out)
 
@@ -243,7 +309,7 @@ print('  plotted gaps: %s' % ', '.join('%s %+.2f' % (c, g) for c, g in zip(CITIE
 print('  all cities above the plane: %s, gap range %.2f to %.2f (%.1fx)' % (
     bool((gaps > 0).all()), gaps.min(), gaps.max(), gaps.max() / gaps.min()))
 print('figures:')
-render(False, True, False, '3d_scatter_clean.png', floor_drops=True)
+render(False, True, False, '3d_scatter_clean.png')
 render(True, True, False, '3d_plane_clean.png')
 render(True, False, False, '3d_plane_bare.png')
 render(True, True, True, '3d_loss_clean.png')
