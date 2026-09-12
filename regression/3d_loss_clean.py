@@ -237,37 +237,59 @@ def render_J(out):
     ax.scatter([best[0]], [best[1]], [jmin + 0.25], s=150, c='#674ea7',
                edgecolors='black', linewidth=1.5, depthshade=False, zorder=10)
 
-    ax.set_xlim(2.0 - SPAN, 2.0 + SPAN)
-    ax.set_ylim(3.0 - SPAN, 3.0 + SPAN)
-    ax.set_zlim(0, float(Z.max()))
-    # Small pads and a margin around the axes. With the ticks gone and the box
-    # stretched in z, a large pad pushes these two off the canvas, and a tight
-    # bounding box cannot recover pixels that were never drawn.
-    ax.set_xlabel(r'$\theta_1$', fontsize=19, labelpad=4)
-    ax.set_ylabel(r'$\theta_2$', fontsize=19, labelpad=4)
-    # set_zlabel does not survive this figure, at any labelpad or rotation tried, so
-    # the name goes in axes fractions instead, beside the tick numbers it belongs to.
-    ax.set_zlabel('')
-    ax.text2D(1.02, 0.55, r'$J(\theta)$', transform=ax.transAxes,
-              fontsize=19, ha='left', va='center')
-    # No ticks and no numbers. The three names carry what the reader needs, and the
-    # figure sits beside a slide that already states the scale.
-    ax.set_xticks([])
-    ax.set_yticks([])
-    ax.set_zticks([])
-    fig.subplots_adjust(left=0.04, right=0.92, bottom=0.09, top=0.97)
-    # The demo's camera sits at eye (1.8, -1.8, 0.8), which is azim 315 and elev 17.
-    # Low on purpose: from up high the walls foreshorten and the basin flattens out.
-    ax.view_init(elev=18, azim=315)
+    ztop = float(Z.max())
+    # The arm geometry comes first, because the limits have to reach past the arrow
+    # tips far enough to contain the names. Set to the surface alone, the names land
+    # outside the axes and project off the canvas, and a tight bounding box cannot
+    # recover pixels that were never drawn.
+    m1 = 0.10 * (g1.max() - g1.min())
+    m2 = 0.10 * (g2.max() - g2.min())
+    xN, yN = g1.max() + m1, g2.min() - m2      # the corner nearest the viewer
+    xF, yF = g1.min(), g2.max()
+    L1, L2 = xN - xF, yF - yN
+    ax.set_xlim(xF - m1, xN + 0.30 * L1)
+    ax.set_ylim(yN - 0.30 * L2, yF + 0.30 * L2)
+    ax.set_zlim(0, ztop)
+    for setter in ('set_xlabel', 'set_ylabel', 'set_zlabel'):
+        getattr(ax, setter)('')
+    for setter in ('set_xticks', 'set_yticks', 'set_zticks'):
+        getattr(ax, setter)([])
+    # azim 305, ten degrees counter-clockwise of the 315 the interactive version uses.
+    ax.view_init(elev=18, azim=305)
+    ax.grid(False)
     # Stretched in z, so the basin reads as a bowl rather than a shallow dish. This
     # changes only how tall the drawing box is; the surface itself is untouched.
     ax.set_box_aspect([1, 1, 1.35])
-    # No grid, and the panes hidden outright. A transparent facecolour is not enough:
-    # the pane carries its own alpha of 0.5 and that overrides the one in the colour,
-    # which is what left a half-opaque wash across the whole figure.
-    ax.grid(False)
-    for axis in (ax.xaxis, ax.yaxis, ax.zaxis):
-        axis.pane.set_visible(False)
+    # The same switch axes_frame throws: no box, no panes, no matplotlib axis lines.
+    # The three arms below stand in for them.
+    ax._axis3don = False
+
+    # axes_frame hangs its arms off the origin. Theta-space has no useful origin
+    # under the bowl, so these follow the two edges nearest the viewer and meet at
+    # the corner that projects to the bottom of the frame. Weights, arrowhead
+    # proportions and label size are the cube's.
+    fig.canvas.draw()  # the projection is only valid once the figure has been drawn
+    ax.plot([xF, xN], [yN, yN], [0, 0], 'k-', linewidth=2, zorder=8)
+    ax.plot([xN, xN], [yN, yF], [0, 0], 'k-', linewidth=2, zorder=8)
+    # J passes behind the bowl, so it goes under the surface rather than over it.
+    ax.plot([xN, xN], [yN, yN], [0, ztop], 'k-', linewidth=2, zorder=1)
+    # Arrowheads in the cube's proportions, 6% of the arm back and 4% across.
+    ax.plot([xN, xN - 0.06 * L1], [yN, yN + 0.04 * L2], [0, 0], 'k-', linewidth=2, zorder=8)
+    ax.plot([xN, xN - 0.06 * L1], [yN, yN - 0.04 * L2], [0, 0], 'k-', linewidth=2, zorder=8)
+    ax.plot([xN + 0.04 * L1, xN], [yF - 0.06 * L2, yF], [0, 0], 'k-', linewidth=2, zorder=8)
+    ax.plot([xN - 0.04 * L1, xN], [yF - 0.06 * L2, yF], [0, 0], 'k-', linewidth=2, zorder=8)
+    ax.plot([xN + 0.04 * L1, xN], [yN, yN], [0.94 * ztop, ztop], 'k-', linewidth=2, zorder=1)
+    ax.plot([xN - 0.04 * L1, xN], [yN, yN], [0.94 * ztop, ztop], 'k-', linewidth=2, zorder=1)
+    # Names at the arm tips, angled to follow the arm, the way axis_labels does it.
+    specs = [
+        (((xF, yN, 0), (xN, yN, 0)), (xN + 0.17 * L1, yN, -0.06 * ztop), r'$\theta_1$'),
+        (((xN, yN, 0), (xN, yF, 0)), (xN, yF + 0.17 * L2, -0.06 * ztop), r'$\theta_2$'),
+        (None, (xN, yN, 1.12 * ztop), r'$J(\theta)$'),
+    ]
+    for edge, at, words in specs:
+        angle = _label_angle(ax, edge[0], edge[1]) if edge else 0.0
+        ax.text(at[0], at[1], at[2], words, fontsize=19, rotation=angle,
+                rotation_mode='anchor', ha='center', va='center', zorder=12)
     print('  J minimum at theta = (%.2f, %.2f), J = %.3f, top %.1f' % (
         best[0], best[1], jmin, Z.max()))
     save(fig, out)
