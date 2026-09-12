@@ -16,9 +16,11 @@ from mpl_toolkits.mplot3d import Axes3D
 # visible, and it sits under every city so all four gaps drop the same direction.
 # The two weights differ so the plane tilts visibly. Weighting both equally makes it
 # rise toward the far corner, which this viewing angle foreshortens into something
-# that reads as horizontal. Blue, at (3.5, 1.5, 1.5), caps how far theta1 can go
-# before the plane climbs above that city and the gaps start pointing both ways.
-THETA = (0.35, 0.05)
+# that reads as horizontal. Blue, at (3.5, 1.5, 1.5), is the binding city: it has the
+# highest x of the four, so the plane rises fastest toward it and its gap closes
+# first. theta1 is held to whatever keeps that gap wide enough to read, which matters
+# more now that the gaps are thin dashes rather than thick colored bars.
+THETA = (0.26, 0.04)
 
 # Points and colors from 3d_scatter_clean.py: Chicago, New York, Boston, San Diego
 points = np.array([
@@ -53,18 +55,17 @@ ax.plot_surface(gx, gy, h(gx, gy),
 
 # Vertical gap from each city down to the plane, then a hollow ring where it lands.
 # A plane seen in projection gives no cue for where a vertical meets it, so without
-# the ring each gap reads as stopping in mid-air. Point 4 is the worked example
-# named in the slide's callout and carries the heaviest line.
-for (px, py, pz), c in zip(points, colors):
-    highlight = (pz == 3.5)
+# the ring each gap reads as stopping in mid-air. The gaps stay black and broken,
+# matching the dotted black line blocks the slide already uses for the 2D version,
+# and the rings stay unfilled: only the cities carry color, so the four gaps read as
+# four instances of one quantity rather than four different things.
+for px, py, pz in points:
     ax.plot([px, px], [py, py], [pz, h(px, py)],
-            color=c,
-            linewidth=5.5 if highlight else 4,
-            solid_capstyle='butt',
-            zorder=5)
+            color='black', linestyle='--', dashes=(4, 3),
+            linewidth=2.5, zorder=5)
     ax.scatter([px], [py], [h(px, py)],
-               s=130, facecolors='white', edgecolors=c,
-               linewidth=3, depthshade=False, zorder=6)
+               s=95, facecolors='white', edgecolors='black',
+               linewidth=2, depthshade=False, zorder=6)
 
 # Create scatter plot with large, easy-to-see points
 scatter = ax.scatter(x, y, z,
