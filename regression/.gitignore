@@ -1,0 +1,11 @@
+# The uncropped renders are build intermediates, not deliverables.
+#
+# 3d_loss_clean.py writes each figure twice: once whole, then again trimmed to a
+# crop box. The last pass reopens all four uncropped cube PNGs together to work
+# out one shared box, so that the cities land in the same place on every slide
+# they appear on. Only the _cropped files are dragged into the deck.
+#
+# Every run rewrites the uncropped ones, so tracking them adds a fresh copy of
+# each to history on every re-render and buys nothing the script cannot redo.
+3d_*.png
+!3d_*_cropped.png
