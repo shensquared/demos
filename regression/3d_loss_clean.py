@@ -20,9 +20,11 @@ from mpl_toolkits.mplot3d import Axes3D
 # rise toward the far corner, which this viewing angle foreshortens into something
 # that reads as horizontal. Blue, at (3.5, 1.5, 1.5), is the binding city: it has the
 # highest x of the four, so the plane rises fastest toward it and its gap closes
-# first. theta1 is held to whatever keeps that gap wide enough to read, which matters
-# more now that the gaps are thin dashes rather than thick colored bars.
-THETA = (0.26, 0.04)
+# first, which caps the slant. theta1 is pushed right up to what blue's gap tolerates
+# while still reading as a thin dash. Steeper than this and the plane climbs through
+# blue, flipping that one gap upward while the other three still point down, and that
+# consistency is what makes the picture legible at this viewing angle.
+THETA = (0.32, 0.02)
 
 # Points and colors from 3d_scatter_clean.py: Chicago, New York, Boston, San Diego
 points = np.array([
@@ -47,7 +49,9 @@ def render(show_gaps, out):
 
     # Hypothesis plane through the origin. Gray at low opacity, matching the plane on
     # the linear hypothesis class slide.
-    gx, gy = np.meshgrid(np.linspace(0, 4.6, 2), np.linspace(0, 4.6, 2))
+    # Stops just past the farthest city at 3.5 instead of running out toward the axis
+    # arrows, so the patch reads as a plane through the origin rather than as a floor.
+    gx, gy = np.meshgrid(np.linspace(0, 3.9, 2), np.linspace(0, 3.9, 2))
     ax.plot_surface(gx, gy, h(gx, gy),
                     color='#cccccc', alpha=0.39, shade=False,
                     edgecolor='#9a9a9a', linewidth=1.2, zorder=1)
