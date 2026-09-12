@@ -139,43 +139,48 @@ def axis_labels(ax, fig):
                 rotation_mode='anchor', ha='center', va='center', zorder=12)
 
 
-def j_axes_frame(ax, g1, g2, cut, m1, m2):
-    """The same three black arrowed arms the cube figures carry, for theta-space.
+def j_axes_frame(ax, g1, g2, ztop, m1, m2):
+    """Three black arrowed arms for theta-space, along the two edges facing the viewer.
 
     The cube figures hang their axes off the origin. That is not available here: the
-    window sits tight around theta*, and the origin of theta-space is nowhere near
-    it. So the arms run out of the low corner of the window instead, through the
-    margin the limits already hold open, which keeps them clear of the bowl.
+    window is centred on theta* and the origin of theta-space sits outside it. Running
+    all three out of one corner of the window sends one of them straight across the
+    bowl, so the two weights follow the near edges instead, meeting at the corner that
+    projects to the bottom of the frame, and J rises at the far end of one of them.
     """
-    x0, y0 = g1.min() - 0.6 * m1, g2.min() - 0.6 * m2
-    x1, y1 = g1.max(), g2.max()
+    # Pushed well past the surface, so the vertical arm clears the screen column the
+    # minimum sits in. At azim 315 that column rises from the middle of the near edge.
+    xN, yN = g1.max() + 1.15 * m1, g2.min() - 1.15 * m2
+    xF, yF = g1.min(), g2.max()
     style = dict(color='black', linewidth=2, zorder=8)
-    ax.plot([x0, x1], [y0, y0], [0, 0], **style)
-    ax.plot([x0, x0], [y0, y1], [0, 0], **style)
-    ax.plot([x0, x0], [y0, y0], [0, cut], **style)
-    # Arrowheads sized per axis. The two weights span about a third of a unit while
-    # J spans its cut height, so one shared offset would be a speck on one arm and
-    # a spike on another.
-    hx, hy, hz = 0.07 * (x1 - x0), 0.07 * (y1 - y0), 0.07 * cut
-    ax.plot([x1, x1 - hx], [y0, y0 + 0.5 * hy], [0, 0], **style)
-    ax.plot([x1, x1 - hx], [y0, y0 - 0.5 * hy], [0, 0], **style)
-    ax.plot([x0 + 0.5 * hx, x0], [y1 - hy, y1], [0, 0], **style)
-    ax.plot([x0 - 0.5 * hx, x0], [y1 - hy, y1], [0, 0], **style)
-    ax.plot([x0 + 0.5 * hx, x0], [y0, y0], [cut - hz, cut], **style)
-    ax.plot([x0 - 0.5 * hx, x0], [y0, y0], [cut - hz, cut], **style)
-    return x0, y0, x1, y1, cut
+    ax.plot([xF, xN], [yN, yN], [0, 0], **style)
+    ax.plot([xN, xN], [yN, yF], [0, 0], **style)
+    # J rises from the far end of the near edge, not from the corner the other two
+    # meet at. That corner projects directly below the basin, so an arm there runs up
+    # through the bowl and its label lands on the minimum.
+    ax.plot([xF, xF], [yN, yN], [0, ztop], **style)
+    # Arrowheads sized per axis: the weights span a handful of units while J spans
+    # hundreds, so one shared offset would be a speck on one arm and a spike on another.
+    hx, hy, hz = 0.06 * (xN - xF), 0.06 * (yF - yN), 0.06 * ztop
+    ax.plot([xN, xN - hx], [yN, yN + 0.5 * hy], [0, 0], **style)
+    ax.plot([xN, xN - hx], [yN, yN - 0.5 * hy], [0, 0], **style)
+    ax.plot([xN + 0.5 * hx, xN], [yF - hy, yF], [0, 0], **style)
+    ax.plot([xN - 0.5 * hx, xN], [yF - hy, yF], [0, 0], **style)
+    ax.plot([xF + 0.5 * hx, xF], [yN, yN], [ztop - hz, ztop], **style)
+    ax.plot([xF - 0.5 * hx, xF], [yN, yN], [ztop - hz, ztop], **style)
+    return xF, yF, xN, yN, ztop
 
 
 def j_axis_labels(ax, fig, frame):
     """Name each arm at its tip, the way the cube figures name theirs."""
     fig.canvas.draw()  # the projection is only valid once the figure has been drawn
-    x0, y0, x1, y1, z1 = frame
-    dx, dy, dz = 0.08 * (x1 - x0), 0.08 * (y1 - y0), 0.09 * z1
+    xF, yF, xN, yN, ztop = frame
+    dx, dy, dz = 0.07 * (xN - xF), 0.07 * (yF - yN), 0.09 * ztop
     # the arm to lie along, where the words sit, the words
     specs = [
-        (((x0, y0, 0), (x1, y0, 0)), (x1 + dx, y0 - 0.3 * dy, 0), r'$\theta_1$'),
-        (((x0, y0, 0), (x0, y1, 0)), (x0 - 0.3 * dx, y1 + dy, 0), r'$\theta_2$'),
-        (None, (x0, y0, z1 + dz), r'$J(\theta)$'),
+        (((xF, yN, 0), (xN, yN, 0)), (xN + dx, yN - 0.3 * dy, 0), r'$\theta_1$'),
+        (((xN, yN, 0), (xN, yF, 0)), (xN + 0.3 * dx, yF + dy, 0), r'$\theta_2$'),
+        (None, (xF, yN, ztop + dz), r'$J(\theta)$'),
     ]
     for edge, at, words in specs:
         angle = _label_angle(ax, edge[0], edge[1]) if edge else 0.0
@@ -252,26 +257,21 @@ def render_J(out):
     A = np.column_stack([X1, X2])
     best = np.linalg.lstsq(A, Y, rcond=None)[0]
     jmin = J(best[0], best[1])
-    # Size the window separately per weight, so J rises by the same amount along
-    # each axis. A square window renders the surface as a needle: J grows with the
-    # square of the step, and the two weights have very different curvature, so one
-    # direction towers while the other stays flat.
-    curv = A.T @ A / len(Y)
-    rise = max(8.0 * jmin, 0.35)
-    span1 = np.sqrt(rise / curv[0, 0])
-    span2 = np.sqrt(rise / curv[1, 1])
+    # theta* plus or minus 3 and 4, the proportions ridge/d2-unique-solution.html
+    # uses for the same picture. Sized off the curvature instead, the window hugged
+    # the minimum, where a paraboloid is nearly flat, and the surface read as a dish.
+    span1, span2 = 3.0, 4.0
     g1 = np.linspace(best[0] - span1, best[0] + span1, 60)
     g2 = np.linspace(best[1] - span2, best[1] + span2, 60)
     G1, G2 = np.meshgrid(g1, g2)
     Z = J(G1, G2)
-    # Cut the walls off above a threshold and drop everything higher. Drawn all the
-    # way up its sides a paraboloid hides its own basin: the near wall occludes the
-    # floor and the far wall rises behind it, so the surface reads as a peak rather
-    # than a minimum. Cutting it leaves an open rim you can see down into.
-    cut = jmin + 6.0 * max(jmin, 0.05)
-    Z = np.where(Z > cut, np.nan, Z)
-    print('  J window: span %.3f by %.3f, floor %.4f, cut at %.4f' % (
-        span1, span2, jmin, cut))
+    # Drawn whole, over its rectangular window. Masking everything above a height
+    # instead leaves the rim a ragged sawtooth, because the cut falls between grid
+    # cells and every cell is either kept or dropped. The box aspect below
+    # compresses the vertical, which is what keeps the basin readable without one.
+    ztop = float(Z.max())
+    print('  J window: span %.3f by %.3f, floor %.4f, top %.4f' % (
+        span1, span2, jmin, ztop))
 
     fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(111, projection='3d', computed_zorder=False)
@@ -285,29 +285,23 @@ def render_J(out):
     # top of it instead of beside it.
     m1 = 0.12 * (g1.max() - g1.min())
     m2 = 0.12 * (g2.max() - g2.min())
-    ax.set_xlim(g1.min() - m1, g1.max() + m1)
-    ax.set_ylim(g2.min() - m2, g2.max() + m2)
-    ax.set_zlim(0, cut)
+    # Asymmetric on purpose: the arms and their labels live past the two near edges.
+    ax.set_xlim(g1.min() - m1, g1.max() + 1.9 * m1)
+    ax.set_ylim(g2.min() - 1.9 * m2, g2.max() + m2)
+    ax.set_zlim(0, ztop)
     for setter in ('set_xlabel', 'set_ylabel', 'set_zlabel'):
         getattr(ax, setter)('')
     for setter in ('set_xticks', 'set_yticks', 'set_zticks'):
         getattr(ax, setter)([])
-    # Look down into the basin and compress the vertical, so the quadratic reads as
-    # a bowl. J grows fast toward the window corners, so at equal aspect and a low
-    # elevation the corners tower and the whole surface renders as a spike.
-    # azim 215, not 225, for the same reason the cube sits at 35 rather than 45.
-    # The window is centred on theta*, so the minimum lies exactly on the diagonal
-    # out of the low corner; square to that diagonal it projects onto the vertical
-    # arm and the purple dot lands on the axis. Ten degrees off separates them.
-    # elev 48 rather than 38. The arm rises from a corner that projects well below
-    # the basin, so at 38 the J label and the arrow tip both land on the bowl's
-    # lower edge. Lifting the eye closes that gap, and 58 would start flattening
-    # the bowl into a disc.
-    ax.view_init(elev=48, azim=215)
+    # azim 315 looks along the shallow diagonal of the quadratic, the same direction
+    # the interactive version looks from. Square to the steep diagonal, at 45 or 225,
+    # one corner towers and the surface reads as a ramp rather than a basin.
+    # elev 26 keeps the walls inside the frame; lower and they run off the top.
+    ax.view_init(elev=26, azim=315)
     ax.grid(False)
-    ax.set_box_aspect([1, 1, 0.55])
+    ax.set_box_aspect([1, 1, 0.75])
     ax._axis3don = False
-    j_axis_labels(ax, fig, j_axes_frame(ax, g1, g2, cut, m1, m2))
+    j_axis_labels(ax, fig, j_axes_frame(ax, g1, g2, ztop, m1, m2))
     print('  J minimum at theta = (%.3f, %.3f), J = %.4f' % (best[0], best[1], jmin))
     save(fig, out)
 
