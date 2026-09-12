@@ -15,24 +15,24 @@ from mpl_toolkits.mplot3d import Axes3D
 #   3d_loss_clean.png     the cities, the plane, and the gap from each city to it
 #   3d_J_clean.png        the objective J over the two weights, with its minimum
 #
-# DATA is in the slide's own units, and it is what the table on the slide shows.
-# Each column spans a little over a 2x range, which matters because the plane has
-# no offset: scaling into the drawing cube has to be a pure multiply, so a column's
-# max/min ratio is exactly what sets its visual spread.
-# Three cities is enough to carry the two-feature story and keeps X at 3x2, so the
-# matrices and the expanded J on the slides stay short. Chicago is hot with fewer
-# people, New York mild with many, Boston low on both, so neither feature explains
-# the label on its own.
+# The data matches ridge/d2-unique-solution.html, so the deck's table, its matrices,
+# and that demo all run on one example. The two features are 0/1 indicators rather
+# than measured quantities, which is why the slide's Temperature and Population
+# headers read oddly over them.
+#
+# theta* = (2, 3) fits all three points exactly, so the least-squares residual is
+# zero and J bottoms out at its floor. THETA below is therefore deliberately not the
+# fit: the loss picture needs a wrong hypothesis to have any gaps to show.
 CITIES = ['Chicago', 'New York', 'Boston']
 COLORS = ['red', 'blue', 'green']
-TEMP = np.array([88, 58, 42], float)    # x1, degrees F
-POP = np.array([5.9, 8.4, 3.6], float)  # x2, millions
-ENERGY = np.array([39, 43, 28], float)  # y
+TEMP = np.array([1, 0, 1], float)       # x1
+POP = np.array([0, 1, 1], float)        # x2
+ENERGY = np.array([2, 3, 5], float)     # y
 
 # The hypothesis, in those same units. Deliberately a poor fit, and deliberately
 # under every city so all three gaps drop the same direction, which is what keeps
 # the loss picture readable at this viewing angle.
-THETA = (0.25, 1.5)
+THETA = (1.0, 1.5)
 
 # Pure per-axis scaling into the drawing cube. An offset would move the plane off
 # the origin and break the "for now, ignoring the offset" framing on the slides.
@@ -77,7 +77,9 @@ def axes_frame(ax):
     ax.plot([0, -0.2], [5, 4.7], [0, 0], 'k-', linewidth=2, zorder=8)
     ax.plot([0, 0.2], [0, 0], [5, 4.7], 'k-', linewidth=2, zorder=8)
     ax.plot([0, -0.2], [0, 0], [5, 4.7], 'k-', linewidth=2, zorder=8)
-    ax.view_init(elev=20, azim=45)
+    # azim 35 rather than 45. At 45 any point with x1 == x2 projects straight onto
+    # the vertical axis, and one of the three does exactly that.
+    ax.view_init(elev=20, azim=35)
     ax.grid(False)
     ax.set_box_aspect([1, 1, 1])
     ax._axis3don = False
@@ -95,7 +97,7 @@ def save(fig, out):
         print('  %-24s -> %s %s' % (out, out.replace('.png', '_cropped.png'), cropped.size))
 
 
-def render(show_plane, show_points, show_gaps, out):
+def render(show_plane, show_points, show_gaps, out, floor_drops=False):
     # Every city sits above the plane, so drawing points and gaps over it is the
     # correct order. computed_zorder=False makes matplotlib honor that instead of
     # deriving its own, which otherwise chops the gap lines in half.
@@ -126,6 +128,18 @@ def render(show_plane, show_points, show_gaps, out):
             ax.scatter([px], [py], [h(px, py)],
                        s=95, facecolors='white', edgecolors='black',
                        linewidth=2, depthshade=False, zorder=6)
+
+    # Floor drop lines, on the scatter only. Both features are binary, so the three
+    # points sit at corners of the footprint with nothing in between and the picture
+    # carries no depth cue at all; anchoring each one to the x1-x2 plane supplies it.
+    # The loss figure already has its gap lines, so these would only clutter it.
+    if floor_drops:
+        for px, py, pz in points:
+            ax.plot([px, px], [py, py], [0, pz], color='#9a9a9a',
+                    linestyle='--', dashes=(4, 3), linewidth=1.4, zorder=4)
+            ax.scatter([px], [py], [0], s=55, facecolors='white',
+                       edgecolors='#9a9a9a', linewidth=1.4,
+                       depthshade=False, zorder=5)
 
     if show_points:
         ax.scatter(points[:, 0], points[:, 1], points[:, 2],
@@ -212,7 +226,7 @@ print('  plotted gaps: %s' % ', '.join('%s %+.2f' % (c, g) for c, g in zip(CITIE
 print('  all cities above the plane: %s, gap range %.2f to %.2f (%.1fx)' % (
     bool((gaps > 0).all()), gaps.min(), gaps.max(), gaps.max() / gaps.min()))
 print('figures:')
-render(False, True, False, '3d_scatter_clean.png')
+render(False, True, False, '3d_scatter_clean.png', floor_drops=True)
 render(True, True, False, '3d_plane_clean.png')
 render(True, False, False, '3d_plane_bare.png')
 render(True, True, True, '3d_loss_clean.png')
