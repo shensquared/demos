@@ -1,286 +1,187 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ridge Regression: Effect of λ</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
     <style>
-        /* Locked tokens. Every colour, size and radius on the page comes from here.
-           Palette: one neutral ramp of true greys, plus four semantic hues that key a
-           label to a mark in the plots. Purple is the 6.390 house accent and the marker
-           for "optimal", so no control is ever painted purple.
-           Radii: containers 10px, chips 3px, the slider thumb is a circle. */
-        :root {
-            --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-
-            --optimum: #674ea7;
-            --objective: #9e6900;
-            /* Text tint of the data blue. The mark itself keeps #3c78d8 (see the JS
-               palette): a mark only has to clear 3:1, but as body text on white that
-               value measures 4.3:1 and fails AA. */
-            --data-text: #3372d6;
-            --mse-swatch: #bbbbbb;
-            --ridge-swatch: #ffd966;
-
-            --ink: #2b2b2b;
-            --ink-2: #555555;
-            --ink-3: #5f6672;
-            --rule: #e2e2e2;
-            --page: #fafafa;
-            --surface: #ffffff;
-            --control: #f0f0f0;
-            --track: #d8d8d8;
-            --thumb: #5f6672;
-
-            --fs-heading: 20px;
-            --fs-readout: 22px;
-            --fs-body: 17px;
-            --fs-hint: 14px;
-            --fs-tick: 13px;
-
-            --s1: 4px;
-            --s2: 8px;
-            --s3: 12px;
-            --s4: 16px;
-
-            --r-container: 10px;
-            --r-chip: 3px;
-        }
-
         * { box-sizing: border-box; }
-
-        html { height: 100%; }
-
-        /* The page is a flex column that owns the viewport exactly, so the plots claim
-           whatever is left after the controls. No calc(100vh - magic number) anywhere:
-           that arithmetic is what clips the sibling ridge demos inside a 720px slide. */
         body {
             margin: 0;
-            padding: var(--s3);
-            height: 100vh;
-            height: 100dvh;
+            padding: 15px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fafafa;
+        }
+        .top-bar {
+            margin-bottom: 10px;
+        }
+        .container {
+            display: flex;
+            gap: 15px;
+            height: calc(100vh - 120px);
+        }
+        .panel {
+            flex: 1;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 10px;
             display: flex;
             flex-direction: column;
-            gap: var(--s3);
-            overflow: hidden;
-            font-family: var(--font-sans);
-            font-size: var(--fs-body);
-            color: var(--ink);
-            background: var(--page);
         }
-
-        .controls {
-            flex: 0 0 auto;
-            padding: var(--s3) var(--s4);
-            background: var(--control);
-            border-radius: var(--r-container);
+        .panel h3 {
+            margin: 0 0 5px 0;
+            font-size: 22px;
+            color: #333;
         }
-        .control-head {
+        .panel .subtitle {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+        .plot {
+            flex: 1;
+        }
+        .slider-container {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            padding: 10px 15px;
+            background: #f0f0f0;
+            border-radius: 8px;
+        }
+        .slider-col {
+            flex: 1;
+        }
+        .slider-label {
+            font-size: 22px;
+            color: #333;
+            margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
-            align-items: baseline;
-            gap: var(--s4);
-            margin-bottom: var(--s2);
+            align-items: center;
         }
-        .readout {
-            font-size: var(--fs-readout);
-            color: var(--ink);
-            font-variant-numeric: tabular-nums;
+        .slider-label .hint {
+            font-size: 14px;
+            color: #999;
         }
-        .regime {
-            font-size: var(--fs-hint);
-            color: var(--ink-3);
-        }
-
         .slider {
-            display: block;
             width: 100%;
             height: 6px;
             -webkit-appearance: none;
             appearance: none;
-            background: var(--track);
-            border-radius: var(--r-chip);
+            background: #ddd;
+            border-radius: 3px;
             outline: none;
-            cursor: pointer;
         }
-        /* Thumb states carry the only motion on the page: each one acknowledges an
-           action (hover, press, keyboard focus). Nothing animates on its own. */
         .slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
             width: 20px;
             height: 20px;
-            background: var(--thumb);
+            background: #666;
             border-radius: 50%;
             cursor: pointer;
-            box-shadow: 0 1px 3px rgba(43, 43, 43, 0.35);
-            transition: transform 0.12s ease, box-shadow 0.12s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
         .slider::-moz-range-thumb {
             width: 20px;
             height: 20px;
-            background: var(--thumb);
-            border: none;
+            background: #666;
             border-radius: 50%;
             cursor: pointer;
-            box-shadow: 0 1px 3px rgba(43, 43, 43, 0.35);
-            transition: transform 0.12s ease, box-shadow 0.12s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            border: none;
         }
-        .slider:hover::-webkit-slider-thumb { background: var(--ink); }
-        .slider:hover::-moz-range-thumb { background: var(--ink); }
-        .slider:active::-webkit-slider-thumb { transform: scale(0.94); }
-        .slider:active::-moz-range-thumb { transform: scale(0.94); }
-        /* White gap then a dark ring: reads as a focus indicator on both the grey
-           control strip and the track, without borrowing a semantic hue. */
-        .slider:focus-visible::-webkit-slider-thumb {
-            box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--ink);
+        .theta-val {
+            color: #674ea7;
         }
-        .slider:focus-visible::-moz-range-thumb {
-            box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--ink);
+        .j-val {
+            color: #cc8800;
         }
-
-        /* Ticks are placed by the slider's own log mapping. The side margin is half the
-           thumb width, so a label lines up with the thumb centre, not the track edge. */
-        .tick-marks {
-            position: relative;
-            height: 18px;
-            margin: var(--s1) 10px 0 10px;
+        .norm-val {
+            color: #674ea7;
         }
-        .tick-marks > span {
-            position: absolute;
-            transform: translateX(-50%);
-            font-size: var(--fs-tick);
-            color: var(--ink-3);
-            white-space: nowrap;
+        .katex {
+            font-size: 1.1em;
         }
-
-        .container {
-            flex: 1 1 auto;
-            min-height: 0;
-            display: flex;
-            gap: var(--s3);
-        }
-        /* Two equal panels on purpose: the same fit shown in data space and in
-           parameter space. Breaking the symmetry would break the comparison. */
-        .panel {
-            flex: 1 1 0;
-            min-width: 0;
-            display: flex;
-            flex-direction: column;
-            padding: var(--s3);
-            background: var(--surface);
-            border: 1px solid var(--rule);
-            border-radius: var(--r-container);
-            box-shadow: 0 1px 2px rgba(43, 43, 43, 0.04), 0 8px 20px -12px rgba(43, 43, 43, 0.10);
-        }
-        .panel h2 {
-            margin: 0 0 var(--s1) 0;
-            font-size: var(--fs-heading);
-            font-weight: 600;
-            color: var(--ink);
-        }
-        .subtitle {
-            font-size: var(--fs-body);
-            color: var(--ink-2);
-            line-height: 1.45;
-        }
-        .hypothesis {
-            display: block;
-            margin-top: var(--s1);
-            font-size: var(--fs-readout);
-            color: var(--optimum);
-        }
-        .stats {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0 var(--s4);
-            margin-top: var(--s1);
-            font-size: var(--fs-readout);
-            font-variant-numeric: tabular-nums;
-        }
-        /* The off-chart notice gets a reserved line of its own, so the stats above it
-           never shift as λ moves θ* in and out of the plotted grid. */
-        .flag {
-            min-height: 1.45em;
-            font-size: var(--fs-body);
-            color: var(--optimum);
-        }
-        .norm-val { color: var(--optimum); }
-        .j-val { color: var(--objective); }
-
-        .plot {
-            flex: 1 1 0;
-            min-height: 0;
-            overflow: hidden;
-        }
-
-        .katex { font-size: 1.1em; }
-
         .legend-swatch {
             display: inline-block;
             width: 14px;
             height: 14px;
-            border-radius: var(--r-chip);
+            border-radius: 3px;
             vertical-align: middle;
-            margin-right: var(--s1);
+            margin-right: 4px;
         }
 
-        /* Inside a fixed slide every pixel of plot counts, so embed mode buys the
-           plots some room by trimming the outer padding. Layout is viewport-relative,
-           so no height override is needed here. */
-        body.embed { padding: var(--s2); }
+        .tick-marks {
+            position: relative;
+            height: 18px;
+            margin: 2px 10px 0 10px;  /* thumb is 20px wide: its centre spans 10px..(100% - 10px) of the track */
+        }
+        .tick-marks > span {
+            position: absolute;
+            transform: translateX(-50%);
+            font-size: 13px;
+            color: #666;
+            white-space: nowrap;
+        }
 
-        /* Objective surface only, slider kept. */
-        body.Jonly .panel:first-child { display: none; }
+        /* Embed mode */
+        body.embed {
+            overflow: hidden;
+        }
+        body.embed .container {
+            height: calc(100vh - 130px);
+        }
 
-        @media (prefers-reduced-motion: reduce) {
-            .slider::-webkit-slider-thumb,
-            .slider::-moz-range-thumb {
-                transition: none;
-            }
-            .slider:active::-webkit-slider-thumb,
-            .slider:active::-moz-range-thumb {
-                transform: none;
-            }
+        /* Jonly mode: show only the objective surface, keep slider */
+        body.Jonly .container {
+            height: calc(100vh - 80px);
+        }
+        body.Jonly .panel:first-child {
+            display: none;
         }
     </style>
 </head>
 <body>
-    <header class="controls">
-        <div class="control-head">
-            <span class="regime">← OLS</span>
-            <span class="readout" id="lambda-val"></span>
-            <span class="regime">θ magnitude penalty dominates →</span>
+    <div class="top-bar">
+        <div class="slider-container">
+            <div class="slider-col">
+                <div class="slider-label">
+                    <span class="hint">← OLS</span>
+                    <span id="lambda-val"></span>
+                    <span class="hint">θ magnitude penalty dominates →</span>
+                </div>
+                <input type="range" id="lambda-slider" class="slider" min="0" max="60" step="1" value="0">
+                <div class="tick-marks" id="tick-marks"></div>
+            </div>
         </div>
-        <input type="range" id="lambda-slider" class="slider" min="0" max="60" step="1" value="0"
-               aria-label="ridge penalty lambda">
-        <div class="tick-marks" id="tick-marks" aria-hidden="true"></div>
-    </header>
-    <main class="container">
-        <section class="panel">
-            <h2>Data &amp; Hypothesis</h2>
+    </div>
+    <div class="container">
+        <div class="panel">
+            <h3>Data &amp; Hypothesis</h3>
             <div class="subtitle">
-                <span style="color: var(--data-text);">\(X = \left[\begin{array}{rr} -2 & -4.00006 \\ -1 & -2.00004 \\ 1 & 2.00004 \\ 2 & 4.00006 \end{array}\right] \quad Y = \left[\begin{array}{r} -1.8 \\ -1.2 \\ 1.2 \\ 1.8 \end{array}\right]\)</span>
-                <span class="hypothesis" id="hypothesis-text"></span>
+                <span style="color: #3c78d8;">\(X = \left[\begin{array}{rr} -2 & -4.00006 \\ -1 & -2.00004 \\ 1 & 2.00004 \\ 2 & 4.00006 \end{array}\right] \quad Y = \left[\begin{array}{r} -1.8 \\ -1.2 \\ 1.2 \\ 1.8 \end{array}\right]\)</span>
+                <br><span id="hypothesis-text" style="color: #674ea7; font-size: 22px;"></span>
             </div>
             <div id="data-plot" class="plot"></div>
-        </section>
-        <section class="panel">
-            <h2>Objective in \(\theta\)-space</h2>
+        </div>
+        <div class="panel">
+            <h3>Objective in \(\theta\)-space</h3>
             <div class="subtitle">
-                <span class="legend-swatch" style="background: var(--mse-swatch);"></span>\(J(\theta)\) (MSE) &nbsp;
-                <span class="legend-swatch" style="background: var(--ridge-swatch);"></span>\(J_{\text{ridge}}(\theta) = J(\theta) + \lambda\|\theta\|^2\) &nbsp;
-                <span style="color: var(--optimum);">◆</span> \(\theta^*_{\text{ridge}}\)
-                <div class="stats" id="obj-stats"></div>
-                <div class="flag" id="obj-flag"></div>
+                <span class="legend-swatch" style="background: #bbb;"></span>\(J(\theta)\) (MSE) &nbsp;
+                <span class="legend-swatch" style="background: #ffd966;"></span>\(J_{\text{ridge}}(\theta) = J(\theta) + \lambda\|\theta\|^2\) &nbsp;
+                <span style="color: #674ea7;">◆</span> \(\theta^*_{\text{ridge}}\)
+                <br><span id="obj-stats" style="color: #666; font-size: 22px;"></span>
             </div>
             <div id="obj-plot" class="plot"></div>
-        </section>
-    </main>
+        </div>
+    </div>
 
     <script>
         // Detect embed mode
@@ -294,24 +195,6 @@
 
         // Typeset the \( ... \) math in the static text
         renderMathInElement(document.body, { delimiters: [{ left: '\\(', right: '\\)', display: false }] });
-
-        // The same locked palette the CSS uses. Plotly cannot read custom properties,
-        // so the semantic hues are mirrored here rather than repeated as loose literals.
-        const C = {
-            optimum: '#674ea7',
-            // Mark-only blue. Its text counterpart is --data-text in the token block.
-            optimumSoft: '#b4a7d6',
-            data: '#3c78d8',
-            dataEdge: '#1a4a8a',
-            ink: '#2b2b2b',
-            tick: '#5f6672',
-            grid: '#dcdcdc',
-            mseLow: '#e0e0e0',
-            mseHigh: '#999999',
-            ridgeLow: '#fff2cc',
-            ridgeMid: '#ffd966',
-            ridgeHigh: '#f6b26b'
-        };
 
         // Super sensitive: x2 ≈ 2*x1 with ~0.00004 perturbation → det(X^TX) ≈ 1.6e-9
         const dataPoints = [
@@ -387,10 +270,10 @@
 
         // ==================== Common styling ====================
         const axisStyle = {
-            titlefont: { size: 20, family: "'Times New Roman', Times, serif", color: C.ink },  // Times keeps ₁ ₂ legible (Arial shrinks them to specks); <sub> tags would tilt the title along its axis
-            tickfont: { size: 13, family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", color: C.tick },  // 13px at 5.8:1 contrast: the old 11px #999 was 2.9:1 and vanished on a projector
+            titlefont: { size: 20, family: "'Times New Roman', Times, serif", color: '#333' },  // Times keeps ₁ ₂ legible (Arial shrinks them to specks); <sub> tags would tilt the title along its axis
+            tickfont: { size: 11, family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", color: '#999' },
             nticks: 5,
-            gridcolor: C.grid
+            gridcolor: '#ddd'
         };
 
         // ==================== Data Plot (Left) ====================
@@ -420,7 +303,7 @@
                 x: px1,
                 y: px2,
                 z: planeZ,
-                colorscale: [[0, C.optimumSoft], [1, C.optimum]],
+                colorscale: [[0, '#b4a7d6'], [1, '#674ea7']],
                 opacity: 0.7,
                 showscale: false,
                 hoverinfo: 'skip'
@@ -439,7 +322,7 @@
                     x: [pt.x1, pt.x1],
                     y: [pt.x2, pt.x2],
                     z: [prediction, pt.y],
-                    line: { color: C.optimum, width: 5, dash: 'dash' },
+                    line: { color: '#674ea7', width: 5, dash: 'dash' },
                     hoverinfo: 'skip'
                 });
 
@@ -450,7 +333,7 @@
                     x: [pt.x1],
                     y: [pt.x2],
                     z: [prediction],
-                    marker: { size: 6, color: C.optimum, symbol: 'diamond' },
+                    marker: { size: 6, color: '#674ea7', symbol: 'diamond' },
                     hoverinfo: 'skip'
                 });
 
@@ -461,7 +344,7 @@
                     x: [pt.x1],
                     y: [pt.x2],
                     z: [pt.y],
-                    marker: { size: 10, color: C.data, line: { color: C.dataEdge, width: 2 } },
+                    marker: { size: 10, color: '#3c78d8', line: { color: '#1a4a8a', width: 2 } },
                     hoverinfo: 'skip'
                 });
             }
@@ -493,7 +376,7 @@
             x: t1Range,
             y: t2Range,
             z: mseGrid,
-            colorscale: [[0, C.mseLow], [1, C.mseHigh]],
+            colorscale: [[0, '#e0e0e0'], [1, '#999999']],
             opacity: 0.5,
             showscale: false,
             hoverinfo: 'skip'
@@ -505,7 +388,7 @@
             x: t1Range,
             y: t2Range,
             z: getRidgeGrid(0),
-            colorscale: [[0, C.ridgeLow], [0.3, C.ridgeMid], [1, C.ridgeHigh]],
+            colorscale: [[0, '#fff2cc'], [0.3, '#ffd966'], [1, '#f6b26b']],
             opacity: 0.7,
             showscale: false,
             hoverinfo: 'skip'
@@ -518,7 +401,7 @@
             x: [0, 0],
             y: [tMin, tMax],
             z: [0, 0],
-            line: { color: C.ink, width: 3 },
+            line: { color: '#333', width: 3 },
             hoverinfo: 'skip'
         };
         const originLineT2 = {
@@ -527,7 +410,7 @@
             x: [tMin, tMax],
             y: [0, 0],
             z: [0, 0],
-            line: { color: C.ink, width: 3 },
+            line: { color: '#333', width: 3 },
             hoverinfo: 'skip'
         };
         const originDot = {
@@ -536,7 +419,7 @@
             x: [0],
             y: [0],
             z: [0],
-            marker: { size: 6, color: C.ink, symbol: 'circle' },
+            marker: { size: 6, color: '#333', symbol: 'circle' },
             hoverinfo: 'skip'
         };
 
@@ -547,7 +430,7 @@
             x: [initMin.t1],
             y: [initMin.t2],
             z: [ridgeCost(initMin.t1, initMin.t2, 0) + 0.5],
-            marker: { size: 10, color: C.optimum, symbol: 'diamond' },
+            marker: { size: 10, color: '#674ea7', symbol: 'diamond' },
             hoverinfo: 'skip'
         };
 
@@ -612,11 +495,8 @@
             const p = parseFloat(lambdaSlider.value);
             const lambda = sliderToLambda(p);
             const [mant, exp] = lambda.toExponential(1).split('e');
-            const lambdaTex = lambda === 0 ? '0' : lambda < 0.01 ? String.raw`${mant} \times 10^{${+exp}}` : lambda.toFixed(2);
-            katex.render(String.raw`\lambda = ` + lambdaTex, document.getElementById('lambda-val'));
-            // A range input announces "0 of 60" by default, which says nothing about λ.
-            lambdaSlider.setAttribute('aria-valuetext',
-                lambda === 0 ? 'lambda 0, ordinary least squares' : 'lambda ' + lambda.toExponential(1));
+            katex.render(String.raw`\lambda = ` + (lambda === 0 ? '0' : lambda < 0.01 ? String.raw`${mant} \times 10^{${+exp}}` : lambda.toFixed(2)),
+                document.getElementById('lambda-val'));
 
             // Solve for ridge minimum
             const min = solveRidge(lambda);
@@ -633,11 +513,9 @@
             // Update right panel: norm and MSE
             const offChart = Math.max(Math.abs(theta1), Math.abs(theta2)) > tMax;
             document.getElementById('obj-stats').innerHTML =
-                `<span class="norm-val">${katex.renderToString(String.raw`\|\theta^*\| = ${norm.toFixed(3)}`)}</span>` +
-                `<span class="j-val">${katex.renderToString(String.raw`J(\theta^*) = ${jMse.toFixed(2)}`)}</span>`;
-            document.getElementById('obj-flag').innerHTML = offChart
-                ? `◆ ${katex.renderToString(String.raw`\theta^*_{\text{ridge}}`)} is off the chart`
-                : '';
+                `<span class="norm-val">${katex.renderToString(String.raw`\|\theta^*\| = ${norm.toFixed(3)}`)}</span> &nbsp; ` +
+                `<span class="j-val">${katex.renderToString(String.raw`J(\theta^*) = ${jMse.toFixed(2)}`)}</span>` +
+                (offChart ? ` &nbsp; <span style="color: #674ea7;">◆ ${katex.renderToString(String.raw`\theta^*_{\text{ridge}}`)} is off the chart</span>` : '');
 
             // Update data plot: hypothesis plane changes with theta
             Plotly.react('data-plot', createDataPlot(), dataLayout);
@@ -655,17 +533,6 @@
 
         lambdaSlider.addEventListener('input', update);
         update();
-
-        // KaTeX web fonts and the readouts land after the plots are drawn, which changes
-        // how much height is left for each plot. Plotly sizes its canvas once at draw time,
-        // so without this the canvas keeps its old height and spills past the panel.
-        if (window.ResizeObserver) {
-            const ro = new ResizeObserver(entries => {
-                for (const e of entries) Plotly.Plots.resize(e.target);
-            });
-            ro.observe(document.getElementById('data-plot'));
-            ro.observe(document.getElementById('obj-plot'));
-        }
     </script>
 </body>
 </html>
