@@ -146,19 +146,20 @@ def j_axes_frame(ax, g1, g2, ztop, m1, m2):
     window is centred on theta* and the origin of theta-space sits outside it. Running
     all three out of one corner of the window sends one of them straight across the
     bowl, so the two weights follow the near edges instead, meeting at the corner that
-    projects to the bottom of the frame, and J rises at the far end of one of them.
+    projects to the bottom of the frame. J rises from that same corner, drawn under the
+    surface, so the bowl hides the stretch of it that passes behind.
     """
-    # Pushed well past the surface, so the vertical arm clears the screen column the
-    # minimum sits in. At azim 315 that column rises from the middle of the near edge.
+    # Pushed clear of the surface, so the two weight arms and their labels sit outside
+    # the bowl's footprint rather than on top of it.
     xN, yN = g1.max() + 1.15 * m1, g2.min() - 1.15 * m2
     xF, yF = g1.min(), g2.max()
     style = dict(color='black', linewidth=2, zorder=8)
     ax.plot([xF, xN], [yN, yN], [0, 0], **style)
     ax.plot([xN, xN], [yN, yF], [0, 0], **style)
-    # J rises from the far end of the near edge, not from the corner the other two
-    # meet at. That corner projects directly below the basin, so an arm there runs up
-    # through the bowl and its label lands on the minimum.
-    ax.plot([xF, xF], [yN, yN], [0, ztop], **style)
+    # Under the surface rather than over it. Drawn on top, this arm cuts straight
+    # across the basin; at zorder 1 the bowl hides the stretch that passes behind it.
+    behind = dict(color='black', linewidth=2, zorder=1)
+    ax.plot([xN, xN], [yN, yN], [0, ztop], **behind)
     # Arrowheads sized per axis: the weights span a handful of units while J spans
     # hundreds, so one shared offset would be a speck on one arm and a spike on another.
     hx, hy, hz = 0.06 * (xN - xF), 0.06 * (yF - yN), 0.06 * ztop
@@ -166,8 +167,8 @@ def j_axes_frame(ax, g1, g2, ztop, m1, m2):
     ax.plot([xN, xN - hx], [yN, yN - 0.5 * hy], [0, 0], **style)
     ax.plot([xN + 0.5 * hx, xN], [yF - hy, yF], [0, 0], **style)
     ax.plot([xN - 0.5 * hx, xN], [yF - hy, yF], [0, 0], **style)
-    ax.plot([xF + 0.5 * hx, xF], [yN, yN], [ztop - hz, ztop], **style)
-    ax.plot([xF - 0.5 * hx, xF], [yN, yN], [ztop - hz, ztop], **style)
+    ax.plot([xN + 0.5 * hx, xN], [yN, yN], [ztop - hz, ztop], **behind)
+    ax.plot([xN - 0.5 * hx, xN], [yN, yN], [ztop - hz, ztop], **behind)
     return xF, yF, xN, yN, ztop
 
 
@@ -180,7 +181,7 @@ def j_axis_labels(ax, fig, frame):
     specs = [
         (((xF, yN, 0), (xN, yN, 0)), (xN + dx, yN - 0.3 * dy, 0), r'$\theta_1$'),
         (((xN, yN, 0), (xN, yF, 0)), (xN + 0.3 * dx, yF + dy, 0), r'$\theta_2$'),
-        (None, (xF, yN, ztop + dz), r'$J(\theta)$'),
+        (None, (xN, yN, ztop + dz), r'$J(\theta)$'),
     ]
     for edge, at, words in specs:
         angle = _label_angle(ax, edge[0], edge[1]) if edge else 0.0
@@ -275,8 +276,9 @@ def render_J(out):
 
     fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(111, projection='3d', computed_zorder=False)
+    # zorder 4: over the J arm at 1, under the two weight arms at 8.
     ax.plot_surface(G1, G2, Z, color='#cccccc', alpha=0.5, shade=False,
-                    edgecolor='#9a9a9a', linewidth=0.4, zorder=1)
+                    edgecolor='#9a9a9a', linewidth=0.4, zorder=4)
     jmin = J(best[0], best[1])
     ax.scatter([best[0]], [best[1]], [jmin], s=260, c='#674ea7',
                edgecolors='black', linewidth=2, depthshade=False, zorder=10)
@@ -296,8 +298,10 @@ def render_J(out):
     # azim 315 looks along the shallow diagonal of the quadratic, the same direction
     # the interactive version looks from. Square to the steep diagonal, at 45 or 225,
     # one corner towers and the surface reads as a ramp rather than a basin.
-    # elev 26 keeps the walls inside the frame; lower and they run off the top.
-    ax.view_init(elev=26, azim=315)
+    # elev 62 looks down into the basin. Lower, and the minimum lands on the bowl's
+    # own silhouette with no surface drawn below it, which reads as a point sitting on
+    # the rim rather than resting at the bottom.
+    ax.view_init(elev=62, azim=315)
     ax.grid(False)
     ax.set_box_aspect([1, 1, 0.75])
     ax._axis3don = False
