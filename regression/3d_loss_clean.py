@@ -93,9 +93,14 @@ def render(show_plane, show_points, show_gaps, out):
     ax = fig.add_subplot(111, projection='3d', computed_zorder=False)
 
     if show_plane:
-        gx, gy = np.meshgrid(np.linspace(0, 4.6, 2), np.linspace(0, 4.6, 2))
+        # Reach back past the origin in both features, so the origin sits inside the
+        # patch instead of at its corner. A patch starting exactly at x=0, y=0 reads
+        # as a quadrant that happens to touch the origin, not as a plane passing
+        # through it. -0.5 is as far back as the cube allows: the surface reaches
+        # -0.40 at that corner against a floor at -0.50, and further would clip.
+        gx, gy = np.meshgrid(np.linspace(-0.5, 4.6, 2), np.linspace(-0.5, 4.6, 2))
         ax.plot_surface(gx, gy, h(gx, gy),
-                        color='#cccccc', alpha=0.39, shade=False,
+                        color='#cccccc', alpha=0.55, shade=False,
                         edgecolor='#9a9a9a', linewidth=1.2, zorder=1)
 
     # The gaps stay black and broken, matching the dotted black line blocks the
@@ -200,3 +205,18 @@ render(True, True, False, '3d_plane_clean.png')
 render(True, False, False, '3d_plane_bare.png')
 render(True, True, True, '3d_loss_clean.png')
 render_J('3d_J_clean.png')
+
+# Crop the four cube figures to one shared box. Cropping each to its own content
+# frames them differently, because the scatter has no plane and the plane reaches
+# further left than the points do, so the cities would shift between slides placed
+# at the same width. The J surface keeps its own crop; its aspect is deliberately
+# different and it shares no geometry with these.
+CUBE_FIGS = ['3d_scatter_clean.png', '3d_plane_clean.png',
+             '3d_plane_bare.png', '3d_loss_clean.png']
+boxes = [Image.open(f).getbbox() for f in CUBE_FIGS]
+union = (min(b[0] for b in boxes), min(b[1] for b in boxes),
+         max(b[2] for b in boxes), max(b[3] for b in boxes))
+for f in CUBE_FIGS:
+    cropped = Image.open(f).crop(union)
+    cropped.save(f.replace('.png', '_cropped.png'))
+print('  shared crop across the cube figures: %dx%d' % cropped.size)
