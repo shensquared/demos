@@ -252,12 +252,15 @@ def render_J(out):
     # The demo's camera sits at eye (1.8, -1.8, 0.8), which is azim 315 and elev 17.
     # Low on purpose: from up high the walls foreshorten and the basin flattens out.
     ax.view_init(elev=18, azim=315)
-    ax.set_box_aspect([1, 1, 0.85])
-    # White panes and a light grid, matching the demo's plot area.
+    # Stretched in z, so the basin reads as a bowl rather than a shallow dish. This
+    # changes only how tall the drawing box is; the surface itself is untouched.
+    ax.set_box_aspect([1, 1, 1.35])
+    # No grid and no panes. The colourscale already carries the height, and the
+    # walls boxed the bowl in without adding anything worth reading.
+    ax.grid(False)
     for axis in (ax.xaxis, ax.yaxis, ax.zaxis):
-        axis.pane.set_facecolor('white')
-        axis.pane.set_edgecolor('#dcdcdc')
-        axis._axinfo['grid'].update(color='#dcdcdc', linewidth=0.8)
+        axis.pane.set_facecolor((1, 1, 1, 0))
+        axis.pane.set_edgecolor('none')
     print('  J minimum at theta = (%.2f, %.2f), J = %.3f, top %.1f' % (
         best[0], best[1], jmin, Z.max()))
     save(fig, out)
