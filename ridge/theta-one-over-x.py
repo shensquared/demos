@@ -32,15 +32,14 @@ ax.axvline(0.0, color='#999999', linestyle='--', dashes=(5, 4), linewidth=1.4, z
 # Axes through the origin rather than around the outside, so the sign flip reads
 ax.axhline(0.0, color='black', linewidth=1.4, zorder=2)
 
+# Markers and drop lines only, no captions. Slide 25 already carries its own text
+# blocks for both cases, positioned over the plot area, so baking the same words
+# into the raster would duplicate them and make them impossible to reposition.
 for x, th in POINTS:
     ax.plot([x, x], [0, th], color=ACCENT, linestyle='--', dashes=(4, 3),
             linewidth=1.8, zorder=4)
     ax.scatter([x], [th], s=170, color=ACCENT, edgecolors='black',
                linewidth=1.8, zorder=6)
-    ax.annotate(r'$x=%s,\ \theta^*=%s$' % (('%g' % x), ('{:,.0f}'.format(th))),
-                xy=(x, th), xytext=(14 if x > 0 else -14, 22 if x > 0 else -30),
-                textcoords='offset points', fontsize=13,
-                ha='left' if x > 0 else 'right', color=ACCENT, zorder=7)
 
 ax.set_xlim(XMIN, XMAX)
 ax.set_ylim(YMIN, YMAX)
