@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 from mpl_toolkits.mplot3d import Axes3D
+import os
 
 # Figures for the 2-feature running example on the FA26 lec02 slides. All of them
 # come out of the one dataset and one viewing angle below, so they cannot drift
@@ -262,3 +263,10 @@ for f in CUBE_FIGS:
     cropped = Image.open(f).crop(union)
     cropped.save(f.replace('.png', '_cropped.png'))
 print('  shared crop across the cube figures: %dx%d' % cropped.size)
+
+# The uncropped renders exist only so the pass above can measure one box across
+# all four at once. Now that it has, drop them, so the directory holds just the
+# five _cropped files that go on slides.
+for f in CUBE_FIGS + ['3d_J_clean.png']:
+    os.remove(f)
+print('  removed %d intermediate renders' % (len(CUBE_FIGS) + 1))
