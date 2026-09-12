@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ridge Regression: Effect of λ</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <style>
+        /* Locked tokens. Every colour, size and radius on the page comes from here.
+           Palette: one neutral ramp of true greys, plus four semantic hues that key a
+           label to a mark in the plots. Purple is the 6.390 house accent and the marker
+           for "optimal", so no control is ever painted purple.
+           Radii: containers 10px, chips 3px, the slider thumb is a circle. */
+        :root {
+            --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+            --optimum: #674ea7;
+            --objective: #9e6900;
+            /* Text tint of the data blue. The mark itself keeps #3c78d8 (see the JS
+               palette): a mark only has to clear 3:1, but as body text on white that
+               value measures 4.3:1 and fails AA. */
+            --data-text: #3372d6;
+            --mse-swatch: #bbbbbb;
+            --ridge-swatch: #ffd966;
+
+            --ink: #2b2b2b;
+            --ink-2: #555555;
+            --ink-3: #5f6672;
+            --rule: #e2e2e2;
+            --page: #fafafa;
+            --surface: #ffffff;
+            --control: #f0f0f0;
+            --track: #d8d8d8;
+            --thumb: #5f6672;
+
+            --fs-heading: 20px;
+            --fs-readout: 22px;
+            --fs-body: 17px;
+            --fs-hint: 14px;
+            --fs-tick: 13px;
+
+            --s1: 4px;
+            --s2: 8px;
+            --s3: 12px;
+            --s4: 16px;
+
+            --r-container: 10px;
+            --r-chip: 3px;
+        }
+
+        * { box-sizing: border-box; }
+
+        html { height: 100%; }
+
+        /* The page is a flex column that owns the viewport exactly, so the plots claim
+           whatever is left after the controls. No calc(100vh - magic number) anywhere:
+           that arithmetic is what clips the sibling ridge demos inside a 720px slide. */
+        body {
+            margin: 0;
+            padding: var(--s3);
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            gap: var(--s3);
+            overflow: hidden;
+            font-family: var(--font-sans);
+            font-size: var(--fs-body);
+            color: var(--ink);
+            background: var(--page);
+        }
+
+        .controls {
+            flex: 0 0 auto;
+            padding: var(--s3) var(--s4);
+            background: var(--control);
+            border-radius: var(--r-container);
+        }
+        .control-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: var(--s4);
+            margin-bottom: var(--s2);
+        }
+        .readout {
+            font-size: var(--fs-readout);
+            color: var(--ink);
+            font-variant-numeric: tabular-nums;
+        }
+        .regime {
+            font-size: var(--fs-hint);
+            color: var(--ink-3);
+        }
+
+        .slider {
+            display: block;
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--track);
+            border-radius: var(--r-chip);
+            outline: none;
+            cursor: pointer;
+        }
+        /* Thumb states carry the only motion on the page: each one acknowledges an
+           action (hover, press, keyboard focus). Nothing animates on its own. */
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--thumb);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(43, 43, 43, 0.35);
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: var(--thumb);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(43, 43, 43, 0.35);
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+        .slider:hover::-webkit-slider-thumb { background: var(--ink); }
+        .slider:hover::-moz-range-thumb { background: var(--ink); }
+        .slider:active::-webkit-slider-thumb { transform: scale(0.94); }
+        .slider:active::-moz-range-thumb { transform: scale(0.94); }
+        /* White gap then a dark ring: reads as a focus indicator on both the grey
+           control strip and the track, without borrowing a semantic hue. */
+        .slider:focus-visible::-webkit-slider-thumb {
+            box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--ink);
+        }
+        .slider:focus-visible::-moz-range-thumb {
+            box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--ink);
+        }
+
+        /* Ticks are placed by the slider's own log mapping. The side margin is half the
+           thumb width, so a label lines up with the thumb centre, not the track edge. */
+        .tick-marks {
+            position: relative;
+            height: 18px;
+            margin: var(--s1) 10px 0 10px;
+        }
+        .tick-marks > span {
+            position: absolute;
+            transform: translateX(-50%);
+            font-size: var(--fs-tick);
+            color: var(--ink-3);
+            white-space: nowrap;
+        }
+
+        .container {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            gap: var(--s3);
+        }
+        /* Two equal panels on purpose: the same fit shown in data space and in
+           parameter space. Breaking the symmetry would break the comparison. */
+        .panel {
+            flex: 1 1 0;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            padding: var(--s3);
+            background: var(--surface);
+            border: 1px solid var(--rule);
+            border-radius: var(--r-container);
+            box-shadow: 0 1px 2px rgba(43, 43, 43, 0.04), 0 8px 20px -12px rgba(43, 43, 43, 0.10);
+        }
+        .panel h2 {
+            margin: 0 0 var(--s1) 0;
+            font-size: var(--fs-heading);
+            font-weight: 600;
+            color: var(--ink);
+        }
+        .subtitle {
+            font-size: var(--fs-body);
+            color: var(--ink-2);
+            line-height: 1.45;
+        }
+        .hypothesis {
+            display: block;
+            margin-top: var(--s1);
+            font-size: var(--fs-readout);
+            color: var(--optimum);
+        }
+        .stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0 var(--s4);
+            margin-top: var(--s1);
+            font-size: var(--fs-readout);
+            font-variant-numeric: tabular-nums;
+        }
+        /* The off-chart notice gets a reserved line of its own, so the stats above it
+           never shift as λ moves θ* in and out of the plotted grid. */
+        .flag {
+            min-height: 1.45em;
+            font-size: var(--fs-body);
+            color: var(--optimum);
+        }
+        .norm-val { color: var(--optimum); }
+        .j-val { color: var(--objective); }
+
+        .plot {
+            flex: 1 1 0;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .katex { font-size: 1.1em; }
+
+        .legend-swatch {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: var(--r-chip);
+            vertical-align: middle;
+            margin-right: var(--s1);
+        }
+
+        /* Inside a fixed slide every pixel of plot counts, so embed mode buys the
+           plots some room by trimming the outer padding. Layout is viewport-relative,
+           so no height override is needed here. */
+        body.embed { padding: var(--s2); }
+
+        /* Objective surface only, slider kept. */
+        body.Jonly .panel:first-child { display: none; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .slider::-webkit-slider-thumb,
+            .slider::-moz-range-thumb {
+                transition: none;
+            }
+            .slider:active::-webkit-slider-thumb,
+            .slider:active::-moz-range-thumb {
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="controls">
+        <div class="control-head">
+            <span class="regime">← OLS</span>
+            <span class="readout" id="lambda-val"></span>
+            <span class="regime">θ magnitude penalty dominates →</span>
+        </div>
+        <input type="range" id="lambda-slider" class="slider" min="0" max="60" step="1" value="0"
+               aria-label="ridge penalty lambda">
+        <div class="tick-marks" id="tick-marks" aria-hidden="true"></div>
+    </header>
+    <main class="container">
+        <section class="panel">
+            <h2>Data &amp; Hypothesis</h2>
+            <div class="subtitle">
+                <span style="color: var(--data-text);">\(X = \left[\begin{array}{rr} -2 & -4.00006 \\ -1 & -2.00004 \\ 1 & 2.00004 \\ 2 & 4.00006 \end{array}\right] \quad Y = \left[\begin{array}{r} -1.8 \\ -1.2 \\ 1.2 \\ 1.8 \end{array}\right]\)</span>
+                <span class="hypothesis" id="hypothesis-text"></span>
+            </div>
+            <div id="data-plot" class="plot"></div>
+        </section>
+        <section class="panel">
+            <h2>Objective in \(\theta\)-space</h2>
+            <div class="subtitle">
+                <span class="legend-swatch" style="background: var(--mse-swatch);"></span>\(J(\theta)\) (MSE) &nbsp;
+                <span class="legend-swatch" style="background: var(--ridge-swatch);"></span>\(J_{\text{ridge}}(\theta) = J(\theta) + \lambda\|\theta\|^2\) &nbsp;
+                <span style="color: var(--optimum);">◆</span> \(\theta^*_{\text{ridge}}\)
+                <div class="stats" id="obj-stats"></div>
+                <div class="flag" id="obj-flag"></div>
+            </div>
+            <div id="obj-plot" class="plot"></div>
+        </section>
+    </main>
+
+    <script>
+        // Detect embed mode
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('embed')) {
+            document.body.classList.add('embed');
+        }
+        if (params.has('Jonly')) {
+            document.body.classList.add('Jonly');
+        }
+
+        // Typeset the \( ... \) math in the static text
+        renderMathInElement(document.body, { delimiters: [{ left: '\\(', right: '\\)', display: false }] });
+
+        // The same locked palette the CSS uses. Plotly cannot read custom properties,
+        // so the semantic hues are mirrored here rather than repeated as loose literals.
+        const C = {
+            optimum: '#674ea7',
+            // Mark-only blue. Its text counterpart is --data-text in the token block.
+            optimumSoft: '#b4a7d6',
+            data: '#3c78d8',
+            dataEdge: '#1a4a8a',
+            ink: '#2b2b2b',
+            tick: '#5f6672',
+            grid: '#dcdcdc',
+            mseLow: '#e0e0e0',
+            mseHigh: '#999999',
+            ridgeLow: '#fff2cc',
+            ridgeMid: '#ffd966',
+            ridgeHigh: '#f6b26b'
+        };
+
+        // Super sensitive: x2 ≈ 2*x1 with ~0.00004 perturbation → det(X^TX) ≈ 1.6e-9
+        const dataPoints = [
+            { x1: -2, x2: -4.00006, y: -1.8 },
+            { x1: -1, x2: -2.00004, y: -1.2 },
+            { x1:  1, x2:  2.00004, y:  1.2 },
+            { x1:  2, x2:  4.00006, y:  1.8 }
+        ];
+        const n = dataPoints.length;
+
+        // MSE loss function
+        function mse(t1, t2) {
+            let sum = 0;
+            for (const pt of dataPoints) {
+                sum += Math.pow(t1 * pt.x1 + t2 * pt.x2 - pt.y, 2);
+            }
+            return sum / n;
+        }
+
+        // Ridge cost = MSE + lambda * ||theta||^2
+        function ridgeCost(t1, t2, lambda) {
+            return mse(t1, t2) + lambda * (t1 * t1 + t2 * t2);
+        }
+
+        // Solve ridge analytically: theta* = (X^TX + n*lambda*I)^{-1} X^T Y
+        function solveRidge(lambda) {
+            const lam = lambda;
+            let a11 = 0, a12 = 0, a22 = 0, b1 = 0, b2 = 0;
+            for (const pt of dataPoints) {
+                a11 += pt.x1 * pt.x1;
+                a12 += pt.x1 * pt.x2;
+                a22 += pt.x2 * pt.x2;
+                b1 += pt.x1 * pt.y;
+                b2 += pt.x2 * pt.y;
+            }
+            a11 += n * lam;
+            a22 += n * lam;
+            const det = a11 * a22 - a12 * a12;
+            return {
+                t1: (a22 * b1 - a12 * b2) / det,
+                t2: (a11 * b2 - a12 * b1) / det
+            };
+        }
+
+        // ==================== Precompute grids ====================
+        const gridSize = 50;
+        const tMin = -5, tMax = 5;
+        const t1Range = [], t2Range = [];
+        for (let i = 0; i <= gridSize; i++) {
+            t1Range.push(tMin + i * (tMax - tMin) / gridSize);
+            t2Range.push(tMin + i * (tMax - tMin) / gridSize);
+        }
+
+        const mseGrid = [];
+        const penaltyGrid = [];
+        for (let j = 0; j <= gridSize; j++) {
+            const mseRow = [], penRow = [];
+            for (let i = 0; i <= gridSize; i++) {
+                mseRow.push(mse(t1Range[i], t2Range[j]));
+                penRow.push(t1Range[i] * t1Range[i] + t2Range[j] * t2Range[j]);
+            }
+            mseGrid.push(mseRow);
+            penaltyGrid.push(penRow);
+        }
+
+        // Fixed z-axis range based on MSE so grey surface never rescales
+        let maxMSE = 0;
+        for (const row of mseGrid) {
+            for (const v of row) {
+                if (v > maxMSE) maxMSE = v;
+            }
+        }
+
+        // ==================== Common styling ====================
+        const axisStyle = {
+            titlefont: { size: 20, family: "'Times New Roman', Times, serif", color: C.ink },  // Times keeps ₁ ₂ legible (Arial shrinks them to specks); <sub> tags would tilt the title along its axis
+            tickfont: { size: 13, family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", color: C.tick },  // 13px at 5.8:1 contrast: the old 11px #999 was 2.9:1 and vanished on a projector
+            nticks: 5,
+            gridcolor: C.grid
+        };
+
+        // ==================== Data Plot (Left) ====================
+        const initMin = solveRidge(0);
+        let theta1 = initMin.t1;
+        let theta2 = initMin.t2;
+
+        function createDataPlot() {
+            const pGridSize = 10;
+            const px1 = [], px2 = [];
+            for (let i = 0; i <= pGridSize; i++) {
+                px1.push(-3 + i * 6 / pGridSize);
+                px2.push(-5 + i * 10 / pGridSize);
+            }
+
+            const planeZ = [];
+            for (let j = 0; j < px2.length; j++) {
+                const row = [];
+                for (let i = 0; i < px1.length; i++) {
+                    row.push(theta1 * px1[i] + theta2 * px2[j]);
+                }
+                planeZ.push(row);
+            }
+
+            const plane = {
+                type: 'surface',
+                x: px1,
+                y: px2,
+                z: planeZ,
+                colorscale: [[0, C.optimumSoft], [1, C.optimum]],
+                opacity: 0.7,
+                showscale: false,
+                hoverinfo: 'skip'
+            };
+
+            const traces = [plane];
+
+            // Deviation lines and data points
+            for (const pt of dataPoints) {
+                const prediction = theta1 * pt.x1 + theta2 * pt.x2;
+
+                // Vertical deviation line
+                traces.push({
+                    type: 'scatter3d',
+                    mode: 'lines',
+                    x: [pt.x1, pt.x1],
+                    y: [pt.x2, pt.x2],
+                    z: [prediction, pt.y],
+                    line: { color: C.optimum, width: 5, dash: 'dash' },
+                    hoverinfo: 'skip'
+                });
+
+                // Point on plane
+                traces.push({
+                    type: 'scatter3d',
+                    mode: 'markers',
+                    x: [pt.x1],
+                    y: [pt.x2],
+                    z: [prediction],
+                    marker: { size: 6, color: C.optimum, symbol: 'diamond' },
+                    hoverinfo: 'skip'
+                });
+
+                // Actual data point
+                traces.push({
+                    type: 'scatter3d',
+                    mode: 'markers',
+                    x: [pt.x1],
+                    y: [pt.x2],
+                    z: [pt.y],
+                    marker: { size: 10, color: C.data, line: { color: C.dataEdge, width: 2 } },
+                    hoverinfo: 'skip'
+                });
+            }
+
+            return traces;
+        }
+
+        const dataLayout = {
+            scene: {
+                xaxis: { title: 'x₁', range: [-3, 3], ...axisStyle },
+                yaxis: { title: 'x₂', range: [-5, 5], ...axisStyle },
+                zaxis: { title: 'y', range: [-3, 3], ...axisStyle },
+                camera: { eye: { x: -1.82, y: -1.88, z: 0.80 } },
+                aspectmode: 'cube'
+            },
+            margin: { l: 0, r: 0, t: 0, b: 0 },
+            showlegend: false
+        };
+
+        Plotly.newPlot('data-plot', createDataPlot(), dataLayout, {
+            responsive: true,
+            displayModeBar: false
+        });
+
+        // ==================== Objective Plot (Right) ====================
+        // MSE surface (grey, fixed)
+        const mseSurface = {
+            type: 'surface',
+            x: t1Range,
+            y: t2Range,
+            z: mseGrid,
+            colorscale: [[0, C.mseLow], [1, C.mseHigh]],
+            opacity: 0.5,
+            showscale: false,
+            hoverinfo: 'skip'
+        };
+
+        // Ridge surface (yellow, varies with lambda)
+        const ridgeSurface = {
+            type: 'surface',
+            x: t1Range,
+            y: t2Range,
+            z: getRidgeGrid(0),
+            colorscale: [[0, C.ridgeLow], [0.3, C.ridgeMid], [1, C.ridgeHigh]],
+            opacity: 0.7,
+            showscale: false,
+            hoverinfo: 'skip'
+        };
+
+        // Origin marker lines (θ₁=0 and θ₂=0 axes on the floor)
+        const originLineT1 = {
+            type: 'scatter3d',
+            mode: 'lines',
+            x: [0, 0],
+            y: [tMin, tMax],
+            z: [0, 0],
+            line: { color: C.ink, width: 3 },
+            hoverinfo: 'skip'
+        };
+        const originLineT2 = {
+            type: 'scatter3d',
+            mode: 'lines',
+            x: [tMin, tMax],
+            y: [0, 0],
+            z: [0, 0],
+            line: { color: C.ink, width: 3 },
+            hoverinfo: 'skip'
+        };
+        const originDot = {
+            type: 'scatter3d',
+            mode: 'markers',
+            x: [0],
+            y: [0],
+            z: [0],
+            marker: { size: 6, color: C.ink, symbol: 'circle' },
+            hoverinfo: 'skip'
+        };
+
+        // Ridge minimum marker
+        const ridgeMinMarker = {
+            type: 'scatter3d',
+            mode: 'markers',
+            x: [initMin.t1],
+            y: [initMin.t2],
+            z: [ridgeCost(initMin.t1, initMin.t2, 0) + 0.5],
+            marker: { size: 10, color: C.optimum, symbol: 'diamond' },
+            hoverinfo: 'skip'
+        };
+
+        function getRidgeGrid(lambda) {
+            const grid = [];
+            for (let j = 0; j <= gridSize; j++) {
+                const row = [];
+                for (let i = 0; i <= gridSize; i++) {
+                    row.push(mseGrid[j][i] + lambda * penaltyGrid[j][i]);
+                }
+                grid.push(row);
+            }
+            return grid;
+        }
+
+        const objCameraAngle = { eye: { x: 2.40, y: -0.01, z: 0.59 } };
+
+        const objLayout = {
+            scene: {
+                xaxis: { title: 'θ₁', range: [tMin, tMax], ...axisStyle },
+                yaxis: { title: 'θ₂', range: [tMin, tMax], ...axisStyle },
+                zaxis: { title: 'J(θ)', range: [0, maxMSE], ...axisStyle },
+                camera: objCameraAngle,
+                aspectmode: 'cube'
+            },
+            margin: { l: 0, r: 0, t: 0, b: 0 },
+            showlegend: false
+        };
+
+        // Traces: 0=MSE(grey), 1=originT1, 2=originT2, 3=originDot, 4=Ridge(yellow), 5=minimum marker
+        Plotly.newPlot('obj-plot', [mseSurface, originLineT1, originLineT2, originDot, ridgeSurface, ridgeMinMarker], objLayout, {
+            responsive: true,
+            displayModeBar: false
+        });
+
+        // ==================== Slider interaction ====================
+        const lambdaSlider = document.getElementById('lambda-slider');
+
+        // Log-scale mapping: slider 0 → λ=0, slider 1..60 → λ = 10^-5..10^1, ten steps per decade.
+        // Coarse on purpose: every step redraws both plots, so finer steps make dragging lag.
+        function sliderToLambda(p) {
+            if (p === 0) return 0;
+            return Math.pow(10, -5 + p / 10);
+        }
+        function lambdaToSlider(lambda) {
+            return (Math.log10(lambda) + 5) * 10;
+        }
+        // Tick labels sit where the slider actually maps them (log scale), not evenly spaced.
+        // Slider position 0 is λ = 0, which coincides with the 10⁻⁵ tick, so that one goes unlabeled.
+        (function renderTicks() {
+            const box = document.getElementById('tick-marks');
+            [[0, '0'], [1e-4, '10^{-4}'], [1e-2, '10^{-2}'], [1, '10^{0}'], [10, '10^{1}']]
+                .forEach(([lam, label]) => {
+                    const span = document.createElement('span');
+                    katex.render(label, span);
+                    span.style.left = (lam === 0 ? 0 : lambdaToSlider(lam) / lambdaSlider.max * 100) + '%';
+                    box.appendChild(span);
+                });
+        })();
+
+        function update() {
+            const p = parseFloat(lambdaSlider.value);
+            const lambda = sliderToLambda(p);
+            const [mant, exp] = lambda.toExponential(1).split('e');
+            const lambdaTex = lambda === 0 ? '0' : lambda < 0.01 ? String.raw`${mant} \times 10^{${+exp}}` : lambda.toFixed(2);
+            katex.render(String.raw`\lambda = ` + lambdaTex, document.getElementById('lambda-val'));
+            // A range input announces "0 of 60" by default, which says nothing about λ.
+            lambdaSlider.setAttribute('aria-valuetext',
+                lambda === 0 ? 'lambda 0, ordinary least squares' : 'lambda ' + lambda.toExponential(1));
+
+            // Solve for ridge minimum
+            const min = solveRidge(lambda);
+            theta1 = min.t1;
+            theta2 = min.t2;
+            const jMse = mse(theta1, theta2);
+            const norm = Math.sqrt(theta1 * theta1 + theta2 * theta2);
+            const jRidge = jMse + lambda * (theta1 * theta1 + theta2 * theta2);
+
+            // Update left panel: hypothesis annotation
+            katex.render(String.raw`h = ${theta1.toFixed(3)}\,x_1 ${theta2 < 0 ? '-' : '+'} ${Math.abs(theta2).toFixed(3)}\,x_2`,
+                document.getElementById('hypothesis-text'));
+
+            // Update right panel: norm and MSE
+            const offChart = Math.max(Math.abs(theta1), Math.abs(theta2)) > tMax;
+            document.getElementById('obj-stats').innerHTML =
+                `<span class="norm-val">${katex.renderToString(String.raw`\|\theta^*\| = ${norm.toFixed(3)}`)}</span>` +
+                `<span class="j-val">${katex.renderToString(String.raw`J(\theta^*) = ${jMse.toFixed(2)}`)}</span>`;
+            document.getElementById('obj-flag').innerHTML = offChart
+                ? `◆ ${katex.renderToString(String.raw`\theta^*_{\text{ridge}}`)} is off the chart`
+                : '';
+
+            // Update data plot: hypothesis plane changes with theta
+            Plotly.react('data-plot', createDataPlot(), dataLayout);
+
+            // Update objective plot: ridge surface + minimum marker
+            const ridgeGrid = getRidgeGrid(lambda);
+            Plotly.restyle('obj-plot', { z: [ridgeGrid] }, 4);  // trace 4 = ridge surface
+            Plotly.restyle('obj-plot', {
+                x: [[theta1]],
+                y: [[theta2]],
+                z: [[jRidge + 0.5]],
+                visible: !offChart
+            }, 5);  // trace 5 = minimum marker
+        }
+
+        lambdaSlider.addEventListener('input', update);
+        update();
+
+        // KaTeX web fonts and the readouts land after the plots are drawn, which changes
+        // how much height is left for each plot. Plotly sizes its canvas once at draw time,
+        // so without this the canvas keeps its old height and spills past the panel.
+        if (window.ResizeObserver) {
+            const ro = new ResizeObserver(entries => {
+                for (const e of entries) Plotly.Plots.resize(e.target);
+            });
+            ro.observe(document.getElementById('data-plot'));
+            ro.observe(document.getElementById('obj-plot'));
+        }
+    </script>
+</body>
+</html>
