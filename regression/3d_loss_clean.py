@@ -1,5 +1,12 @@
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend for saving
+# Dash lengths are given in points, and by default matplotlib multiplies them by
+# the line width. At linewidth 2.5 the gap lines' (4, 3) became a 42px dash with a
+# 31px hole, a 73px period, while Chicago's gap leaves only about 40px of line
+# visible between its dot and its landing ring. The whole gap fell inside one hole,
+# so the smallest of the three gaps drew no dashes at all. Unscaled, (4, 3) is a
+# 17px dash and a 13px hole, which fits inside even the shortest gap.
+matplotlib.rcParams['lines.scale_dashes'] = False
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
@@ -32,7 +39,14 @@ ENERGY = np.array([2, 3, 5], float)     # y
 # The hypothesis, in those same units. Deliberately a poor fit, and deliberately
 # under every city so all three gaps drop the same direction, which is what keeps
 # the loss picture readable at this viewing angle.
-THETA = (1.0, 1.5)
+#
+# Slant and gap size trade off directly here, because theta* = (2, 3) fits all
+# three cities exactly: every step toward it tilts the plane and shrinks all three
+# gaps at the same rate, and the steepest plane with every city above it is theta*
+# itself, where the gaps vanish. This sits 0.7 of the way, steep enough to read as
+# a plane rather than an edge-on sliver, shallow enough that Chicago, whose gap is
+# the smallest of the three, still has one worth drawing.
+THETA = (1.4, 2.1)
 
 # Pure per-axis scaling into the drawing cube. An offset would move the plane off
 # the origin and break the "for now, ignoring the offset" framing on the slides.
@@ -216,8 +230,10 @@ print('  %-11s %6s %6s %7s %8s %8s' % ('city', 'temp', 'pop', 'energy', 'h(x)', 
 for c, a, b, y in zip(CITIES, TEMP, POP, ENERGY):
     pred = THETA[0] * a + THETA[1] * b
     print('  %-11s %6.0f %6.1f %7.0f %8.2f %+8.2f' % (c, a, b, y, pred, y - pred))
-print('  column ranges: temp %.2fx  pop %.2fx  energy %.2fx' % (
-    TEMP.max() / TEMP.min(), POP.max() / POP.min(), ENERGY.max() / ENERGY.min()))
+# Spans rather than max/min ratios: both features are 0/1 indicators, so a ratio
+# divides by zero and reports inf, which says nothing about the column.
+print('  column spans: temp %g..%g  pop %g..%g  energy %g..%g' % (
+    TEMP.min(), TEMP.max(), POP.min(), POP.max(), ENERGY.min(), ENERGY.max()))
 print('  hypothesis in slide units:   y = %.2f x1 + %.2f x2' % THETA)
 print('  hypothesis in plotted units: y = %.3f x1 + %.3f x2  (weights %.1fx apart)' % (
     T1, T2, max(T1 / T2, T2 / T1)))
