@@ -68,9 +68,15 @@ def axes_frame(ax):
         getattr(ax, setter)('')
     for setter in ('set_xticks', 'set_yticks', 'set_zticks'):
         getattr(ax, setter)([])
-    ax.plot([AX_MIN, 5], [0, 0], [0, 0], 'k-', linewidth=2, zorder=8)
-    ax.plot([0, 0], [AX_MIN, 5], [0, 0], 'k-', linewidth=2, zorder=8)
-    ax.plot([0, 0], [0, 0], [AX_MIN, 5], 'k-', linewidth=2, zorder=8)
+    # Positive arms in full black. Negative arms thinner and grey: they are only
+    # there to make the origin read as a crossing, and at full weight they cut
+    # across the plane and compete with the content in front of it.
+    ax.plot([0, 5], [0, 0], [0, 0], 'k-', linewidth=2, zorder=8)
+    ax.plot([0, 0], [0, 5], [0, 0], 'k-', linewidth=2, zorder=8)
+    ax.plot([0, 0], [0, 0], [0, 5], 'k-', linewidth=2, zorder=8)
+    ax.plot([AX_MIN, 0], [0, 0], [0, 0], color='#9a9a9a', linewidth=1.1, zorder=8)
+    ax.plot([0, 0], [AX_MIN, 0], [0, 0], color='#9a9a9a', linewidth=1.1, zorder=8)
+    ax.plot([0, 0], [0, 0], [AX_MIN, 0], color='#9a9a9a', linewidth=1.1, zorder=8)
     ax.plot([5, 4.7], [0, 0.2], [0, 0], 'k-', linewidth=2, zorder=8)
     ax.plot([5, 4.7], [0, -0.2], [0, 0], 'k-', linewidth=2, zorder=8)
     ax.plot([0, 0.2], [5, 4.7], [0, 0], 'k-', linewidth=2, zorder=8)
@@ -80,12 +86,13 @@ def axes_frame(ax):
     # Arrowheads on the negative ends too. Without them the arms stop dead partway
     # across the plane and read as stray marks lying on its surface rather than as
     # axes continuing past the origin.
-    ax.plot([AX_MIN, AX_MIN + 0.3], [0, 0.2], [0, 0], 'k-', linewidth=2, zorder=8)
-    ax.plot([AX_MIN, AX_MIN + 0.3], [0, -0.2], [0, 0], 'k-', linewidth=2, zorder=8)
-    ax.plot([0, 0.2], [AX_MIN, AX_MIN + 0.3], [0, 0], 'k-', linewidth=2, zorder=8)
-    ax.plot([0, -0.2], [AX_MIN, AX_MIN + 0.3], [0, 0], 'k-', linewidth=2, zorder=8)
-    ax.plot([0, 0.2], [0, 0], [AX_MIN, AX_MIN + 0.3], 'k-', linewidth=2, zorder=8)
-    ax.plot([0, -0.2], [0, 0], [AX_MIN, AX_MIN + 0.3], 'k-', linewidth=2, zorder=8)
+    GREY = dict(color='#9a9a9a', linewidth=1.1, zorder=8)
+    ax.plot([AX_MIN, AX_MIN + 0.3], [0, 0.2], [0, 0], **GREY)
+    ax.plot([AX_MIN, AX_MIN + 0.3], [0, -0.2], [0, 0], **GREY)
+    ax.plot([0, 0.2], [AX_MIN, AX_MIN + 0.3], [0, 0], **GREY)
+    ax.plot([0, -0.2], [AX_MIN, AX_MIN + 0.3], [0, 0], **GREY)
+    ax.plot([0, 0.2], [0, 0], [AX_MIN, AX_MIN + 0.3], **GREY)
+    ax.plot([0, -0.2], [0, 0], [AX_MIN, AX_MIN + 0.3], **GREY)
     ax.view_init(elev=20, azim=45)
     ax.grid(False)
     ax.set_box_aspect([1, 1, 1])
