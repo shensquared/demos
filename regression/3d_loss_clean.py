@@ -5,64 +5,102 @@ import numpy as np
 from PIL import Image
 from mpl_toolkits.mplot3d import Axes3D
 
-# Two figures for the 2-feature running example, sharing one geometry so they cannot
-# drift apart. Both match 3d_scatter_clean.py in view angle, limits, colors and point
-# positions, so every slide shows the same four cities:
+# Figures for the 2-feature running example on the FA26 lec02 slides. All of them
+# come out of the one dataset and one viewing angle below, so they cannot drift
+# apart and the cities never move between slides:
 #
-#   3d_plane_clean.png  the four cities and the hypothesis plane, nothing else
-#   3d_loss_clean.png   the same, plus the vertical gap from each city to the plane
-#   3d_plane_bare.png   the hypothesis plane alone, no cities
+#   3d_scatter_clean.png  the three cities alone
+#   3d_plane_clean.png    the three cities and the hypothesis plane
+#   3d_plane_bare.png     the hypothesis plane alone, no cities
+#   3d_loss_clean.png     the cities, the plane, and the gap from each city to it
+#   3d_J_clean.png        the objective J over the two weights, with its minimum
 #
-# The hypothesis is h(x) = theta1*x1 + theta2*x2, a hyperplane through the origin
-# with no offset, matching the "for now, ignoring the offset" framing on the linear
-# hypothesis class slide. theta is deliberately a poor fit so all four gaps stay
-# visible, and it sits under every city so all four gaps drop the same direction.
-# The two weights differ so the plane tilts visibly. Weighting both equally makes it
-# rise toward the far corner, which this viewing angle foreshortens into something
-# that reads as horizontal. Blue, at (3.5, 1.5, 1.5), is the binding city: it has the
-# highest x of the four, so the plane rises fastest toward it and its gap closes
-# first, which caps the slant. theta1 is pushed right up to what blue's gap tolerates
-# while still reading as a thin dash. Steeper than this and the plane climbs through
-# blue, flipping that one gap upward while the other three still point down, and that
-# consistency is what makes the picture legible at this viewing angle.
-THETA = (0.32, 0.02)
+# DATA is in the slide's own units, and it is what the table on the slide shows.
+# Each column spans a little over a 2x range, which matters because the plane has
+# no offset: scaling into the drawing cube has to be a pure multiply, so a column's
+# max/min ratio is exactly what sets its visual spread.
+# Three cities is enough to carry the two-feature story and keeps X at 3x2, so the
+# matrices and the expanded J on the slides stay short. Chicago is hot with fewer
+# people, New York mild with many, Boston low on both, so neither feature explains
+# the label on its own.
+CITIES = ['Chicago', 'New York', 'Boston']
+COLORS = ['red', 'blue', 'green']
+TEMP = np.array([88, 58, 42], float)    # x1, degrees F
+POP = np.array([5.9, 8.4, 3.6], float)  # x2, millions
+ENERGY = np.array([39, 43, 28], float)  # y
 
-# Points and colors from 3d_scatter_clean.py: Chicago, New York, Boston, San Diego
-points = np.array([
-    [2, 1.5, 1.5],    # Point 1 - center bottom area
-    [3.5, 1.5, 1.5],    # Point 2 - right bottom area
-    [1.5, 3.5, 1.5],    # Point 3 - back bottom area
-    [3.5, 2, 3.5]     # Point 4 - top back right area
-])
-colors = ['red', 'blue', 'green', 'orange']
+# The hypothesis, in those same units. Deliberately a poor fit, and deliberately
+# under every city so all three gaps drop the same direction, which is what keeps
+# the loss picture readable at this viewing angle.
+THETA = (0.25, 1.5)
+
+# Pure per-axis scaling into the drawing cube. An offset would move the plane off
+# the origin and break the "for now, ignoring the offset" framing on the slides.
+CUBE = 4.5
+s1, s2, sy = CUBE / TEMP.max(), CUBE / POP.max(), CUBE / ENERGY.max()
+X1, X2, Y = TEMP * s1, POP * s2, ENERGY * sy
+# The same hypothesis expressed in plotted units
+T1, T2 = THETA[0] * TEMP.max() / ENERGY.max(), THETA[1] * POP.max() / ENERGY.max()
+
+points = np.column_stack([X1, X2, Y])
 
 
 def h(px, py):
-    return THETA[0] * px + THETA[1] * py
+    return T1 * px + T2 * py
 
 
-def render(show_gaps, show_points, out):
-    # Every city sits above the plane, so drawing the points and gap lines over it is
-    # the geometrically correct order. computed_zorder=False makes matplotlib honor
-    # that instead of deriving its own, which otherwise chops the gap lines in half.
+def axes_frame(ax):
+    """The shared cube: no ticks, no box, three black arrows out of the origin."""
+    ax.set_xlim(-0.5, 5.5)
+    ax.set_ylim(-0.5, 5.5)
+    ax.set_zlim(-0.5, 5.5)
+    for setter in ('set_xlabel', 'set_ylabel', 'set_zlabel'):
+        getattr(ax, setter)('')
+    for setter in ('set_xticks', 'set_yticks', 'set_zticks'):
+        getattr(ax, setter)([])
+    ax.plot([0, 5], [0, 0], [0, 0], 'k-', linewidth=2, zorder=8)
+    ax.plot([0, 0], [0, 5], [0, 0], 'k-', linewidth=2, zorder=8)
+    ax.plot([0, 0], [0, 0], [0, 5], 'k-', linewidth=2, zorder=8)
+    ax.plot([5, 4.7], [0, 0.2], [0, 0], 'k-', linewidth=2, zorder=8)
+    ax.plot([5, 4.7], [0, -0.2], [0, 0], 'k-', linewidth=2, zorder=8)
+    ax.plot([0, 0.2], [5, 4.7], [0, 0], 'k-', linewidth=2, zorder=8)
+    ax.plot([0, -0.2], [5, 4.7], [0, 0], 'k-', linewidth=2, zorder=8)
+    ax.plot([0, 0.2], [0, 0], [5, 4.7], 'k-', linewidth=2, zorder=8)
+    ax.plot([0, -0.2], [0, 0], [5, 4.7], 'k-', linewidth=2, zorder=8)
+    ax.view_init(elev=20, azim=45)
+    ax.grid(False)
+    ax.set_box_aspect([1, 1, 1])
+    ax._axis3don = False
+
+
+def save(fig, out):
+    plt.tight_layout()
+    fig.savefig(out, dpi=300, bbox_inches='tight', transparent=True)
+    plt.close(fig)
+    img = Image.open(out)
+    bbox = img.getbbox()
+    if bbox:
+        cropped = img.crop(bbox)
+        cropped.save(out.replace('.png', '_cropped.png'))
+        print('  %-24s -> %s %s' % (out, out.replace('.png', '_cropped.png'), cropped.size))
+
+
+def render(show_plane, show_points, show_gaps, out):
+    # Every city sits above the plane, so drawing points and gaps over it is the
+    # correct order. computed_zorder=False makes matplotlib honor that instead of
+    # deriving its own, which otherwise chops the gap lines in half.
     fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(111, projection='3d', computed_zorder=False)
 
-    # Hypothesis plane through the origin. Gray at low opacity, matching the plane on
-    # the linear hypothesis class slide.
-    # Stops just past the farthest city at 3.5 instead of running out toward the axis
-    # arrows, so the patch reads as a plane through the origin rather than as a floor.
-    gx, gy = np.meshgrid(np.linspace(0, 3.9, 2), np.linspace(0, 3.9, 2))
-    ax.plot_surface(gx, gy, h(gx, gy),
-                    color='#cccccc', alpha=0.39, shade=False,
-                    edgecolor='#9a9a9a', linewidth=1.2, zorder=1)
+    if show_plane:
+        gx, gy = np.meshgrid(np.linspace(0, 4.6, 2), np.linspace(0, 4.6, 2))
+        ax.plot_surface(gx, gy, h(gx, gy),
+                        color='#cccccc', alpha=0.39, shade=False,
+                        edgecolor='#9a9a9a', linewidth=1.2, zorder=1)
 
-    # Vertical gap from each city down to the plane, then a hollow ring where it
-    # lands. A plane seen in projection gives no cue for where a vertical meets it, so
-    # without the ring each gap reads as stopping in mid-air. The gaps stay black and
-    # broken, matching the dotted black line blocks the slide already uses for the 2D
-    # version, and the rings stay unfilled: only the cities carry color, so the four
-    # gaps read as four instances of one quantity rather than four different things.
+    # The gaps stay black and broken, matching the dotted black line blocks the
+    # slides already use, and the rings stay unfilled: only the cities carry color,
+    # so the four gaps read as four instances of one quantity.
     if show_gaps:
         for px, py, pz in points:
             ax.plot([px, px], [py, py], [pz, h(px, py)],
@@ -72,89 +110,93 @@ def render(show_gaps, show_points, out):
                        s=95, facecolors='white', edgecolors='black',
                        linewidth=2, depthshade=False, zorder=6)
 
-    # Create scatter plot with large, easy-to-see points
     if show_points:
         ax.scatter(points[:, 0], points[:, 1], points[:, 2],
-                   s=300,           # Large marker size
-                   c=colors,        # Different colors
-                   alpha=1.0,
+                   s=300, c=COLORS, alpha=1.0,
                    depthshade=False,  # keep the far cities as vivid as the near ones
-                   edgecolors='black',  # Black edges for contrast
-                   linewidth=2,      # Edge line width
-                   zorder=10)
+                   edgecolors='black', linewidth=2, zorder=10)
 
-    # Set axis limits with extra padding for arrows
-    ax.set_xlim(-0.5, 5.5)
-    ax.set_ylim(-0.5, 5.5)
-    ax.set_zlim(-0.5, 5.5)
+    axes_frame(ax)
+    save(fig, out)
 
-    # Clean up the axes - no labels, no tick numbers
-    ax.set_xlabel('')
-    ax.set_ylabel('')
-    ax.set_zlabel('')
 
-    # Remove tick labels but keep tick marks
-    ax.set_xticklabels([])
-    ax.set_yticklabels([])
-    ax.set_zticklabels([])
+def render_J(out):
+    """J over the two weights, in plotted units, with its minimum marked."""
+    n = len(ENERGY)
 
-    # Remove tick marks as well for completely clean look
-    ax.set_xticks([])
-    ax.set_yticks([])
-    ax.set_zticks([])
+    def J(t1, t2):
+        total = 0.0
+        for a, b, c in zip(X1, X2, Y):
+            total = total + (t1 * a + t2 * b - c) ** 2
+        return total / n
 
-    # Draw coordinate axes INSIDE the plot boundaries, over the plane so the frame of
-    # reference stays visible through it
-    # X-axis from origin to x=5
-    ax.plot([0, 5], [0, 0], [0, 0], 'k-', linewidth=2, zorder=8)
-    # Y-axis from origin to y=5
-    ax.plot([0, 0], [0, 5], [0, 0], 'k-', linewidth=2, zorder=8)
-    # Z-axis from origin to z=5
-    ax.plot([0, 0], [0, 0], [0, 5], 'k-', linewidth=2, zorder=8)
+    # least squares minimum, and a window around it
+    A = np.column_stack([X1, X2])
+    best = np.linalg.lstsq(A, Y, rcond=None)[0]
+    jmin = J(best[0], best[1])
+    # Size the window separately per weight, so J rises by the same amount along
+    # each axis. A square window renders the surface as a needle: J grows with the
+    # square of the step, and the two weights have very different curvature, so one
+    # direction towers while the other stays flat.
+    curv = A.T @ A / len(Y)
+    rise = max(8.0 * jmin, 0.35)
+    span1 = np.sqrt(rise / curv[0, 0])
+    span2 = np.sqrt(rise / curv[1, 1])
+    g1 = np.linspace(best[0] - span1, best[0] + span1, 60)
+    g2 = np.linspace(best[1] - span2, best[1] + span2, 60)
+    G1, G2 = np.meshgrid(g1, g2)
+    Z = J(G1, G2)
+    # Cut the walls off above a threshold and drop everything higher. Drawn all the
+    # way up its sides a paraboloid hides its own basin: the near wall occludes the
+    # floor and the far wall rises behind it, so the surface reads as a peak rather
+    # than a minimum. Cutting it leaves an open rim you can see down into.
+    cut = jmin + 6.0 * max(jmin, 0.05)
+    Z = np.where(Z > cut, np.nan, Z)
+    print('  J window: span %.3f by %.3f, floor %.4f, cut at %.4f' % (
+        span1, span2, jmin, cut))
 
-    # Add simple arrowheads using small lines
-    # X-axis arrowhead
-    ax.plot([5, 4.7], [0, 0.2], [0, 0], 'k-', linewidth=2, zorder=8)
-    ax.plot([5, 4.7], [0, -0.2], [0, 0], 'k-', linewidth=2, zorder=8)
-
-    # Y-axis arrowhead
-    ax.plot([0, 0.2], [5, 4.7], [0, 0], 'k-', linewidth=2, zorder=8)
-    ax.plot([0, -0.2], [5, 4.7], [0, 0], 'k-', linewidth=2, zorder=8)
-
-    # Z-axis arrowhead
-    ax.plot([0, 0.2], [0, 0], [5, 4.7], 'k-', linewidth=2, zorder=8)
-    ax.plot([0, -0.2], [0, 0], [5, 4.7], 'k-', linewidth=2, zorder=8)
-
-    # Set a good viewing angle
-    ax.view_init(elev=20, azim=45)
-
-    # Remove grid lines for cleaner appearance
+    fig = plt.figure(figsize=(10, 8))
+    ax = fig.add_subplot(111, projection='3d', computed_zorder=False)
+    ax.plot_surface(G1, G2, Z, color='#cccccc', alpha=0.5, shade=False,
+                    edgecolor='#9a9a9a', linewidth=0.4, zorder=1)
+    jmin = J(best[0], best[1])
+    ax.scatter([best[0]], [best[1]], [jmin], s=260, c='#674ea7',
+               edgecolors='black', linewidth=2, depthshade=False, zorder=10)
+    ax.set_xlim(g1.min(), g1.max())
+    ax.set_ylim(g2.min(), g2.max())
+    ax.set_zlim(0, cut)
+    for setter in ('set_xlabel', 'set_ylabel', 'set_zlabel'):
+        getattr(ax, setter)('')
+    for setter in ('set_xticks', 'set_yticks', 'set_zticks'):
+        getattr(ax, setter)([])
+    # Look down into the basin and compress the vertical, so the quadratic reads as
+    # a bowl. J grows fast toward the window corners, so at equal aspect and a low
+    # elevation the corners tower and the whole surface renders as a spike.
+    ax.view_init(elev=38, azim=45)
     ax.grid(False)
-
-    # Disable the 3D box and planes to remove thin lines
-    ax.set_box_aspect([1, 1, 1])
+    ax.set_box_aspect([1, 1, 0.55])
     ax._axis3don = False
-
-    # Adjust layout to prevent clipping
-    plt.tight_layout()
-    plt.savefig(out, dpi=300, bbox_inches='tight', transparent=True)
-    plt.close(fig)
-
-    # Trim the transparent border so the drawing fills the frame, matching how the
-    # scatter already on the slide was cropped before upload.
-    cropped_name = out.replace('.png', '_cropped.png')
-    img = Image.open(out)
-    bbox = img.getbbox()
-    if bbox:
-        cropped = img.crop(bbox)
-        cropped.save(cropped_name)
-        print(f"  {out} -> {cropped_name} {cropped.size}")
+    print('  J minimum at theta = (%.3f, %.3f), J = %.4f' % (best[0], best[1], jmin))
+    save(fig, out)
 
 
-print(f"theta = {THETA}")
-for (px, py, pz), c in zip(points, colors):
-    print(f"  {c:<7} y={pz:<4} h(x)={h(px, py):.3f}  gap={pz - h(px, py):+.3f}")
-
-render(False, True, '3d_plane_clean.png')
-render(True, True, '3d_loss_clean.png')
-render(False, False, '3d_plane_bare.png')
+print('data, in the slide\'s own units:')
+print('  %-11s %6s %6s %7s %8s %8s' % ('city', 'temp', 'pop', 'energy', 'h(x)', 'gap'))
+for c, a, b, y in zip(CITIES, TEMP, POP, ENERGY):
+    pred = THETA[0] * a + THETA[1] * b
+    print('  %-11s %6.0f %6.1f %7.0f %8.2f %+8.2f' % (c, a, b, y, pred, y - pred))
+print('  column ranges: temp %.2fx  pop %.2fx  energy %.2fx' % (
+    TEMP.max() / TEMP.min(), POP.max() / POP.min(), ENERGY.max() / ENERGY.min()))
+print('  hypothesis in slide units:   y = %.2f x1 + %.2f x2' % THETA)
+print('  hypothesis in plotted units: y = %.3f x1 + %.3f x2  (weights %.1fx apart)' % (
+    T1, T2, max(T1 / T2, T2 / T1)))
+gaps = Y - h(X1, X2)
+print('  plotted gaps: %s' % ', '.join('%s %+.2f' % (c, g) for c, g in zip(CITIES, gaps)))
+print('  all cities above the plane: %s, gap range %.2f to %.2f (%.1fx)' % (
+    bool((gaps > 0).all()), gaps.min(), gaps.max(), gaps.max() / gaps.min()))
+print('figures:')
+render(False, True, False, '3d_scatter_clean.png')
+render(True, True, False, '3d_plane_clean.png')
+render(True, False, False, '3d_plane_bare.png')
+render(True, True, True, '3d_loss_clean.png')
+render_J('3d_J_clean.png')
