@@ -18,15 +18,13 @@
       .app {
         display: flex; flex-direction: column;
         height: 100%;
-        padding: 10px 14px 30px;
+        padding: 10px 14px 8px;
         gap: 8px;
       }
 
-      /* Embed mode: the slide supplies the title, and the Source / Report a Bug
-         bar is page chrome that does not belong on a projected slide. */
+      /* Embed mode: the slide supplies the title. */
       body.embed .app { padding: 6px 10px 8px; }
       body.embed .topbar h1 { display: none; }
-      body.embed .site-footer { display: none; }
 
       .topbar { display: flex; align-items: center; gap: 14px; }
 
@@ -473,10 +471,5 @@
           Plotly.Plots.resize(document.getElementById(id)));
       });
     </script>
-    <div class="site-footer" style="position:fixed;bottom:0;width:100%;text-align:center;padding:6px 0;font-size:13px;color:#888;background:#fafafa;">
-      <a href="https://github.com/shensquared/demos" target="_blank" style="color:#007bff;text-decoration:none;">Source</a>
-      <span style="margin:0 6px;">|</span>
-      <a href="https://github.com/shensquared/demos/issues" target="_blank" style="color:#007bff;text-decoration:none;">Report a Bug</a>
-    </div>
   </body>
 </html>
