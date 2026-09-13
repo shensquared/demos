@@ -8,8 +8,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
     <style>
-        /* The same locked tokens two-datasets.html uses, so the two slides that show
-           this data look like one pair. Mark colours are mirrored in the JS below,
+        /* The same locked colours ill-conditioned-two-planes.html uses, so the two
+           slides look like one pair. Mark colours are mirrored in the JS below,
            since Plotly cannot read custom properties. */
         :root {
             --a-mark: #cc3b2f;
@@ -72,8 +72,7 @@
 
         // HW1 Worcester-temperature data: x1 = Cambridge, x2 = Boston, y = Worcester (°F).
         // A is the rounded readings; B is the precise readings, a perturbation of A the
-        // size of measurement noise. Identical to the DATA block in two-datasets.html,
-        // which steps through the same pair one at a time; this page shows both at once.
+        // size of measurement noise. This page shows A and B at once.
         const DATA = {
             a: { x1: [78, 79, 81, 82], x2: [76, 78, 82, 84], y: [78, 77, 80, 83],
                  color: '#cc3b2f', light: '#f4c7c3', label: 'A' },

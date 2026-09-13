@@ -188,6 +188,10 @@
             color: var(--ink-2);
             line-height: 1.45;
         }
+        .legend-ridge {
+            display: block;
+            margin-top: var(--s2);
+        }
         .hypothesis {
             display: block;
             margin-top: var(--s1);
@@ -198,7 +202,7 @@
             display: flex;
             flex-wrap: wrap;
             gap: 0 var(--s4);
-            margin-top: var(--s1);
+            margin-top: var(--s3);
             font-size: var(--fs-readout);
             font-variant-numeric: tabular-nums;
         }
@@ -273,8 +277,8 @@
             <h2>Objective in \(\theta\)-space</h2>
             <div class="subtitle">
                 <span class="legend-swatch" style="background: var(--mse-swatch);"></span>\(J(\theta)\) (MSE) &nbsp;
-                <span class="legend-swatch" style="background: var(--ridge-swatch);"></span>\(J_{\text{ridge}}(\theta) = J(\theta) + \lambda\|\theta\|^2\) &nbsp;
-                <span style="color: var(--optimum);">◆</span> \(\theta^*_{\text{ridge}}\)
+                <span class="legend-ridge"><span class="legend-swatch" style="background: var(--ridge-swatch);"></span>\(J_{\text{ridge}}(\theta) = J(\theta) + \lambda\|\theta\|^2\) &nbsp;
+                <span style="color: var(--optimum);">◆</span> \(\theta^*_{\text{ridge}}\)</span>
                 <div class="stats" id="obj-stats"></div>
                 <div class="flag" id="obj-flag"></div>
             </div>
