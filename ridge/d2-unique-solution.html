@@ -179,9 +179,9 @@
             <div class="slider-col">
                 <div class="slider-label">
                     <span>\(\theta_1\)</span>
-                    <span class="val" id="theta1-val">2.00</span>
+                    <span class="val" id="theta1-val">1.00</span>
                 </div>
-                <input type="range" id="theta1-slider" class="slider" min="-1" max="5" step="0.1" value="2" aria-label="theta 1">
+                <input type="range" id="theta1-slider" class="slider" min="-1" max="5" step="0.1" value="1" aria-label="theta 1">
             </div>
             <div class="slider-col">
                 <div class="slider-label">
@@ -234,7 +234,7 @@
         // theta* = (2, 3) passes through all three points, so J bottoms out at zero
         // there. The sliders move theta away from it; this stays as the reference.
         const OPT1 = 2, OPT2 = 3;
-        let theta1 = OPT1, theta2 = OPT2;
+        let theta1 = 1, theta2 = OPT2;
 
         // Loss function: J(θ) = (1/n) Σ(θ1*x1 + θ2*x2 - y)²
         function loss(t1, t2) {
