@@ -37,6 +37,10 @@
             padding: 10px 14px 8px;
             gap: 8px;
         }
+        /* Embed mode: the slide supplies the title and the surrounding space, so
+           trim the padding the standalone page needs. */
+        body.embed .app { padding: 6px 8px 4px; gap: 6px; }
+
         .topbar {
             display: flex;
             align-items: center;
@@ -293,6 +297,7 @@
             b.addEventListener('click', () => { mode = b.dataset.mode; render(); }));
 
         const params = new URLSearchParams(window.location.search);
+        if (params.has('embed')) document.body.classList.add('embed');
         if (['a', 'b', 'both'].includes(params.get('mode'))) mode = params.get('mode');
 
         renderTables();
