@@ -210,7 +210,9 @@
             color: var(--optimum);
         }
         .norm-val { color: var(--optimum); }
-        .j-val { color: var(--objective); }
+        /* Each J readout takes its surface's colour: grey MSE, yellow J_ridge (as amber text). */
+        .j-val { color: var(--ink-2); }
+        .jr-val { color: var(--objective); }
 
         .plot {
             flex: 1 1 0;
@@ -630,11 +632,12 @@
             katex.render(String.raw`h = ${theta1.toFixed(3)}\,x_1 ${theta2 < 0 ? '-' : '+'} ${Math.abs(theta2).toFixed(3)}\,x_2`,
                 document.getElementById('hypothesis-text'));
 
-            // Update right panel: norm and MSE
+            // Update right panel: norm, MSE, and the ridge objective at θ*
             const offChart = Math.max(Math.abs(theta1), Math.abs(theta2)) > tMax;
             document.getElementById('obj-stats').innerHTML =
-                `<span class="norm-val">${katex.renderToString(String.raw`\|\theta^*\| = ${norm.toFixed(3)}`)}</span>` +
-                `<span class="j-val">${katex.renderToString(String.raw`J(\theta^*) = ${jMse.toFixed(2)}`)}</span>`;
+                `<span class="j-val">${katex.renderToString(String.raw`J(\theta^*)\ \text{(MSE)} = ${jMse.toFixed(2)}`)}</span>` +
+                `<span class="jr-val">${katex.renderToString(String.raw`J_{\text{ridge}}(\theta^*) = ${jRidge.toFixed(2)}`)}</span>` +
+                `<span class="norm-val">${katex.renderToString(String.raw`\|\theta^*\| = ${norm.toFixed(3)}`)}</span>`;
             document.getElementById('obj-flag').innerHTML = offChart
                 ? `◆ ${katex.renderToString(String.raw`\theta^*_{\text{ridge}}`)} is off the chart`
                 : '';
