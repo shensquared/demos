@@ -300,6 +300,11 @@
         );
       }
 
+      // Sizes below follow B4 in slides/10-250.md, in deck pixels: the first and last
+      // step are marks a viewer has to tell apart, so 19, the floor for the smallest
+      // text; the steps between only trace the path, so 10 to 12. They overlap once
+      // the iteration count is high, which is the intended outcome, since a thick
+      // beaded line still reads as a path and a line of specks does not.
       function markerSizes(arr, big, small) {
         return arr.map((_, i) =>
           i === 0 || i === arr.length - 1 ? big : small
@@ -321,13 +326,13 @@
           },
           {
             x: path.p1, y: path.p2, mode: "markers+lines", type: "scatter",
-            line: { color: "rgba(200,170,40,0.6)", width: 2 },
-            marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 10, 5), line: { color: "#fff", width: 1.5 } },
+            line: { color: "rgba(200,170,40,0.6)", width: 5 },
+            marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 19, 11), line: { color: "#fff", width: 2 } },
             hovertemplate: "θ₁ = %{x:.3f}<br>θ₂ = %{y:.3f}<extra></extra>",
           },
           {
             x: [optT1], y: [optT2], mode: "markers", type: "scatter",
-            marker: { color: "#ffd966", size: 10, symbol: "star", line: { color: "#333", width: 1 } },
+            marker: { color: "#ffd966", size: 22, symbol: "star", line: { color: "#333", width: 2 } },
             hovertemplate: "θ* = (1, 1)<extra>optimum</extra>",
           },
         ];
@@ -354,8 +359,8 @@
           {
             x: path.p1, y: path.p2, z: path.pJ,
             mode: "markers+lines", type: "scatter3d",
-            line: { color: "#ffd966", width: 5 },
-            marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 5, 3) },
+            line: { color: "#ffd966", width: 6 },
+            marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 19, 11) },
             hovertemplate: "θ₁ = %{x:.3f}<br>θ₂ = %{y:.3f}<br>J = %{z:.3f}<extra></extra>",
           },
         ];
@@ -396,14 +401,14 @@
           },
           {
             x: path.p1, y: path.p2, mode: "markers+lines", type: "scatter",
-            line: { color: "rgba(200,170,40,0.6)", width: 2 },
-            marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 9, 4), line: { color: "#fff", width: 1 } },
+            line: { color: "rgba(200,170,40,0.6)", width: 5 },
+            marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 19, 10), line: { color: "#fff", width: 2 } },
             hovertemplate: "θ₁ = %{x:.3f}<br>θ₂ = %{y:.3f}<extra></extra>",
             xaxis: "x", yaxis: "y",
           },
           {
             x: [optT1], y: [optT2], mode: "markers", type: "scatter",
-            marker: { color: "#ffd966", size: 9, symbol: "star", line: { color: "#333", width: 1 } },
+            marker: { color: "#ffd966", size: 20, symbol: "star", line: { color: "#333", width: 2 } },
             hovertemplate: "θ* = (1, 1)<extra>optimum</extra>",
             xaxis: "x", yaxis: "y",
           },
