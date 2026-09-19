@@ -311,6 +311,21 @@
         );
       }
 
+      // Plotly.react gets a fresh layout on every redraw, and a layout naming
+      // scene.camera snaps the view back to that eye, so moving any slider threw away
+      // whatever angle the room was looking from. Reading the camera off the graph and
+      // handing it back keeps the current one. uirevision alone does not cover this: it
+      // restores GUI edits, the ones Plotly records from a drag, and leaves a camera set
+      // any other way to be overwritten. After setView purges the graph there is no
+      // layout left to read, so HOME_EYE is where a freshly opened view starts.
+      const HOME_EYE = { eye: { x: -2.26, y: 0, z: 0.8 } };
+      function currentCamera() {
+        const gd = document.getElementById("plot");
+        return (gd && gd.layout && gd.layout.scene && gd.layout.scene.camera)
+          ? gd.layout.scene.camera
+          : HOME_EYE;
+      }
+
       function plotContour(path) {
         const traces = [
           {
@@ -342,6 +357,8 @@
           yaxis: { title: "θ₂", ...axis2d, scaleanchor: "x" },
           margin: { l: 78, r: 24, t: 24, b: 68 },
           paper_bgcolor: "#fafafa", plot_bgcolor: "#fafafa",
+          // Carries the viewer's zoom and pan across a redraw; see plot3D for the reason.
+          uirevision: "gd3d",
           showlegend: false, hovermode: "closest",
         };
 
@@ -378,10 +395,17 @@
             // closer camera takes away the margin they sit in. At 1.75 the theta-1
             // ticks jam against the topbar and the whole theta-2 axis leaves the
             // frame. Half-filled with readable axes beats filled with two axes cut off.
-            camera: { eye: { x: -2.26, y: 0, z: 0.8 } },
+            camera: currentCamera(),
           },
           margin: { l: 0, r: 0, t: 0, b: 0 },
           paper_bgcolor: "#fafafa",
+          // Every slider redraws through Plotly.react with this same layout, and the
+          // layout names scene.camera above, so without uirevision each move of a slider
+          // snaps the camera back to that eye and takes the room's viewpoint with it. A
+          // constant uirevision tells Plotly to keep the camera, zoom and pan the viewer
+          // set and to ignore the respecified values. Switching views still resets,
+          // because setView purges the graph first, which is the wanted behaviour.
+          uirevision: "gd3d",
           showlegend: false,
         };
 
@@ -445,10 +469,12 @@
             xaxis: { title: "θ₁", ...axis3d, nticks: 4 },
             yaxis: { title: "θ₂", ...axis3d, nticks: 4 },
             zaxis: { title: "J", ...axis3d, nticks: 4 },
-            camera: { eye: { x: -2.26, y: 0, z: 0.8 } },
+            camera: currentCamera(),
           },
           margin: { l: 78, r: 16, t: 16, b: 68 },
           paper_bgcolor: "#fafafa", plot_bgcolor: "#fafafa",
+          // Keeps the camera, zoom and pan across a slider redraw; see plot3D.
+          uirevision: "gd3d",
           showlegend: false, hovermode: "closest",
         };
 
