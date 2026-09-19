@@ -118,7 +118,7 @@
           y: [sigmoid(1, theta, theta0)],
           mode: "markers",
           type: "scatter",
-          marker: { size: 15, symbol: "square", color: "black" }
+          marker: { size: 19, symbol: "square", color: "black" }
         };
 
         Plotly.react("plot_left", [traceSigmoid, markerTrace], layoutLeft);
@@ -142,7 +142,7 @@
           y: [init_loss],
           mode: "markers",
           type: "scatter",
-          marker: { size: 15, symbol: "circle", color: "gold" }
+          marker: { size: 19, symbol: "circle", color: "gold" }
         };
 
         Plotly.newPlot("plot_right", [
