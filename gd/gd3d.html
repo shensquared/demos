@@ -424,7 +424,11 @@
             x: path.p1, y: path.p2, z: path.pJ,
             mode: "markers+lines", type: "scatter3d",
             line: { color: "#ffd966", width: 5 },
-            marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 5, 3) },
+            // 19 and 11 per B4 in slides/10-250.md, the same pair the full-width 3D view
+            // uses. The first and last step are marks the room has to tell apart; the ones
+            // between only trace the path. A half-width panel does not earn smaller marks,
+            // because the floor is in deck pixels and the back row is the same distance away.
+            marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 19, 11) },
             hovertemplate: "θ₁ = %{x:.3f}<br>θ₂ = %{y:.3f}<br>J = %{z:.3f}<extra></extra>",
             scene: "scene",
           },
