@@ -261,6 +261,20 @@
       const t2Arr = Array.from({ length: N }, (_, i) => -3 + i * 8 / (N - 1));
       const zGrid = t2Arr.map((t2) => t1Arr.map((t1) => J(t1, t2)));
 
+      // Pin the world to the surface so that no slider can rescale it. The Hessian
+      // [[2, 1], [1, 2]] has eigenvalues 3 and 1, so the iteration is unstable above
+      // lr = 2/3 and the top step of 0.70 diverges, running J to about 1.7e5. Left to
+      // autorange every axis stretches to chase the runaway path: the surface flattens
+      // into a sheet and the whole view appears to swing, even though the camera never
+      // moved. With the ranges fixed the path simply leaves the box, which is what
+      // divergence should look like.
+      const T_RANGE = [t1Arr[0], t1Arr[N - 1]];
+      const Z_RANGE = zGrid.reduce(
+        (acc, row) => row.reduce(
+          (a, v) => [Math.min(a[0], v), Math.max(a[1], v)], acc),
+        [Infinity, -Infinity]
+      );
+
       // Optimum: θ* = (1, 1)
       const optT1 = 1, optT2 = 1;
 
@@ -353,7 +367,7 @@
         ];
 
         const layout = {
-          xaxis: { title: "θ₁", ...axis2d },
+          xaxis: { title: "θ₁", ...axis2d, range: T_RANGE },
           yaxis: { title: "θ₂", ...axis2d, scaleanchor: "x" },
           margin: { l: 78, r: 24, t: 24, b: 68 },
           paper_bgcolor: "#fafafa", plot_bgcolor: "#fafafa",
@@ -384,9 +398,9 @@
 
         const layout = {
           scene: {
-            xaxis: { title: "θ₁", ...axis3d },
-            yaxis: { title: "θ₂", ...axis3d },
-            zaxis: { title: "J", ...axis3d },
+            xaxis: { title: "θ₁", ...axis3d, range: T_RANGE },
+            yaxis: { title: "θ₂", ...axis3d, range: T_RANGE },
+            zaxis: { title: "J", ...axis3d, range: Z_RANGE },
             // The surface covers about half the panel's width here, which is short of
             // what slides/10-250.md C1 asks for. Shortening the eye is the documented
             // fix and it does work on fill, 49% to 74% at eye 1.75, but not at this
@@ -459,16 +473,16 @@
         ];
 
         const layout = {
-          xaxis: { title: "θ₁", ...axis2d, nticks: 5, domain: [0, 0.44] },
+          xaxis: { title: "θ₁", ...axis2d, nticks: 5, domain: [0, 0.44], range: T_RANGE },
           yaxis: { title: "θ₂", ...axis2d, nticks: 5, scaleanchor: "x" },
           scene: {
             // Stops short of the frame on both sides. A 3D scene draws its tick labels
             // outside the domain box, so at this type size a domain reaching 1 pushed
             // the theta-1 label and its ticks off the right edge of the slide.
             domain: { x: [0.50, 0.96], y: [0.02, 0.98] },
-            xaxis: { title: "θ₁", ...axis3d, nticks: 4 },
-            yaxis: { title: "θ₂", ...axis3d, nticks: 4 },
-            zaxis: { title: "J", ...axis3d, nticks: 4 },
+            xaxis: { title: "θ₁", ...axis3d, nticks: 4, range: T_RANGE },
+            yaxis: { title: "θ₂", ...axis3d, nticks: 4, range: T_RANGE },
+            zaxis: { title: "J", ...axis3d, nticks: 4, range: Z_RANGE },
             camera: currentCamera(),
           },
           margin: { l: 78, r: 16, t: 16, b: 68 },
@@ -481,8 +495,25 @@
         Plotly.react("plot", traces, layout, config);
       }
 
+      // Keep the drawn path inside the grid. Pinning the 3D ranges is enough for the
+      // scene, but the contour panel ties its two axes together with scaleanchor, and
+      // that constraint is solved against the data: a diverging run stretched y to
+      // contain itself and the solver then widened x to match, so the pinned x range
+      // lost. Bounding the data settles both panels at once. One step past the edge is
+      // kept so the line visibly leaves the box instead of stopping short of it, and
+      // the readouts still report the true values, so a diverging run still shows its
+      // numbers climbing.
+      function clipPath(p) {
+        const inBox = (a, b) =>
+          a >= T_RANGE[0] && a <= T_RANGE[1] && b >= T_RANGE[0] && b <= T_RANGE[1];
+        let n = 0;
+        while (n < p.p1.length && inBox(p.p1[n], p.p2[n])) n++;
+        const end = Math.min(n + 1, p.p1.length);
+        return { p1: p.p1.slice(0, end), p2: p.p2.slice(0, end), pJ: p.pJ.slice(0, end) };
+      }
+
       function updatePlot() {
-        const path = runGD();
+        const path = clipPath(runGD());
         if (viewMode === "contour") plotContour(path);
         else if (viewMode === "3d") plot3D(path);
         else plotBoth(path);
