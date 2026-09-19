@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gradient Descent 2D Demo</title>
+    <title>Gradient Descent: Contour and Surface</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -16,47 +16,72 @@
         color: #333;
       }
 
-      .container {
+      .page {
         display: flex;
+        flex-direction: column;
         height: 100%;
       }
 
+      /* The objective spans the full width rather than sitting in the sidebar. At a
+         readable size it is wider than any sidebar this layout can spare, and in the
+         sidebar it was being clipped mid-expression. */
+      .topbar {
+        flex: none;
+        padding: 12px 22px;
+        background: #fff;
+        border-bottom: 1px solid #e0e0e0;
+        font-size: 24px;
+        color: #2b2b2b;
+        white-space: nowrap;
+      }
+
+      .container {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+      }
+
+      /* Embed mode: the slide supplies the surrounding space, so trim the padding the
+         standalone page needs. */
+      body.embed .sidebar { padding: 14px 18px; gap: 16px; }
+      body.embed .topbar { padding: 8px 18px; }
+
+      /* Sizes are deck pixels. The deck embeds this full-bleed at 1280x720, so one
+         CSS px is one slide px, and slides/10-250.md sets the floors: nothing under
+         19, and 29 for anything a student is expected to read. The sidebar widened
+         from 260 to fit the larger type without wrapping the objective. */
       .sidebar {
-        width: 260px;
-        min-width: 260px;
-        padding: 28px 24px;
+        width: 330px;
+        min-width: 330px;
+        padding: 26px 22px;
         background: #fff;
         border-right: 1px solid #e0e0e0;
         display: flex;
         flex-direction: column;
-        gap: 22px;
+        gap: 20px;
         overflow-y: auto;
       }
 
-      .sidebar h1 {
-        font-size: 18px;
-        font-weight: 600;
-        color: #222;
-        margin-bottom: 4px;
-      }
-
+      /* The slide behind this demo is bare, iframe only, with no title block of its
+         own, so the objective here is the only statement of what is being minimised
+         and it is sized as read-this text rather than as a caption. */
       .sidebar .subtitle {
-        font-size: 13px;
-        color: #888;
+        font-size: 22px;
+        color: #2b2b2b;
       }
 
       .control-group label {
         display: block;
-        font-size: 13px;
+        font-size: 20px;
         font-weight: 500;
-        color: #555;
-        margin-bottom: 6px;
+        color: #2b2b2b;
+        margin-bottom: 8px;
       }
 
       .control-group .value {
         font-family: "SF Mono", "Menlo", monospace;
-        font-size: 13px;
-        color: #222;
+        font-size: 20px;
+        color: #2b2b2b;
         float: right;
       }
 
@@ -90,15 +115,19 @@
 
       .view-toggle button {
         flex: 1;
-        padding: 6px 0;
-        font-size: 12px;
+        padding: 9px 0;
+        font-size: 19px;
         font-family: inherit;
         border: none;
         background: #fff;
-        color: #777;
+        color: #555555;
         cursor: pointer;
         transition: all 0.15s;
       }
+
+      /* The buttons had no focus indicator, so keyboard use was invisible. */
+      .view-toggle button:focus-visible { outline: 2px solid #2b2b2b; outline-offset: -2px; }
+      @media (prefers-reduced-motion: reduce) { .view-toggle button { transition: none; } }
 
       .view-toggle button.active {
         background: #555;
@@ -109,38 +138,43 @@
         border-right: 1px solid #ddd;
       }
 
+      /* Was 12px #aaa on white, about 2.3:1 and under half the 19px floor. These are
+         the numbers the demo is for, so they are read-this text now. */
       .info {
         margin-top: auto;
         padding-top: 16px;
         border-top: 1px solid #e0e0e0;
-        font-size: 12px;
-        color: #aaa;
+        font-size: 19px;
+        color: #5f6672;
         line-height: 1.7;
       }
 
       .info span {
         font-family: "SF Mono", "Menlo", monospace;
-        color: #666;
+        color: #2b2b2b;
       }
 
+      /* min-height as well as flex: Plotly reads the div's height when it draws, and
+         a flex item defaults to min-height:auto, so before the layout settles it can
+         report short and leave the plot with dead space under it. */
       #plot {
-        flex: 1;
+        flex: 1 1 0;
+        min-width: 0;
+        min-height: 0;
         height: 100%;
       }
     </style>
   </head>
   <body>
-    <div class="container">
+    <div class="page">
+      <div class="topbar">\(J = \theta_1^2 + \theta_1\theta_2 + \theta_2^2 - 3\theta_1 - 3\theta_2\)</div>
+      <div class="container">
       <div class="sidebar">
-        <div>
-          <div class="subtitle">\(J = \theta_1^2 + \theta_1\theta_2 + \theta_2^2 - 3\theta_1 - 3\theta_2\)</div>
-        </div>
-
         <div class="control-group">
           <label>View</label>
           <div class="view-toggle">
             <button id="btnContour">Contour</button>
-            <button id="btn3D">3D Surface</button>
+            <button id="btn3D">3D</button>
             <button id="btnBoth" class="active">Both</button>
           </div>
         </div>
@@ -176,12 +210,15 @@
       </div>
 
       <div id="plot"></div>
+      </div>
     </div>
 
     <script>
       window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] } };
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+    <!-- Pinned. mathjax@3 floats across the 3.x line, so an upstream release could
+         change how the objective renders mid-semester with no commit on our side. -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js"></script>
 
     <script>
       // J(θ₁,θ₂) = θ₁² + θ₁θ₂ + θ₂² − 3θ₁ − 3θ₂
@@ -199,6 +236,24 @@
 
       const lrSteps = [0.05, 0.15, 0.30, 0.50, 0.70];
       const config = { displayModeBar: false, responsive: true };
+
+      // Deck pixels, the same floors the CSS above follows: 19 for anything, 29 for
+      // text a student must read. Axis titles name the quantity, so they are read-this;
+      // ticks clear 19 and the tick count drops to keep them from colliding at that size.
+      const AXIS_TITLE = 24, TICK = 19, TICK_COLOR = "#5f6672", INK = "#2b2b2b";
+      const axis2d = {
+        titlefont: { size: AXIS_TITLE, color: INK },
+        tickfont: { size: TICK, color: TICK_COLOR },
+        nticks: 6,
+        zeroline: false,
+        gridcolor: "#e2e2e2",
+      };
+      const axis3d = {
+        titlefont: { size: AXIS_TITLE, color: INK },
+        tickfont: { size: TICK, color: TICK_COLOR },
+        nticks: 5,
+        gridcolor: "#dcdcdc",
+      };
 
       // Precompute surface grid
       const N = 80;
@@ -256,8 +311,12 @@
           {
             x: t1Arr, y: t2Arr, z: zGrid, type: "contour",
             colorscale: [[0, "#f5f5f5"], [0.2, "#dce9f5"], [0.5, "#8cb4d9"], [1, "#3a7ebf"]],
-            contours: { coloring: "heatmap", showlabels: true, labelfont: { size: 10, color: "#666" } },
-            colorbar: { title: "J", thickness: 14, len: 0.6, tickfont: { size: 10 } },
+            // Inline contour labels are dropped rather than enlarged. At 10px they were
+            // half the floor, and at 19 they collide on a contour this dense. The colour
+            // ramp and the colorbar carry the level, which is all this demo needs.
+            contours: { coloring: "heatmap", showlabels: false },
+            colorbar: { title: { text: "J", font: { size: AXIS_TITLE, color: INK } },
+                        thickness: 18, len: 0.7, tickfont: { size: TICK, color: TICK_COLOR } },
             hovertemplate: "θ₁ = %{x:.2f}<br>θ₂ = %{y:.2f}<br>J = %{z:.3f}<extra></extra>",
           },
           {
@@ -274,9 +333,9 @@
         ];
 
         const layout = {
-          xaxis: { title: { text: "θ₁", font: { size: 14 } }, zeroline: false, gridcolor: "#eee" },
-          yaxis: { title: { text: "θ₂", font: { size: 14 } }, zeroline: false, gridcolor: "#eee", scaleanchor: "x" },
-          margin: { l: 56, r: 24, t: 24, b: 48 },
+          xaxis: { title: "θ₁", ...axis2d },
+          yaxis: { title: "θ₂", ...axis2d, scaleanchor: "x" },
+          margin: { l: 78, r: 24, t: 24, b: 68 },
           paper_bgcolor: "#fafafa", plot_bgcolor: "#fafafa",
           showlegend: false, hovermode: "closest",
         };
@@ -303,9 +362,17 @@
 
         const layout = {
           scene: {
-            xaxis: { title: "θ₁" },
-            yaxis: { title: "θ₂" },
-            zaxis: { title: "J" },
+            xaxis: { title: "θ₁", ...axis3d },
+            yaxis: { title: "θ₂", ...axis3d },
+            zaxis: { title: "J", ...axis3d },
+            // The surface covers about half the panel's width here, which is short of
+            // what slides/10-250.md C1 asks for. Shortening the eye is the documented
+            // fix and it does work on fill, 49% to 74% at eye 1.75, but not at this
+            // type size: a 3D scene sets its tick labels outside the domain box, the
+            // 19px ticks this demo needs are much larger than the 12px default, and a
+            // closer camera takes away the margin they sit in. At 1.75 the theta-1
+            // ticks jam against the topbar and the whole theta-2 axis leaves the
+            // frame. Half-filled with readable axes beats filled with two axes cut off.
             camera: { eye: { x: -2.26, y: 0, z: 0.8 } },
           },
           margin: { l: 0, r: 0, t: 0, b: 0 },
@@ -322,7 +389,7 @@
           {
             x: t1Arr, y: t2Arr, z: zGrid, type: "contour",
             colorscale: [[0, "#f5f5f5"], [0.2, "#dce9f5"], [0.5, "#8cb4d9"], [1, "#3a7ebf"]],
-            contours: { coloring: "heatmap", showlabels: true, labelfont: { size: 9, color: "#666" } },
+            contours: { coloring: "heatmap", showlabels: false },
             showscale: false,
             hovertemplate: "θ₁ = %{x:.2f}<br>θ₂ = %{y:.2f}<br>J = %{z:.3f}<extra></extra>",
             xaxis: "x", yaxis: "y",
@@ -359,22 +426,19 @@
         ];
 
         const layout = {
-          xaxis: {
-            title: { text: "θ₁", font: { size: 13 } },
-            domain: [0, 0.44], zeroline: false, gridcolor: "#eee",
-          },
-          yaxis: {
-            title: { text: "θ₂", font: { size: 13 } },
-            zeroline: false, gridcolor: "#eee", scaleanchor: "x",
-          },
+          xaxis: { title: "θ₁", ...axis2d, nticks: 5, domain: [0, 0.44] },
+          yaxis: { title: "θ₂", ...axis2d, nticks: 5, scaleanchor: "x" },
           scene: {
-            domain: { x: [0.52, 1], y: [0, 1] },
-            xaxis: { title: "θ₁" },
-            yaxis: { title: "θ₂" },
-            zaxis: { title: "J" },
+            // Stops short of the frame on both sides. A 3D scene draws its tick labels
+            // outside the domain box, so at this type size a domain reaching 1 pushed
+            // the theta-1 label and its ticks off the right edge of the slide.
+            domain: { x: [0.50, 0.96], y: [0.02, 0.98] },
+            xaxis: { title: "θ₁", ...axis3d, nticks: 4 },
+            yaxis: { title: "θ₂", ...axis3d, nticks: 4 },
+            zaxis: { title: "J", ...axis3d, nticks: 4 },
             camera: { eye: { x: -2.26, y: 0, z: 0.8 } },
           },
-          margin: { l: 56, r: 16, t: 16, b: 48 },
+          margin: { l: 78, r: 16, t: 16, b: 68 },
           paper_bgcolor: "#fafafa", plot_bgcolor: "#fafafa",
           showlegend: false, hovermode: "closest",
         };
@@ -408,7 +472,25 @@
       document.getElementById("init1Slider").addEventListener("input", updatePlot);
       document.getElementById("init2Slider").addEventListener("input", updatePlot);
 
+      // Every other demo in this deck honours ?embed, and the deck cannot tell the
+      // difference when one does not. Here the slide is bare, so embed mode only
+      // tightens the padding; the objective and readouts stay, since nothing on the
+      // slide repeats them.
+      if (new URLSearchParams(window.location.search).has("embed")) {
+        document.body.classList.add("embed");
+      }
+
       updatePlot();
+
+      // A window listener misses the reflow that matters: MathJax's fonts land after
+      // the first draw and change the sidebar's width, which resizes the plot's box
+      // without the window ever changing.
+      const plotEl = document.getElementById("plot");
+      if (window.ResizeObserver) {
+        new ResizeObserver(() => Plotly.Plots.resize(plotEl)).observe(plotEl);
+      } else {
+        window.addEventListener("resize", () => Plotly.Plots.resize(plotEl));
+      }
     </script>
   </body>
 </html>
