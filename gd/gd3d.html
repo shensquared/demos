@@ -44,7 +44,11 @@
         border-right: 1px solid #e0e0e0;
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        /* 16 rather than 20, the same gap embed mode uses. Seven children at 720px tall
+           leaves no room to spare, and the four extra pixels per gap were enough to push
+           the objective past the foot of the standalone page, where overflow-y scrolls
+           it out of sight instead of visibly clipping it. */
+        gap: 16px;
         overflow-y: auto;
       }
 
@@ -52,8 +56,9 @@
          bare, iframe only, so this is the only statement of what is being minimised,
          but the room reads it once rather than continuously, so it takes the 19px floor
          and the muted ink instead of a full-width row of its own. It is written as two
-         lines because at 19px the expression measures 379px on one line while the
-         sidebar spares 286; broken as below the lines are 208px and 183px. */
+         lines because the whole statement does not fit across the 286px the sidebar
+         spares; split as below the lines measure 277px and 239px, and the block stands
+         103px tall, which the sidebar has room for in both standalone and embed. */
       .sidebar .objective {
         padding-top: 16px;
         border-top: 1px solid #e0e0e0;
@@ -194,14 +199,12 @@
           After <span id="infoIter">1</span> steps:<br />
           \(\theta_1\) = <span id="infoT1">—</span><br />
           \(\theta_2\) = <span id="infoT2">—</span><br />
-          \(J\) = <span id="infoCost">—</span><br />
-          <br />
-          <span style="color:#bbb">Optimum: \(\theta^* = (1,\; 1)\)</span>
+          \(J\) = <span id="infoCost">—</span>
         </div>
 
         <div class="objective">
-          \(J = \tfrac14(2\theta_1 + \theta_2 - 3)^2\)<br />
-          \(\quad + \tfrac34(\theta_2 - 1)^2 - 3\)
+          \(J = \tfrac12(\theta-\theta^*)^{\top}H(\theta-\theta^*) - 3\)<br />
+          \(H = \begin{pmatrix}2 & 1\\ 1 & 2\end{pmatrix},\ \theta^* = (1,1)\)
         </div>
       </div>
 
@@ -219,9 +222,19 @@
     <script>
       // J(θ₁,θ₂) = θ₁² + θ₁θ₂ + θ₂² − 3θ₁ − 3θ₂
       //          = ¼(2θ₁ + θ₂ − 3)² + ¾(θ₂ − 1)² − 3
-      // The sidebar shows the second form. Both are the same function, checked to 1e-14
-      // over the grid, and completing the square puts the result on the face of it: a
-      // sum of squares plus −3, so J ≥ −3 with equality only at θ = (1,1).
+      //          = ½(θ − θ*)ᵀH(θ − θ*) − 3,  H = [[2,1],[1,2]], θ* = (1,1)
+      // The sidebar shows the last of these. All three are the same function, checked to
+      // 1e-14 over the grid. The centred form puts the result on the face of it, since H
+      // is positive definite: J ≥ −3 with equality only at θ*. It also shows the Hessian
+      // itself, which is what the demo is about, because its eigenvalues 3 and 1 are the
+      // anisotropy that makes descent zigzag. θ* is named in that same block rather than
+      // in the readout, which keeps it beside the expression that uses it and leaves the
+      // readout to the current iterate alone.
+      //
+      // The matrix is set with pmatrix, not smallmatrix. smallmatrix is the natural
+      // choice for a matrix inside running text and halves the height, but it typesets
+      // its entries at 15.9px against 22.6px, under the 19px floor in slides/10-250.md,
+      // and those entries are the content rather than decoration.
       // Hessian = [[2,1],[1,2]], condition number = 3, optimum at (1,1)
       function J(t1, t2) {
         return t1 * t1 + t1 * t2 + t2 * t2 - 3 * t1 - 3 * t2;
