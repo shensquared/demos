@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>agentic &rarr; agency</title>
+<style>
+  /* Standalone slide embed: the "agentic -> agency" squeeze morph.
+     Transparent bg so it sits on the slide; scales to the iframe; autoplays + loops. */
+  :root{--mitred:#a31f34;--mitgrey:#4a4a4a}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:transparent}
+  body{display:flex;align-items:center;justify-content:center;overflow:hidden;
+       font-family:"Palatino Linotype","Book Antiqua",Palatino,"Georgia",serif;cursor:pointer}
+
+  /* inline-flex + align-items:baseline keeps every letter on one baseline even while clipped */
+  .stage{display:inline-flex;align-items:baseline;font-weight:700;line-height:1;white-space:nowrap;
+         color:var(--mitgrey);font-size:clamp(40px, 13vw, 200px);
+         transition:opacity .25s ease}
+  .stage>span{display:inline-block}
+  .ti,.y{overflow:hidden}
+  .c{color:var(--mitgrey)}
+  .y{max-width:0;opacity:0;color:var(--mitred)}   /* grows in; cy -> MIT red */
+
+  .play .ti{animation:squeeze 1.2s cubic-bezier(.6,0,.2,1) 1.2s forwards}
+  .play .c {animation:tint    0.6s ease                    2.1s forwards}
+  .play .y {animation:grow    0.9s cubic-bezier(.3,0,.2,1) 2.2s forwards}
+
+  @keyframes squeeze{from{max-width:1.2em;opacity:1}to{max-width:0;opacity:0}}
+  @keyframes tint{to{color:var(--mitred)}}
+  @keyframes grow{from{max-width:0;opacity:0}to{max-width:.78em;opacity:1}}
+
+  @media (prefers-reduced-motion: reduce){
+    .play .ti{animation:none;max-width:0;opacity:0}
+    .play .c{animation:none;color:var(--mitred)}
+    .play .y{animation:none;max-width:.78em;opacity:1}
+  }
+</style>
+</head>
+<body>
+  <div class="stage" id="stage"><span>agen</span><span class="ti">ti</span><span class="c">c</span><span class="y">y</span><span>&nbsp;AI</span></div>
+
+<script>
+  const stage = document.getElementById('stage');
+  function morph(){ stage.classList.add('play'); }
+  function reset(){                    // fade out "agency", snap back to "agentic" hidden, fade in
+    stage.style.opacity = 0;
+    setTimeout(() => { stage.classList.remove('play'); void stage.offsetWidth; stage.style.opacity = 1; }, 260);
+  }
+  function cycle(){ reset(); setTimeout(morph, 320); }
+
+  morph();                             // play once on load
+  let timer = setInterval(cycle, 6500);         // then loop with a hold
+  stage.addEventListener('click', () => {       // click to replay on demand (lecture control)
+    clearInterval(timer); cycle(); timer = setInterval(cycle, 6500);
+  });
+</script>
+</body>
+</html>
