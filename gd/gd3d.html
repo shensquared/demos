@@ -22,19 +22,6 @@
         height: 100%;
       }
 
-      /* The objective spans the full width rather than sitting in the sidebar. At a
-         readable size it is wider than any sidebar this layout can spare, and in the
-         sidebar it was being clipped mid-expression. */
-      .topbar {
-        flex: none;
-        padding: 12px 22px;
-        background: #fff;
-        border-bottom: 1px solid #e0e0e0;
-        font-size: 24px;
-        color: #2b2b2b;
-        white-space: nowrap;
-      }
-
       .container {
         display: flex;
         flex: 1;
@@ -44,7 +31,6 @@
       /* Embed mode: the slide supplies the surrounding space, so trim the padding the
          standalone page needs. */
       body.embed .sidebar { padding: 14px 18px; gap: 16px; }
-      body.embed .topbar { padding: 8px 18px; }
 
       /* Sizes are deck pixels. The deck embeds this full-bleed at 1280x720, so one
          CSS px is one slide px, and slides/10-250.md sets the floors: nothing under
@@ -62,12 +48,18 @@
         overflow-y: auto;
       }
 
-      /* The slide behind this demo is bare, iframe only, with no title block of its
-         own, so the objective here is the only statement of what is being minimised
-         and it is sized as read-this text rather than as a caption. */
-      .sidebar .subtitle {
-        font-size: 22px;
-        color: #2b2b2b;
+      /* The objective sits at the foot of the sidebar. The slide behind this demo is
+         bare, iframe only, so this is the only statement of what is being minimised,
+         but the room reads it once rather than continuously, so it takes the 19px floor
+         and the muted ink instead of a full-width row of its own. It is written as two
+         lines because at 19px the whole expression wants about 293px while the sidebar
+         spares 286, and on one line it is clipped mid-expression. */
+      .sidebar .objective {
+        padding-top: 16px;
+        border-top: 1px solid #e0e0e0;
+        font-size: 19px;
+        color: #5f6672;
+        line-height: 1.6;
       }
 
       .control-group label {
@@ -167,7 +159,6 @@
   </head>
   <body>
     <div class="page">
-      <div class="topbar">\(J = \theta_1^2 + \theta_1\theta_2 + \theta_2^2 - 3\theta_1 - 3\theta_2\)</div>
       <div class="container">
       <div class="sidebar">
         <div class="control-group">
@@ -180,7 +171,7 @@
         </div>
 
         <div class="control-group">
-          <label>Learning rate <span class="value" id="lrValue">0.01</span></label>
+          <label>Learning rate \(\eta\) <span class="value" id="lrValue">0.01</span></label>
           <input type="range" id="lrSlider" min="0" max="4" value="0" step="1" />
         </div>
 
@@ -206,6 +197,11 @@
           \(J\) = <span id="infoCost">—</span><br />
           <br />
           <span style="color:#bbb">Optimum: \(\theta^* = (1,\; 1)\)</span>
+        </div>
+
+        <div class="objective">
+          \(J = \theta_1^2 + \theta_1\theta_2 + \theta_2^2\)<br />
+          \(\quad - 3\theta_1 - 3\theta_2\)
         </div>
       </div>
 
@@ -420,8 +416,8 @@
             // type size: a 3D scene sets its tick labels outside the domain box, the
             // 19px ticks this demo needs are much larger than the 12px default, and a
             // closer camera takes away the margin they sit in. At 1.75 the ticks jam
-            // against the topbar and a whole axis leaves the frame. Half-filled with
-            // readable axes beats filled with two axes cut off.
+            // against the top of the panel and a whole axis leaves the frame.
+            // Half-filled with readable axes beats filled with two axes cut off.
             camera: currentCamera(),
           },
           margin: { l: 0, r: 0, t: 0, b: 0 },
@@ -492,7 +488,16 @@
             // Stops short of the frame on both sides. A 3D scene draws its tick labels
             // outside the domain box, so at this type size a domain reaching 1 pushed
             // the theta-1 label and its ticks off the right edge of the slide.
-            domain: { x: [0.50, 0.96], y: [0.02, 0.98] },
+            //
+            // The left edge reaches back to 0.46 because the J title and the top z tick
+            // sit outside the box on that side and were clipped at 0.50 once the panel
+            // grew taller. The contour panel ends at 0.44, so this spends most of the
+            // dead strip between the two and still leaves them separated. It is the
+            // cheapest of the three fixes that work: pulling the camera back to 2.60 or
+            // shortening the domain to y [0.08, 0.92] also frees the labels, but both
+            // shrink the surface, measuring 11.9% and 10.7% of the panel against 14.8%
+            // here.
+            domain: { x: [0.46, 0.96], y: [0.02, 0.98] },
             xaxis: { title: "θ₁", ...axis3d, nticks: 4, range: T_RANGE },
             yaxis: { title: "θ₂", ...axis3d, nticks: 4, range: T_RANGE },
             // Ends only, so no tick sits where the title anchors; see plot3D.
