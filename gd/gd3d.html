@@ -39,7 +39,10 @@
       .sidebar {
         width: 330px;
         min-width: 330px;
-        padding: 26px 22px;
+        /* 20 rather than 26 down the top and bottom. Standalone carries more padding
+           than embed by design, but at 26 the seven children ran 4px past the foot of
+           the page and overflow-y scrolled the readout out of sight. */
+        padding: 20px 22px;
         background: #fff;
         border-right: 1px solid #e0e0e0;
         display: flex;
@@ -56,15 +59,22 @@
          bare, iframe only, so this is the only statement of what is being minimised,
          but the room reads it once rather than continuously, so it takes the 19px floor
          and the muted ink instead of a full-width row of its own. It is written as two
-         lines because the whole statement does not fit across the 286px the sidebar
-         spares; split as below the lines measure 277px and 239px, and the block stands
-         103px tall, which the sidebar has room for in both standalone and embed. */
+         lines because the whole expression does not fit across the 286px the sidebar
+         spares; split as below the lines measure 178px and 129px, with the update rule
+         at 157px beneath them. */
       .sidebar .objective {
+        margin-top: auto;
         padding-top: 16px;
         border-top: 1px solid #e0e0e0;
         font-size: 19px;
         color: #5f6672;
         line-height: 1.6;
+      }
+
+      /* The update rule rides inside the objective block rather than standing as its own
+         flex child, which would cost a 16px gap the sidebar does not have to spare. */
+      .sidebar .objective .update {
+        margin-top: 8px;
       }
 
       .control-group label {
@@ -138,7 +148,6 @@
       /* Was 12px #aaa on white, about 2.3:1 and under half the 19px floor. These are
          the numbers the demo is for, so they are read-this text now. */
       .info {
-        margin-top: auto;
         padding-top: 16px;
         border-top: 1px solid #e0e0e0;
         font-size: 19px;
@@ -195,16 +204,18 @@
           <input type="range" id="init2Slider" min="-3" max="5" value="2" step="0.5" />
         </div>
 
+        <div class="objective">
+          \(J = \theta_1^2 + \theta_1\theta_2 + \theta_2^2\)<br />
+          \(\quad - 3\theta_1 - 3\theta_2\)
+          <div class="update">\(\theta \leftarrow \theta - \eta\,\nabla J(\theta)\)</div>
+        </div>
+
         <div class="info">
           After <span id="infoIter">1</span> steps:<br />
           \(\theta_1\) = <span id="infoT1">—</span><br />
           \(\theta_2\) = <span id="infoT2">—</span><br />
-          \(J\) = <span id="infoCost">—</span>
-        </div>
-
-        <div class="objective">
-          \(J = \tfrac12(\theta-\theta^*)^{\top}H(\theta-\theta^*) - 3\)<br />
-          \(H = \begin{pmatrix}2 & 1\\ 1 & 2\end{pmatrix},\ \theta^* = (1,1)\)
+          \(J\) = <span id="infoCost">—</span><br />
+          <span style="color:#bbb">Optimum: \(\theta^* = (1,\; 1)\)</span>
         </div>
       </div>
 
@@ -223,18 +234,11 @@
       // J(θ₁,θ₂) = θ₁² + θ₁θ₂ + θ₂² − 3θ₁ − 3θ₂
       //          = ¼(2θ₁ + θ₂ − 3)² + ¾(θ₂ − 1)² − 3
       //          = ½(θ − θ*)ᵀH(θ − θ*) − 3,  H = [[2,1],[1,2]], θ* = (1,1)
-      // The sidebar shows the last of these. All three are the same function, checked to
-      // 1e-14 over the grid. The centred form puts the result on the face of it, since H
-      // is positive definite: J ≥ −3 with equality only at θ*. It also shows the Hessian
-      // itself, which is what the demo is about, because its eigenvalues 3 and 1 are the
-      // anisotropy that makes descent zigzag. θ* is named in that same block rather than
-      // in the readout, which keeps it beside the expression that uses it and leaves the
-      // readout to the current iterate alone.
-      //
-      // The matrix is set with pmatrix, not smallmatrix. smallmatrix is the natural
-      // choice for a matrix inside running text and halves the height, but it typesets
-      // its entries at 15.9px against 22.6px, under the 19px floor in slides/10-250.md,
-      // and those entries are the content rather than decoration.
+      // The sidebar shows the first of these, written out in full. All three are the same
+      // function, checked to 1e-14 over the grid, and the other two are recorded here
+      // because each answers a question the expanded form does not: the completed square
+      // shows why J bottoms out at −3, and the matrix form shows the Hessian whose
+      // eigenvalues 3 and 1 are the anisotropy that makes descent zigzag.
       // Hessian = [[2,1],[1,2]], condition number = 3, optimum at (1,1)
       function J(t1, t2) {
         return t1 * t1 + t1 * t2 + t2 * t2 - 3 * t1 - 3 * t2;
