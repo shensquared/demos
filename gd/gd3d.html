@@ -408,7 +408,12 @@
           scene: {
             xaxis: { title: "θ₁", ...axis3d, range: T_RANGE },
             yaxis: { title: "θ₂", ...axis3d, range: T_RANGE },
-            zaxis: { title: "J", ...axis3d, range: Z_RANGE },
+            // Ticks at the ends only. A 3D scene anchors its axis title at the middle of
+            // the axis and lays tick labels along that same line, so whichever tick falls
+            // mid-axis collides with the title and J renders on top of a digit. Plotly
+            // offers no standoff for a scene axis title, so the tick has to move instead.
+            // 0 and 40 sit inside Z_RANGE, which the grid puts at about -3 to 45.
+            zaxis: { title: "J", ...axis3d, tickvals: [0, 40], range: Z_RANGE },
             // The surface covers about half the panel's width here, which is short of
             // what slides/10-250.md C1 asks for. Shortening the eye is the documented
             // fix and it does work on fill, 49% to 74% at eye 1.75, but not at this
@@ -490,7 +495,8 @@
             domain: { x: [0.50, 0.96], y: [0.02, 0.98] },
             xaxis: { title: "θ₁", ...axis3d, nticks: 4, range: T_RANGE },
             yaxis: { title: "θ₂", ...axis3d, nticks: 4, range: T_RANGE },
-            zaxis: { title: "J", ...axis3d, nticks: 4, range: Z_RANGE },
+            // Ends only, so no tick sits where the title anchors; see plot3D.
+            zaxis: { title: "J", ...axis3d, tickvals: [0, 40], range: Z_RANGE },
             camera: currentCamera(),
           },
           margin: { l: 78, r: 16, t: 16, b: 68 },
