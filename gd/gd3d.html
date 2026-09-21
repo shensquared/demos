@@ -332,7 +332,15 @@
       // restores GUI edits, the ones Plotly records from a drag, and leaves a camera set
       // any other way to be overwritten. After setView purges the graph there is no
       // layout left to read, so HOME_EYE is where a freshly opened view starts.
-      const HOME_EYE = { eye: { x: -2.26, y: 0, z: 0.8 } };
+      //
+      // The eye sits on the -theta2 axis so the scene agrees with the contour panel
+      // beside it. theta1 runs left to right along the front edge and theta2 recedes,
+      // the same roles the two parameters have in 2D, so a step read off one panel
+      // lands in the same direction on the other. Looking down the -theta1 axis instead
+      // put theta2 across the front, and the two halves of the view then disagreed about
+      // which parameter is horizontal. The distance of 2.26 is unchanged by the
+      // rotation, and stays this far out for the reason recorded at plot3D.
+      const HOME_EYE = { eye: { x: 0, y: -2.26, z: 0.8 } };
       function currentCamera() {
         const gd = document.getElementById("plot");
         return (gd && gd.layout && gd.layout.scene && gd.layout.scene.camera)
@@ -406,9 +414,9 @@
             // fix and it does work on fill, 49% to 74% at eye 1.75, but not at this
             // type size: a 3D scene sets its tick labels outside the domain box, the
             // 19px ticks this demo needs are much larger than the 12px default, and a
-            // closer camera takes away the margin they sit in. At 1.75 the theta-1
-            // ticks jam against the topbar and the whole theta-2 axis leaves the
-            // frame. Half-filled with readable axes beats filled with two axes cut off.
+            // closer camera takes away the margin they sit in. At 1.75 the ticks jam
+            // against the topbar and a whole axis leaves the frame. Half-filled with
+            // readable axes beats filled with two axes cut off.
             camera: currentCamera(),
           },
           margin: { l: 0, r: 0, t: 0, b: 0 },
