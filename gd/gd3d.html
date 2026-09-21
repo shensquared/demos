@@ -52,8 +52,8 @@
          bare, iframe only, so this is the only statement of what is being minimised,
          but the room reads it once rather than continuously, so it takes the 19px floor
          and the muted ink instead of a full-width row of its own. It is written as two
-         lines because at 19px the whole expression wants about 293px while the sidebar
-         spares 286, and on one line it is clipped mid-expression. */
+         lines because at 19px the expression measures 379px on one line while the
+         sidebar spares 286; broken as below the lines are 208px and 183px. */
       .sidebar .objective {
         padding-top: 16px;
         border-top: 1px solid #e0e0e0;
@@ -200,8 +200,8 @@
         </div>
 
         <div class="objective">
-          \(J = \theta_1^2 + \theta_1\theta_2 + \theta_2^2\)<br />
-          \(\quad - 3\theta_1 - 3\theta_2\)
+          \(J = \tfrac14(2\theta_1 + \theta_2 - 3)^2\)<br />
+          \(\quad + \tfrac34(\theta_2 - 1)^2 - 3\)
         </div>
       </div>
 
@@ -218,6 +218,10 @@
 
     <script>
       // J(θ₁,θ₂) = θ₁² + θ₁θ₂ + θ₂² − 3θ₁ − 3θ₂
+      //          = ¼(2θ₁ + θ₂ − 3)² + ¾(θ₂ − 1)² − 3
+      // The sidebar shows the second form. Both are the same function, checked to 1e-14
+      // over the grid, and completing the square puts the result on the face of it: a
+      // sum of squares plus −3, so J ≥ −3 with equality only at θ = (1,1).
       // Hessian = [[2,1],[1,2]], condition number = 3, optimum at (1,1)
       function J(t1, t2) {
         return t1 * t1 + t1 * t2 + t2 * t2 - 3 * t1 - 3 * t2;
