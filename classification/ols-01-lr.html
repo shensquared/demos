@@ -93,7 +93,7 @@
       <div class="sidebar">
         <div>
           <h1>Model Output and Training Error</h1>
-          <div class="eq" id="eqLabel">z = θx</div>
+          <div class="eq" id="eqLabel">g = θx</div>
         </div>
 
         <div class="control-group">
@@ -181,13 +181,13 @@
       function updateEqLabel() {
         const el = document.getElementById('eqLabel');
         if (currentDim === '1d') {
-          if (currentMode === 'mse') el.textContent = 'z = θx';
-          else if (currentMode === '01') el.textContent = 'ŷ = step(θx)';
-          else el.textContent = 'ŷ = σ(θx)';
+          if (currentMode === 'mse') el.textContent = 'g = θx';
+          else if (currentMode === '01') el.textContent = 'g = step(θx)';
+          else el.textContent = 'g = σ(θx)';
         } else {
-          if (currentMode === 'mse') el.textContent = 'z = θ₁x₁ + θ₂x₂';
-          else if (currentMode === '01') el.textContent = 'ŷ = step(θ₁x₁ + θ₂x₂)';
-          else el.textContent = 'ŷ = σ(θ₁x₁ + θ₂x₂)';
+          if (currentMode === 'mse') el.textContent = 'g = θ₁x₁ + θ₂x₂';
+          else if (currentMode === '01') el.textContent = 'g = step(θ₁x₁ + θ₂x₂)';
+          else el.textContent = 'g = σ(θ₁x₁ + θ₂x₂)';
         }
       }
 
@@ -280,14 +280,14 @@
         const scatterTrace = {
           x: xData, y: yData,
           mode: 'markers',
-          marker: { size: 10, color: colors, line: { width: 1.5, color: '#fff' } },
+          marker: { size: 19, color: colors, line: { width: 1.5, color: '#fff' } },
           hovertemplate: '(%{x:.1f}, %{y})<extra></extra>',
         };
 
         let titleText = '';
-        if (currentMode === 'mse') titleText = 'Model output: z = θx';
-        else if (currentMode === '01') titleText = 'Model output: step(θx)';
-        else titleText = 'Model output: σ(θx)';
+        if (currentMode === 'mse') titleText = 'g = θx';
+        else if (currentMode === '01') titleText = 'g = step(θx)';
+        else titleText = 'g = σ(θx)';
 
         const layout = {
           title: { text: titleText, font: { size: 15 } },
@@ -296,7 +296,7 @@
             range: [-4, 5], zeroline: false, gridcolor: '#eee',
           },
           yaxis: {
-            title: { text: 'Output', font: { size: 13 } },
+            title: { text: 'g', font: { size: 13 } },
             range: [-2, 2], zeroline: true, zerolinecolor: '#ccc', gridcolor: '#eee',
           },
           margin: { l: 50, r: 16, t: 40, b: 44 },
@@ -322,7 +322,7 @@
         const markerTrace = {
           x: [theta], y: [currentLoss],
           mode: 'markers',
-          marker: { size: 12, color: '#2ecc71', line: { width: 2, color: '#fff' } },
+          marker: { size: 19, color: '#2ecc71', line: { width: 2, color: '#fff' } },
           hovertemplate: 'θ=%{x:.1f}, J=%{y:.2f}<extra></extra>',
         };
 
@@ -394,21 +394,21 @@
         const scatter = {
           x: [d.x1], y: [d.x2], z: [d.y],
           type: 'scatter3d', mode: 'markers',
-          marker: { size: 5, color: '#e74c3c', line: { color: '#fff', width: 0.5 } },
+          marker: { size: 19, color: '#e74c3c', line: { color: '#fff', width: 0.5 } },
           hovertemplate: '(%{x:.1f}, %{y:.1f}, %{z:.2f})<extra>label=1</extra>',
         };
 
         let titleText = '';
-        if (currentMode === 'mse') titleText = 'z = θ₁x₁ + θ₂x₂';
-        else if (currentMode === '01') titleText = 'ŷ = step(θ₁x₁ + θ₂x₂)';
-        else titleText = 'ŷ = σ(θ₁x₁ + θ₂x₂)';
+        if (currentMode === 'mse') titleText = 'g = θ₁x₁ + θ₂x₂';
+        else if (currentMode === '01') titleText = 'g = step(θ₁x₁ + θ₂x₂)';
+        else titleText = 'g = σ(θ₁x₁ + θ₂x₂)';
 
         const layout = {
           title: { text: titleText, font: { size: 15 } },
           scene: {
             xaxis: { title: 'x₁', range: [-2, 2], autorange: false, gridcolor: '#e0e0e0' },
             yaxis: { title: 'x₂', range: [-2, 2], autorange: false, gridcolor: '#e0e0e0' },
-            zaxis: { title: 'z', range: currentMode === 'mse' ? [-10, 10] : [-0.5, 1.5], autorange: false, gridcolor: '#e0e0e0' },
+            zaxis: { title: 'g', range: currentMode === 'mse' ? [-10, 10] : [-0.5, 1.5], autorange: false, gridcolor: '#e0e0e0' },
             aspectmode: 'manual', aspectratio: { x: 1, y: 1, z: 1 },
             camera: { eye: { x: 0, y: -2, z: 1.2 }, up: { x: 0, y: 0, z: 1 } },
             bgcolor: '#fafafa',
@@ -556,6 +556,7 @@
       }
 
       // --- Init ---
+      updateEqLabel();
       fullPlot();
 
       window.addEventListener('resize', () => {
