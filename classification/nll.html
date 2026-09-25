@@ -294,7 +294,7 @@
         const yLabel = trueLabel === 1 ? '−log(g)' : '−log(1 − g)';
 
         const layout = {
-          xaxis: { title: { text: 'g (sigmoid output)', font: { size: 20, color: '#3a7ebf' } }, range: [0, 1], zeroline: false, gridcolor: '#eee' },
+          xaxis: { title: { text: 'g = σ(θx + θ₀)', font: { size: 20, color: '#3a7ebf' } }, range: [0, 1], zeroline: false, gridcolor: '#eee' },
           yaxis: { title: { text: yLabel, font: { size: 20 } }, range: [0, 7], zeroline: false, gridcolor: '#eee' },
           margin: { l: 52, r: 16, t: 16, b: 44 },
           paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',

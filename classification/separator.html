@@ -261,13 +261,13 @@
         const posT = {
           x: pos.map(p => p.x1), y: pos.map(p => p.x2), z: pos.map(() => 0),
           type: 'scatter3d', mode: 'markers',
-          marker: { size: 4, color: posCol, line: { color: '#fff', width: 0.5 } },
+          marker: { size: 19, color: posCol, line: { color: '#fff', width: 0.5 } },
           hovertemplate: '(%{x:.1f}, %{y:.1f})<extra>+1</extra>',
         };
         const negT = {
           x: neg.map(p => p.x1), y: neg.map(p => p.x2), z: neg.map(() => 0),
           type: 'scatter3d', mode: 'markers',
-          marker: { size: 4, color: negCol, line: { color: '#fff', width: 0.5 } },
+          marker: { size: 19, color: negCol, line: { color: '#fff', width: 0.5 } },
           hovertemplate: '(%{x:.1f}, %{y:.1f})<extra>0</extra>',
         };
 
@@ -315,13 +315,13 @@
         const posT = {
           x: pos.map(p => p.x1), y: pos.map(p => p.x2),
           type: 'scatter', mode: 'markers',
-          marker: { size: 9, color: posCol, line: { color: '#fff', width: 1.5 } },
+          marker: { size: 19, color: posCol, line: { color: '#fff', width: 1.5 } },
           hovertemplate: '(%{x:.1f}, %{y:.1f})<extra>+1</extra>',
         };
         const negT = {
           x: neg.map(p => p.x1), y: neg.map(p => p.x2),
           type: 'scatter', mode: 'markers',
-          marker: { size: 9, color: negCol, line: { color: '#fff', width: 1.5 } },
+          marker: { size: 19, color: negCol, line: { color: '#fff', width: 1.5 } },
           hovertemplate: '(%{x:.1f}, %{y:.1f})<extra>0</extra>',
         };
 

@@ -130,6 +130,28 @@
         return Math.max(14, Math.min(22, Math.round(w / 25)));
       }
 
+      // The label goes above the plot area, pinned to the pane. The box runs
+      // about 320px at this font, so in data or scene coordinates a long line
+      // runs off the pane, and every in-pane corner is already taken by a
+      // curve, a surface or the test point.
+      function paperAnnotation(text) {
+        return {
+          xref: 'paper', yref: 'paper',
+          x: 0, y: 1,
+          xanchor: 'left', yanchor: 'bottom',
+          yshift: 10,
+          text,
+          showarrow: false,
+          font: { size: annotFontSize(), family: 'SF Mono, Menlo, monospace', color: '#333' },
+          bgcolor: 'rgba(255,255,255,0.85)',
+          borderpad: 4,
+        };
+      }
+
+      // Pinned to the top of the div, since the tall top margin the label needs
+      // would otherwise centre the title in it and the label would land on top.
+      const titlePos = { yref: 'container', y: 0.98, yanchor: 'top' };
+
       // --- Dimension switching ---
       function setDim(dim) {
         currentDim = dim;
@@ -197,21 +219,10 @@
         stepTraces.push(mkPoint(testX, stepPred, stepColor));
         sigTraces.push(mkPoint(testX, sigPred, sigColor));
 
-        const fs = annotFontSize();
-        const mkAnnotation = (y, text) => ({
-          x: -2, y, text,
-          xanchor: 'left', yanchor: 'bottom',
-          xshift: 12, yshift: 8,
-          showarrow: false,
-          font: { size: fs, family: 'SF Mono, Menlo, monospace', color: '#333' },
-          bgcolor: 'rgba(255,255,255,0.85)',
-          borderpad: 4,
-        });
-
         const baseLayout = {
           xaxis: { title: { text: 'x', font: { size: 13 } }, range: [-5, 5], zeroline: false, gridcolor: '#eee' },
           yaxis: { title: { text: '', font: { size: 13 } }, range: [-0.1, 1.1], zeroline: true, zerolinecolor: '#ccc', gridcolor: '#eee' },
-          margin: { l: 50, r: 16, t: 40, b: 44 },
+          margin: { l: 50, r: 16, t: 110, b: 44 },
           paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',
           showlegend: false, hovermode: 'closest',
         };
@@ -219,13 +230,13 @@
         return {
           left: {
             data: stepTraces,
-            layout: { ...baseLayout, title: { text: 'step(θx + θ₀)', font: { size: 15 } },
-              annotations: [mkAnnotation(stepPred, `feature x = 1<br>predicted class: ${stepPred >= 0.5 ? 'positive' : 'negative'}`)] },
+            layout: { ...baseLayout, title: { text: 'step(θx + θ₀)', font: { size: 15 }, ...titlePos },
+              annotations: [paperAnnotation(`feature x = 1<br>predicted class: ${stepPred >= 0.5 ? 'positive' : 'negative'}`)] },
           },
           right: {
             data: sigTraces,
-            layout: { ...baseLayout, title: { text: 'σ(θx + θ₀)', font: { size: 15 } },
-              annotations: [mkAnnotation(sigPred, `feature x = 1<br>predicted class: ${sigPred >= 0.5 ? 'positive' : 'negative'}`)] },
+            layout: { ...baseLayout, title: { text: 'σ(θx + θ₀)', font: { size: 15 }, ...titlePos },
+              annotations: [paperAnnotation(`feature x = 1<br>predicted class: ${sigPred >= 0.5 ? 'positive' : 'negative'}`)] },
           },
         };
       }
@@ -277,7 +288,7 @@
         });
 
         const mkLayout = (title) => ({
-          title: { text: title, font: { size: 15 } },
+          title: { text: title, font: { size: 15 }, ...titlePos },
           scene: {
             xaxis: { title: 'x₁', range: [-2, 2], autorange: false, gridcolor: '#e0e0e0' },
             yaxis: { title: 'x₂', range: [-2, 2], autorange: false, gridcolor: '#e0e0e0' },
@@ -286,7 +297,7 @@
             camera: { eye: { x: 0, y: -2, z: 1.2 }, up: { x: 0, y: 0, z: 1 } },
             bgcolor: '#fafafa',
           },
-          margin: { l: 0, r: 0, t: 40, b: 0 },
+          margin: { l: 0, r: 0, t: 110, b: 0 },
           paper_bgcolor: '#fafafa',
           showlegend: false,
         });
@@ -305,30 +316,20 @@
           hovertemplate: '(%{x:.1f}, %{y:.1f}) ŷ=%{z:.2f}<extra></extra>',
         });
 
-        const fs = annotFontSize();
-        const mkAnnotation3D = (x, y, z, text) => ({
-          x, y, z, text,
-          showarrow: true, arrowhead: 0, arrowsize: 1, arrowcolor: '#999',
-          ax: 50, ay: -40,
-          font: { size: fs, family: 'SF Mono, Menlo, monospace', color: '#333' },
-          bgcolor: 'rgba(255,255,255,0.85)',
-          borderpad: 4,
-        });
-
         const mkLayout3D = (title, ann) => {
           const l = mkLayout(title);
-          l.scene.annotations = [ann];
+          l.annotations = [ann];
           return l;
         };
 
         return {
           left: {
             data: [mkSurface(gStep, gStep, zStep), mkPoint3D(tx1, tx2, stepPred, stepColor)],
-            layout: mkLayout3D('step(θ₁x₁ + θ₂x₂ + θ₀)', mkAnnotation3D(tx1, tx2, stepPred, `feature x = [1,1]<br>predicted class: ${stepPred >= 0.5 ? 'positive' : 'negative'}`)),
+            layout: mkLayout3D('step(θ₁x₁ + θ₂x₂ + θ₀)', paperAnnotation(`feature x = [1,1]<br>predicted class: ${stepPred >= 0.5 ? 'positive' : 'negative'}`)),
           },
           right: {
             data: [mkSurface(gSig, gSig, zSig), mkPoint3D(tx1, tx2, sigPred, sigColor)],
-            layout: mkLayout3D('σ(θ₁x₁ + θ₂x₂ + θ₀)', mkAnnotation3D(tx1, tx2, sigPred, `feature x = [1,1]<br>predicted class: ${sigPred >= 0.5 ? 'positive' : 'negative'}`)),
+            layout: mkLayout3D('σ(θ₁x₁ + θ₂x₂ + θ₀)', paperAnnotation(`feature x = [1,1]<br>predicted class: ${sigPred >= 0.5 ? 'positive' : 'negative'}`)),
           },
           zStep, zSig, stepPred, sigPred, stepColor, sigColor,
         };

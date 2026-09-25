@@ -100,7 +100,7 @@
           <label>Feature Dimension</label>
           <select id="dimSelect" onchange="setDim(this.value)">
             <option value="1d">1D</option>
-            <option value="2d">2D</option>
+            <option value="2d" selected>2D</option>
           </select>
         </div>
 
@@ -125,7 +125,7 @@
 
         <div class="legend">
           <div><span class="dot" style="background:#e74c3c"></span>Training data point</div>
-          <div><span class="dot" style="background:#2ecc71"></span>Current θ</div>
+          <div><span class="dot" style="background:#ffd966;border:2px solid #333"></span>Current θ</div>
         </div>
 
         <div class="info">
@@ -322,7 +322,7 @@
         const markerTrace = {
           x: [theta], y: [currentLoss],
           mode: 'markers',
-          marker: { size: 19, color: '#2ecc71', line: { width: 2, color: '#fff' } },
+          marker: { size: 19, color: '#ffd966', line: { width: 2, color: '#333' } },
           hovertemplate: 'θ=%{x:.1f}, J=%{y:.2f}<extra></extra>',
         };
 
@@ -358,7 +358,9 @@
         [0.6, '#e8c8c8'], [1, '#d47e7e'],
       ];
 
-      const lossColorscale = [[0, 'blue'], [1, 'red']];
+      // Ridge's grey for a loss surface. Neutral, so the yellow current-θ
+      // marker reads at every height of the bowl, including the optimum.
+      const lossColorscale = [[0, '#e0e0e0'], [1, '#999999']];
 
       // Single-color colorscale for 0-1 classifier
       const flatColorscale = [[0, '#a8c8e0'], [1, '#a8c8e0']];
@@ -441,15 +443,18 @@
           colorscale: lossColorscale,
           contours: is01 ? undefined : { z: { show: true, usecolormap: true, project: { z: true } } },
           showscale: false,
-          opacity: is01 ? 1 : undefined,
+          // Translucent so the marker shows through instead of sinking into
+          // the surface, which hid it almost completely in the step case.
+          opacity: 0.85,
         };
 
         const currentLoss = averageLoss2D(t1, t2);
         const marker = {
-          x: [t1], y: [t2], z: [currentLoss],
+          x: [t1], y: [t2], z: [currentLoss + liftFor(Z)],
           type: 'scatter3d', mode: 'markers',
-          marker: { size: 19, color: '#2ecc71' },
-          hovertemplate: 'θ₁=%{x:.1f}, θ₂=%{y:.1f}, J=%{z:.2f}<extra></extra>',
+          marker: { size: 19, color: '#ffd966' },
+          customdata: [currentLoss],
+          hovertemplate: 'θ₁=%{x:.1f}, θ₂=%{y:.1f}, J=%{customdata:.2f}<extra></extra>',
         };
 
         let titleText = '';
@@ -519,6 +524,15 @@
         return zGrid;
       }
 
+      // How far to float a mark above the loss surface. At 0.85 opacity a mark
+      // underneath blends toward white and washes out, worst in the step case
+      // where J is flat and the mark otherwise lies in the plateau itself.
+      function liftFor(Z) {
+        let zMax = 0;
+        for (const row of Z) for (const v of row) if (v > zMax) zMax = v;
+        return 0.02 * (zMax || 1);
+      }
+
       // Helper: build just the loss z-grid for the right 2D plot
       function buildRightZGrid(t1, t2) {
         const N = currentMode === '01' ? 400 : 80;
@@ -550,14 +564,19 @@
           document.getElementById('infoLoss').textContent = currentLoss.toFixed(3);
           // Update only surface z-data and marker position via restyle (preserves camera)
           Plotly.restyle('plotLeft', { z: [buildLeftZGrid(theta, t2)] }, [0]);
-          Plotly.restyle('plotRight', { z: [buildRightZGrid(theta, t2)] }, [0]);
-          Plotly.restyle('plotRight', { x: [[theta]], y: [[t2]], z: [[currentLoss]] }, [1]);
+          const rightZ = buildRightZGrid(theta, t2);
+          Plotly.restyle('plotRight', { z: [rightZ] }, [0]);
+          Plotly.restyle('plotRight', {
+            x: [[theta]], y: [[t2]], z: [[currentLoss + liftFor(rightZ)]],
+            customdata: [[currentLoss]],
+          }, [1]);
         }
       }
 
       // --- Init ---
-      updateEqLabel();
-      fullPlot();
+      // Drives the whole default off the selected option, so the dropdown, the
+      // θ₂ slider, the θ₁ label and the equation cannot drift apart.
+      setDim(document.getElementById('dimSelect').value);
 
       window.addEventListener('resize', () => {
         Plotly.Plots.resize(document.getElementById('plotLeft'));

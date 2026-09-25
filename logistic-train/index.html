@@ -253,13 +253,13 @@
         const posT = {
           x: pos.map(p => p.x1), y: pos.map(p => p.x2),
           type: 'scatter', mode: 'markers',
-          marker: { size: 9, color: posCol, line: { color: '#fff', width: 1.5 } },
+          marker: { size: 19, color: posCol, line: { color: '#fff', width: 1.5 } },
           hovertemplate: '(%{x:.1f}, %{y:.1f})<extra>+1</extra>',
         };
         const negT = {
           x: neg.map(p => p.x1), y: neg.map(p => p.x2),
           type: 'scatter', mode: 'markers',
-          marker: { size: 9, color: negCol, line: { color: '#fff', width: 1.5 } },
+          marker: { size: 19, color: negCol, line: { color: '#fff', width: 1.5 } },
           hovertemplate: '(%{x:.1f}, %{y:.1f})<extra>0</extra>',
         };
 
@@ -314,7 +314,7 @@
         const marker = {
           x: [iter], y: [lossHist[n - 1]],
           type: 'scatter', mode: 'markers',
-          marker: { size: 11, color: '#f1c40f', line: { color: '#fff', width: 1.5 } },
+          marker: { size: 19, color: '#f1c40f', line: { color: '#fff', width: 1.5 } },
           hovertemplate: 'iter %{x}<br>J=%{y:.4f}<extra></extra>',
         };
 
