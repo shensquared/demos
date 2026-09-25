@@ -76,6 +76,8 @@
 
       .toggle-btn.active { background: #555; color: #fff; border-color: #555; }
 
+      .toggle-stack { display: flex; flex-direction: column; gap: 8px; }
+
       .legend { font-size: 14px; color: #666; line-height: 2.2; }
 
       .legend .dot {
@@ -91,6 +93,16 @@
       .legend .line {
         display: inline-block; width: 16px; height: 2px;
         margin-right: 6px; vertical-align: middle;
+      }
+
+      /* Split swatch, the two shades the 2D panel paints either side of the
+         separator, so the legend entry points at something recognisable. */
+      .legend .shade {
+        display: inline-block; width: 16px; height: 10px;
+        margin-right: 6px; vertical-align: middle;
+        border: 1px solid #ddd;
+        background: linear-gradient(90deg,
+          rgba(58,126,191,.35) 0 50%, rgba(231,76,60,.35) 50% 100%);
       }
 
       .info {
@@ -139,17 +151,21 @@
           </div>
         </div>
 
-        <button class="toggle-btn" id="btnZ0">Show z = 0 plane</button>
+        <div class="toggle-stack">
+          <button class="toggle-btn" id="btnZ0">Show z = 0 plane</button>
+          <button class="toggle-btn" id="btnStep">Show g = step(z)</button>
+        </div>
 
         <div class="legend">
-          <div><span class="dot" style="background:#e74c3c"></span>True label +1</div>
+          <div><span class="dot" style="background:#e74c3c"></span>True label 1</div>
           <div><span class="dot" style="background:#3a7ebf"></span>True label 0</div>
           <div><span class="line" style="background:#333"></span>Separator</div>
           <div><span class="arrow">→</span>Normal vector (θ)</div>
+          <div><span class="shade"></span>Shaded region: g = step(z)</div>
         </div>
 
         <div class="info">
-          Errors: <span id="infoErr">–</span> / <span id="infoN">10</span><br>
+          0-1 loss: <span id="infoErr">–</span> / <span id="infoN">10</span><br>
           Accuracy: <span id="infoAcc">–</span>
         </div>
       </div>
@@ -182,7 +198,33 @@
       const gy = [...gx];
 
       let showZ0 = false;
+      let showStep = false;
       let scale = 1;
+
+      // The tilted plane reads as a continuous ramp. The step surface has only
+      // two levels, so its scale repeats each colour across half the range,
+      // giving a hard edge at the separator instead of a gradient through it.
+      const planeColorscale = [
+        [0, '#7eafd4'], [0.4, '#c8dce8'],
+        [0.5, '#f0f0f0'],
+        [0.6, '#e8c8c8'], [1, '#d47e7e'],
+      ];
+      const stepColorscale = [
+        [0, '#7eafd4'], [0.5, '#7eafd4'],
+        [0.5, '#d47e7e'], [1, '#d47e7e'],
+      ];
+
+      // Plotly.react hands the scene a fresh layout on every redraw, and a
+      // layout naming scene.camera snaps the view back to that eye, so the
+      // surface toggle would throw away whatever angle the room had rotated to.
+      // Same remedy as gd/gd3d.html: read the live camera and hand it back.
+      const HOME_EYE = { eye: { x: 0, y: -2, z: 1.2 }, up: { x: 0, y: 0, z: 1 } };
+      function currentCamera() {
+        const gd = document.getElementById('plot3d');
+        return (gd && gd.layout && gd.layout.scene && gd.layout.scene.camera)
+          ? gd.layout.scene.camera
+          : HOME_EYE;
+      }
       const t1El = document.getElementById('t1');
       const t2El = document.getElementById('t2');
       const t0El = document.getElementById('t0');
@@ -225,17 +267,17 @@
       }
 
       function draw3D(t1, t2, t0) {
-        const zGrid = gy.map(y => gx.map(x => sc(t1, t2, t0, x, y)));
+        // Same threshold the error count and the 2D shading use, so all three
+        // panels agree on which side is class 1.
+        const raw = gy.map(y => gx.map(x => sc(t1, t2, t0, x, y)));
+        const zGrid = showStep ? raw.map(r => r.map(z => (z > 0 ? 1 : 0))) : raw;
 
         const surface = {
           x: gx, y: gy, z: zGrid,
           type: 'surface',
-          colorscale: [
-            [0, '#7eafd4'], [0.4, '#c8dce8'],
-            [0.5, '#f0f0f0'],
-            [0.6, '#e8c8c8'], [1, '#d47e7e'],
-          ],
-          cmin: -6, cmax: 6,
+          colorscale: showStep ? stepColorscale : planeColorscale,
+          cmin: showStep ? 0 : -6,
+          cmax: showStep ? 1 : 6,
           showscale: false, opacity: 0.75, hoverinfo: 'skip',
         };
 
@@ -262,7 +304,7 @@
           x: pos.map(p => p.x1), y: pos.map(p => p.x2), z: pos.map(() => 0),
           type: 'scatter3d', mode: 'markers',
           marker: { size: 19, color: posCol, line: { color: '#fff', width: 0.5 } },
-          hovertemplate: '(%{x:.1f}, %{y:.1f})<extra>+1</extra>',
+          hovertemplate: '(%{x:.1f}, %{y:.1f})<extra>1</extra>',
         };
         const negT = {
           x: neg.map(p => p.x1), y: neg.map(p => p.x2), z: neg.map(() => 0),
@@ -275,9 +317,13 @@
           scene: {
             xaxis: { title: 'x<sub>1</sub>', range: [-2, 2], tickmode: 'linear', dtick: 1, gridcolor: '#e0e0e0' },
             yaxis: { title: 'x<sub>2</sub>', range: [-2, 2], tickmode: 'linear', dtick: 1, gridcolor: '#e0e0e0' },
-            zaxis: { title: 'z', range: [-6, 6], gridcolor: '#e0e0e0' },
+            zaxis: {
+              title: showStep ? 'g' : 'z',
+              range: showStep ? [-0.4, 1.4] : [-6, 6],
+              gridcolor: '#e0e0e0',
+            },
             aspectmode: 'manual', aspectratio: { x: 1, y: 1, z: 1 },
-            camera: { eye: { x: 0, y: -2, z: 1.2 }, up: { x: 0, y: 0, z: 1 } },
+            camera: currentCamera(),
             bgcolor: '#fafafa',
           },
           margin: { l: 0, r: 0, t: 0, b: 0 },
@@ -316,7 +362,7 @@
           x: pos.map(p => p.x1), y: pos.map(p => p.x2),
           type: 'scatter', mode: 'markers',
           marker: { size: 19, color: posCol, line: { color: '#fff', width: 1.5 } },
-          hovertemplate: '(%{x:.1f}, %{y:.1f})<extra>+1</extra>',
+          hovertemplate: '(%{x:.1f}, %{y:.1f})<extra>1</extra>',
         };
         const negT = {
           x: neg.map(p => p.x1), y: neg.map(p => p.x2),
@@ -370,6 +416,13 @@
         showZ0 = !showZ0;
         this.classList.toggle('active', showZ0);
         this.textContent = showZ0 ? 'Hide z = 0 plane' : 'Show z = 0 plane';
+        update();
+      });
+
+      document.getElementById('btnStep').addEventListener('click', function () {
+        showStep = !showStep;
+        this.classList.toggle('active', showStep);
+        this.textContent = showStep ? 'Show z surface' : 'Show g = step(z)';
         update();
       });
 
