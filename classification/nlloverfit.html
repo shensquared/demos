@@ -176,7 +176,7 @@
           margin: { l: 50, r: 10, t: 30, b: 50 },
           title: { text: "g(x) at the training point x = 1", font: { size: 13 } },
           xaxis: { title: "x", range: [-10, 10] },
-          yaxis: { title: "g(x) = σ(θx + θ₀)", range: [0, 1] },
+          yaxis: { title: "g(x) = σ(θx + θ<sub>0</sub>)", range: [0, 1] },
           showlegend: false,
           shapes: [
             {
@@ -216,7 +216,7 @@
         let layoutRight = {
           margin: { l: 55, r: 20, t: 30, b: 50 },
           title: { text: "NLL loss — decreases toward 0, but never reaches it", font: { size: 13 } },
-          xaxis: { title: "g(1) = σ(θ + θ₀)", range: [0, 1] },
+          xaxis: { title: "g(1) = σ(θ + θ<sub>0</sub>)", range: [0, 1] },
           yaxis: { title: "−log(g(1))   [NLL loss]", range: [0, 10] },
           showlegend: false,
           shapes: [

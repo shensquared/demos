@@ -401,15 +401,15 @@
         };
 
         let titleText = '';
-        if (currentMode === 'mse') titleText = 'g = θ₁x₁ + θ₂x₂';
-        else if (currentMode === '01') titleText = 'g = step(θ₁x₁ + θ₂x₂)';
-        else titleText = 'g = σ(θ₁x₁ + θ₂x₂)';
+        if (currentMode === 'mse') titleText = 'g = θ<sub>1</sub>x<sub>1</sub> + θ<sub>2</sub>x<sub>2</sub>';
+        else if (currentMode === '01') titleText = 'g = step(θ<sub>1</sub>x<sub>1</sub> + θ<sub>2</sub>x<sub>2</sub>)';
+        else titleText = 'g = σ(θ<sub>1</sub>x<sub>1</sub> + θ<sub>2</sub>x<sub>2</sub>)';
 
         const layout = {
           title: { text: titleText, font: { size: 15 } },
           scene: {
-            xaxis: { title: 'x₁', range: [-2, 2], autorange: false, gridcolor: '#e0e0e0' },
-            yaxis: { title: 'x₂', range: [-2, 2], autorange: false, gridcolor: '#e0e0e0' },
+            xaxis: { title: 'x<sub>1</sub>', range: [-2, 2], autorange: false, gridcolor: '#e0e0e0' },
+            yaxis: { title: 'x<sub>2</sub>', range: [-2, 2], autorange: false, gridcolor: '#e0e0e0' },
             zaxis: { title: 'g', range: currentMode === 'mse' ? [-10, 10] : [-0.5, 1.5], autorange: false, gridcolor: '#e0e0e0' },
             aspectmode: 'manual', aspectratio: { x: 1, y: 1, z: 1 },
             camera: { eye: { x: 0, y: -2, z: 1.2 }, up: { x: 0, y: 0, z: 1 } },
@@ -454,7 +454,7 @@
           type: 'scatter3d', mode: 'markers',
           marker: { size: 19, color: '#ffd966' },
           customdata: [currentLoss],
-          hovertemplate: 'θ₁=%{x:.1f}, θ₂=%{y:.1f}, J=%{customdata:.2f}<extra></extra>',
+          hovertemplate: 'θ<sub>1</sub>=%{x:.1f}, θ<sub>2</sub>=%{y:.1f}, J=%{customdata:.2f}<extra></extra>',
         };
 
         let titleText = '';
@@ -465,8 +465,8 @@
         const layout = {
           title: { text: titleText, font: { size: 15 } },
           scene: {
-            xaxis: { title: 'θ₁', gridcolor: '#e0e0e0' },
-            yaxis: { title: 'θ₂', gridcolor: '#e0e0e0' },
+            xaxis: { title: 'θ<sub>1</sub>', gridcolor: '#e0e0e0' },
+            yaxis: { title: 'θ<sub>2</sub>', gridcolor: '#e0e0e0' },
             zaxis: { title: 'J(θ)', gridcolor: '#e0e0e0',
               range: is01 ? [-0.1, 1.1] : undefined,
               autorange: is01 ? false : undefined,

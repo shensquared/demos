@@ -230,12 +230,12 @@
         return {
           left: {
             data: stepTraces,
-            layout: { ...baseLayout, title: { text: 'step(θx + θ₀)', font: { size: 15 }, ...titlePos },
+            layout: { ...baseLayout, title: { text: 'step(θx + θ<sub>0</sub>)', font: { size: 15 }, ...titlePos },
               annotations: [paperAnnotation(`feature x = 1<br>predicted class: ${stepPred >= 0.5 ? 'positive' : 'negative'}`)] },
           },
           right: {
             data: sigTraces,
-            layout: { ...baseLayout, title: { text: 'σ(θx + θ₀)', font: { size: 15 }, ...titlePos },
+            layout: { ...baseLayout, title: { text: 'σ(θx + θ<sub>0</sub>)', font: { size: 15 }, ...titlePos },
               annotations: [paperAnnotation(`feature x = 1<br>predicted class: ${sigPred >= 0.5 ? 'positive' : 'negative'}`)] },
           },
         };
@@ -290,8 +290,8 @@
         const mkLayout = (title) => ({
           title: { text: title, font: { size: 15 }, ...titlePos },
           scene: {
-            xaxis: { title: 'x₁', range: [-2, 2], autorange: false, gridcolor: '#e0e0e0' },
-            yaxis: { title: 'x₂', range: [-2, 2], autorange: false, gridcolor: '#e0e0e0' },
+            xaxis: { title: 'x<sub>1</sub>', range: [-2, 2], autorange: false, gridcolor: '#e0e0e0' },
+            yaxis: { title: 'x<sub>2</sub>', range: [-2, 2], autorange: false, gridcolor: '#e0e0e0' },
             zaxis: { title: '', range: [-0.1, 1.1], autorange: false, gridcolor: '#e0e0e0' },
             aspectmode: 'manual', aspectratio: { x: 1, y: 1, z: 0.6 },
             camera: { eye: { x: 0, y: -2, z: 1.2 }, up: { x: 0, y: 0, z: 1 } },
@@ -325,11 +325,11 @@
         return {
           left: {
             data: [mkSurface(gStep, gStep, zStep), mkPoint3D(tx1, tx2, stepPred, stepColor)],
-            layout: mkLayout3D('step(θ₁x₁ + θ₂x₂ + θ₀)', paperAnnotation(`feature x = [1,1]<br>predicted class: ${stepPred >= 0.5 ? 'positive' : 'negative'}`)),
+            layout: mkLayout3D('step(θ<sub>1</sub>x<sub>1</sub> + θ<sub>2</sub>x<sub>2</sub> + θ<sub>0</sub>)', paperAnnotation(`feature x = [1,1]<br>predicted class: ${stepPred >= 0.5 ? 'positive' : 'negative'}`)),
           },
           right: {
             data: [mkSurface(gSig, gSig, zSig), mkPoint3D(tx1, tx2, sigPred, sigColor)],
-            layout: mkLayout3D('σ(θ₁x₁ + θ₂x₂ + θ₀)', paperAnnotation(`feature x = [1,1]<br>predicted class: ${sigPred >= 0.5 ? 'positive' : 'negative'}`)),
+            layout: mkLayout3D('σ(θ<sub>1</sub>x<sub>1</sub> + θ<sub>2</sub>x<sub>2</sub> + θ<sub>0</sub>)', paperAnnotation(`feature x = [1,1]<br>predicted class: ${sigPred >= 0.5 ? 'positive' : 'negative'}`)),
           },
           zStep, zSig, stepPred, sigPred, stepColor, sigColor,
         };
