@@ -4,8 +4,19 @@ Matches the Isola slide's black-on-white, serif-font style.
 
 Classes: hot dog, pizza, veggie
 True label: hot dog  =>  y = [1, 0, 0]
-Softmax output: g = [0.1, 0.7, 0.2]  (wrong prediction — pizza highest)
--log(g) ≈ [2.30, 0.36, 1.61]
+
+Two cases, the before/after pair on the end-to-end pipeline slide:
+
+  before  g = [0.1, 0.2, 0.7]  (wrong — veggie highest)   -log(g) ≈ [2.30, 1.61, 0.36]  loss ≈ 2.30
+  after   g = [0.5, 0.4, 0.1]  (right, but only just)     -log(g) ≈ [0.69, 0.92, 2.30]  loss ≈ 0.69
+
+The after case is deliberately not confident. At g_hotdog = 0.5 against
+pizza's 0.4 the slide's punchline, that g_hotdog needs to go up, still has
+somewhere to go.
+
+y stays black, since it is the answer being compared against. g and -log(g)
+are grey: they are the intermediate quantities the pipeline passes through,
+and greying them leaves black and red to carry the label and the loss.
 """
 
 import matplotlib
@@ -20,6 +31,7 @@ OUTDIR = os.path.dirname(os.path.abspath(__file__))
 # Style constants
 FONT_FAMILY = "serif"
 BAR_COLOR = "black"
+GREY_COLOR = "#808080"
 RED_COLOR = "#cc3333"
 BG_COLOR = "white"
 LABEL_SIZE = 28
@@ -40,10 +52,12 @@ plt.rcParams.update({
 labels = ["hot dog", "pizza", "veggie"]
 y_positions = [2, 1, 0]  # top to bottom
 
-# Probabilities and derived values
-g = [0.1, 0.7, 0.2]
-log_g = [np.log(v) for v in g]        # [-0.357, -1.609, -2.303]
-neg_log_g = [-v for v in log_g]        # [ 0.357,  1.609,  2.303]
+# The two panels of the before/after pair. Everything below chart 1 is
+# generated once per case, into nll_k3_<case>_<chart>.png.
+CASES = {
+    "before": [0.1, 0.2, 0.7],
+    "after":  [0.5, 0.4, 0.1],
+}
 
 # Boundaries
 LEFT_EDGE = -2.8   # represents -∞ on log(g) charts
@@ -97,40 +111,6 @@ ax.set_xlim(0, 1)
 ax.set_xticks([0, 1])
 ax.set_xticklabels(["0", "1"], fontsize=TICK_SIZE)
 save_three_bar(fig, "nll_k3_y_onehot.png")
-
-
-# ── Chart 2: log(g)  (Isola-style, -∞ → 0) ─────────────────────────
-
-fig, ax = make_three_bar_ax()
-widths = [v - LEFT_EDGE for v in log_g]
-ax.barh(y_positions, widths, height=BAR_HEIGHT, color=BAR_COLOR, left=LEFT_EDGE)
-add_class_labels(ax)
-ax.set_xlim(LEFT_EDGE, 0)
-ax.set_xticks([LEFT_EDGE, 0])
-ax.set_xticklabels([r"$-\infty$", "0"], fontsize=TICK_SIZE)
-save_three_bar(fig, "nll_k3_log_g.png")
-
-
-# ── Chart 2b: g softmax output (0 → 1) ──────────────────────────────
-
-fig, ax = make_three_bar_ax()
-ax.barh(y_positions, g, height=BAR_HEIGHT, color=BAR_COLOR)
-add_class_labels(ax)
-ax.set_xlim(0, 1)
-ax.set_xticks([0, 1])
-ax.set_xticklabels(["0", "1"], fontsize=TICK_SIZE)
-save_three_bar(fig, "nll_k3_g_softmax.png")
-
-
-# ── Chart 3: -log(g)  (no-sign-flip version, 0 → +∞) ───────────────
-
-fig, ax = make_three_bar_ax()
-ax.barh(y_positions, neg_log_g, height=BAR_HEIGHT, color=BAR_COLOR)
-add_class_labels(ax)
-ax.set_xlim(0, RIGHT_EDGE)
-ax.set_xticks([0, RIGHT_EDGE])
-ax.set_xticklabels(["0", r"$\infty$"], fontsize=TICK_SIZE)
-save_three_bar(fig, "nll_k3_neglog_g.png")
 
 
 # ── Fixed layout for single-bar loss charts ──────────────────────────
@@ -192,35 +172,69 @@ def save_loss(fig, filename):
     print(f"Saved {filename}")
 
 
-# ── Chart 4: loss (Isola-style, black+red split on -∞ → 0) ──────────
-
-hotdog_log_g = log_g[0]   # ≈ -0.357
-loss_val = -hotdog_log_g   # ≈ 0.357
 LOSS_LEFT = -0.9
 
-fig, ax = make_loss_ax()
-black_width = hotdog_log_g - LOSS_LEFT
-ax.barh(HOTDOG_Y, black_width, height=BAR_HEIGHT, color=BAR_COLOR, left=LOSS_LEFT)
-ax.barh(HOTDOG_Y, loss_val, height=BAR_HEIGHT, color=RED_COLOR, left=hotdog_log_g)
-ax.set_xlim(LOSS_LEFT, 0)
-ax.set_xticks([LOSS_LEFT, 0])
-ax.set_xticklabels([r"$-\infty$", "0"], fontsize=TICK_SIZE)
-add_brace_below(ax, hotdog_log_g, 0,
-                "How much better\nyou could have done", italic=True)
-save_loss(fig, "nll_k3_loss.png")
+
+def make_case(case, g):
+    """Charts 2 to 5 for one softmax output, suffixed with the case name."""
+    log_g = [np.log(v) for v in g]
+    neg_log_g = [-v for v in log_g]
+
+    # ── Chart 2: log(g)  (Isola-style, -∞ → 0) ─────────────────────
+    fig, ax = make_three_bar_ax()
+    widths = [v - LEFT_EDGE for v in log_g]
+    ax.barh(y_positions, widths, height=BAR_HEIGHT, color=GREY_COLOR, left=LEFT_EDGE)
+    add_class_labels(ax)
+    ax.set_xlim(LEFT_EDGE, 0)
+    ax.set_xticks([LEFT_EDGE, 0])
+    ax.set_xticklabels([r"$-\infty$", "0"], fontsize=TICK_SIZE)
+    save_three_bar(fig, f"nll_k3_{case}_log_g.png")
+
+    # ── Chart 2b: g softmax output (0 → 1) ─────────────────────────
+    fig, ax = make_three_bar_ax()
+    ax.barh(y_positions, g, height=BAR_HEIGHT, color=GREY_COLOR)
+    add_class_labels(ax)
+    ax.set_xlim(0, 1)
+    ax.set_xticks([0, 1])
+    ax.set_xticklabels(["0", "1"], fontsize=TICK_SIZE)
+    save_three_bar(fig, f"nll_k3_{case}_g_softmax.png")
+
+    # ── Chart 3: -log(g)  (no-sign-flip version, 0 → +∞) ───────────
+    fig, ax = make_three_bar_ax()
+    ax.barh(y_positions, neg_log_g, height=BAR_HEIGHT, color=GREY_COLOR)
+    add_class_labels(ax)
+    ax.set_xlim(0, RIGHT_EDGE)
+    ax.set_xticks([0, RIGHT_EDGE])
+    ax.set_xticklabels(["0", r"$\infty$"], fontsize=TICK_SIZE)
+    save_three_bar(fig, f"nll_k3_{case}_neglog_g.png")
+
+    # ── Chart 4: loss (Isola-style, split on -∞ → 0) ───────────────
+    hotdog_log_g = log_g[0]
+    loss_val = -hotdog_log_g
+    fig, ax = make_loss_ax()
+    ax.barh(HOTDOG_Y, hotdog_log_g - LOSS_LEFT, height=BAR_HEIGHT,
+            color=GREY_COLOR, left=LOSS_LEFT)
+    ax.barh(HOTDOG_Y, loss_val, height=BAR_HEIGHT, color=RED_COLOR, left=hotdog_log_g)
+    ax.set_xlim(LOSS_LEFT, 0)
+    ax.set_xticks([LOSS_LEFT, 0])
+    ax.set_xticklabels([r"$-\infty$", "0"], fontsize=TICK_SIZE)
+    add_brace_below(ax, hotdog_log_g, 0,
+                    "How much better\nyou could have done", italic=True)
+    save_loss(fig, f"nll_k3_{case}_loss.png")
+
+    # ── Chart 5: direct loss (no-sign-flip version, 0 → +∞) ────────
+    hotdog_loss = neg_log_g[0]
+    fig, ax = make_loss_ax()
+    ax.barh(HOTDOG_Y, hotdog_loss, height=BAR_HEIGHT, color=RED_COLOR)
+    ax.set_xlim(0, RIGHT_EDGE)
+    ax.set_xticks([0, RIGHT_EDGE])
+    ax.set_xticklabels(["0", r"$\infty$"], fontsize=TICK_SIZE)
+    add_brace_below(ax, 0, hotdog_loss, "Loss", text_x=hotdog_loss + 0.3)
+    save_loss(fig, f"nll_k3_{case}_loss_direct.png")
 
 
-# ── Chart 5: direct loss (no-sign-flip version, 0 → +∞) ────────────
+for case, g in CASES.items():
+    print(f"\n{case}: g = {g}")
+    make_case(case, g)
 
-hotdog_loss = neg_log_g[0]  # ≈ 0.357
-
-fig, ax = make_loss_ax()
-ax.barh(HOTDOG_Y, hotdog_loss, height=BAR_HEIGHT, color=RED_COLOR)
-ax.set_xlim(0, RIGHT_EDGE)
-ax.set_xticks([0, RIGHT_EDGE])
-ax.set_xticklabels(["0", r"$\infty$"], fontsize=TICK_SIZE)
-add_brace_below(ax, 0, hotdog_loss, "Loss", text_x=hotdog_loss + 0.3)
-save_loss(fig, "nll_k3_loss_direct.png")
-
-
-print("\nAll 5 PNGs generated successfully.")
+print(f"\nAll {1 + 5 * len(CASES)} PNGs generated successfully.")
