@@ -27,6 +27,7 @@
       }
 
       .sidebar h1 { font-size: 20px; font-weight: 600; color: #222; }
+      .sidebar .eq { font-size: 15px; color: #888; margin-top: 2px; }
 
       .control-group label {
         display: block; font-size: 15px; font-weight: 500;
@@ -124,6 +125,10 @@
       <div class="sidebar">
         <div>
           <h1>Linear Separator</h1>
+          <!-- Breaks at the second "=" on purpose: at 15px in a 200px sidebar the
+               expression cannot fit one line, and the default wrap split θ₂x₂
+               from "+ θ₀)". -->
+          <div class="eq">g = step(z)<br>= step(θ<sub>1</sub>x<sub>1</sub> + θ<sub>2</sub>x<sub>2</sub> + θ<sub>0</sub>)</div>
         </div>
 
         <div class="control-group">
@@ -303,13 +308,13 @@
         const posT = {
           x: pos.map(p => p.x1), y: pos.map(p => p.x2), z: pos.map(() => 0),
           type: 'scatter3d', mode: 'markers',
-          marker: { size: 19, color: posCol, line: { color: '#fff', width: 0.5 } },
+          marker: { size: 11, color: posCol, line: { color: '#fff', width: 0.5 } },
           hovertemplate: '(%{x:.1f}, %{y:.1f})<extra>1</extra>',
         };
         const negT = {
           x: neg.map(p => p.x1), y: neg.map(p => p.x2), z: neg.map(() => 0),
           type: 'scatter3d', mode: 'markers',
-          marker: { size: 19, color: negCol, line: { color: '#fff', width: 0.5 } },
+          marker: { size: 11, color: negCol, line: { color: '#fff', width: 0.5 } },
           hovertemplate: '(%{x:.1f}, %{y:.1f})<extra>0</extra>',
         };
 
