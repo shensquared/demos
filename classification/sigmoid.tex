@@ -1,0 +1,55 @@
+% sigma(z), the smooth stand-in for step(z) that the logistic classifier uses.
+%
+% Used on lecture 4 badges 13 and 28, which share one raster. Deliberately the
+% same drawing as step.tex: same axes, same range, same ticks, same line weight,
+% same label placement. The two plots sit side by side on badge 13, so any
+% difference in styling reads as a difference in meaning.
+%
+% Three things differ from step.tex, all because the curve differs:
+%   - the guide at 1 runs the full width, since sigma approaches 1 from both
+%     sides rather than reaching it at a threshold
+%   - there is a 0.5 tick, the value the classifier compares against
+%   - the curve is sampled, not three straight segments
+%
+% Build:  pdflatex sigmoid.tex  &&  ../pdf2png.sh sigmoid
+
+\documentclass[tikz]{standalone}
+\usepackage{pgfplots}
+\usepackage{amsmath}
+\pgfplotsset{compat=1.18}
+
+\begin{document}
+\begin{tikzpicture}
+  \begin{axis}[
+    axis lines=middle,
+    x axis line style={->,>=stealth, shorten >=-3pt},
+    y axis line style={->,>=stealth, shorten >=-3pt},
+    xmin=-4.4, xmax=4.4,
+    % ymin at 0 so the y axis has no tail below the origin, as in step.tex
+    ymin=0, ymax=1.42,
+    xtick={-4,-2,2,4},
+    ytick={0.5,1},
+    yticklabel style={anchor=east},
+    extra x ticks={0}, extra x tick style={xticklabel style={anchor=north east}},
+    tick style={black, thin},
+    axis line style={black},
+    width=10cm, height=4.75cm,
+    scale only axis,
+    clip=false,
+  ]
+    % the asymptote, drawn before the curve so the curve sits on top
+    \addplot[gray, dashed, thin, domain=-4:4, samples=2] {1};
+
+    % sigma(z) = 1 / (1 + e^{-z})
+    \addplot[black, line width=2pt, domain=-4:4, samples=200] {1/(1+exp(-x))};
+
+    % Axis names as nodes rather than xlabel/ylabel: both sit beside their
+    % arrow tip, which pgfplots' label anchoring will not do on a middle axis.
+    \node[anchor=south west] at (axis cs:0.12,1.20) {\(\sigma(z)\)};
+    \node[anchor=south east] at (axis cs:4.38,0.05) {\(z\)};
+  \end{axis}
+  \pgfresetboundingbox
+  \useasboundingbox ([xshift=-9mm, yshift=-7mm]current axis.south west)
+    rectangle ([xshift=6mm, yshift=6mm]current axis.north east);
+\end{tikzpicture}
+\end{document}

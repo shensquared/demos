@@ -1,0 +1,57 @@
+% step(z), the threshold the linear binary classifier applies to z.
+%
+% Used on lecture 4 badges 6, 9 and 13, which all share one raster. Black and
+% white on purpose: the plot is one curve, so colour would only decorate.
+%
+% The label is \operatorname{step}, not Step or $Step$. Writing $Step(z)$ sets
+% S, t, e and p as four italic variables in a product, which is what the raster
+% this replaces used to show. \operatorname also puts the correct thin space
+% before the parenthesis, and matches the deck's own math on badge 9,
+% g = \operatorname{step}(z) = \operatorname{step}(\theta^\top x + \theta_0).
+%
+% Build:  pdflatex step.tex  &&  ../pdf2png.sh step
+
+\documentclass[tikz]{standalone}
+\usepackage{pgfplots}
+\usepackage{amsmath}
+\pgfplotsset{compat=1.18}
+
+\begin{document}
+\begin{tikzpicture}
+  \begin{axis}[
+    axis lines=middle,
+    x axis line style={->,>=stealth, shorten >=-3pt},
+    y axis line style={->,>=stealth, shorten >=-3pt},
+    xmin=-4.4, xmax=4.4,
+    % ymin at 0 so the y axis has no tail below the origin. The lower half of
+    % the step then lies along the x axis, which is what it should look like.
+    ymin=0, ymax=1.42,
+    xtick={-4,-2,2,4},
+    ytick={1},
+    extra x ticks={0}, extra x tick style={xticklabel style={anchor=north east}},
+    tick style={black, thin},
+    axis line style={black},
+    width=10cm, height=4.75cm,
+    scale only axis,
+    clip=false,
+  ]
+    % the guide to 1, drawn before the curve so the curve sits on top
+    \addplot[gray, dashed, thin, domain=-4:0, samples=2] {1};
+
+    % step(z): 0 below the threshold, 1 above it, with the jump at z = 0.
+    % Three separate plots rather than one sampled curve, so the vertical is
+    % exactly vertical instead of a steep sampled ramp.
+    \addplot[black, line width=2pt, domain=-4:0,  samples=2] {0};
+    \addplot[black, line width=2pt] coordinates {(0,0) (0,1)};
+    \addplot[black, line width=2pt, domain=0:4,   samples=2] {1};
+
+    % Axis names as nodes rather than xlabel/ylabel: both sit beside their
+    % arrow tip, which pgfplots' label anchoring will not do on a middle axis.
+    \node[anchor=south west] at (axis cs:0.12,1.20) {\(\operatorname{step}(z)\)};
+    \node[anchor=south east] at (axis cs:4.38,0.05) {\(z\)};
+  \end{axis}
+  \pgfresetboundingbox
+  \useasboundingbox ([xshift=-9mm, yshift=-7mm]current axis.south west)
+    rectangle ([xshift=6mm, yshift=6mm]current axis.north east);
+\end{tikzpicture}
+\end{document}
