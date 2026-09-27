@@ -11,32 +11,41 @@
       html, body {
         width: 100%; height: 100%;
         font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-        background: #fafafa; color: #333;
+        background: #fafafa; color: #2b2b2b;
       }
 
       .container { display: flex; height: 100%; }
 
+      /* Sizes are deck pixels. The deck places this at 1100x560, so one CSS px is one
+         slide px, and ROOM.md sets the floors: 20 for anything (A1) and 29 for what the
+         room must read (A2), which here is the iteration count and J. The sidebar
+         widened from 240 to hold the 20px legend rows without wrapping. */
       .sidebar {
-        width: 240px; min-width: 240px;
-        padding: 24px 20px;
+        width: 300px; min-width: 300px;
+        padding: 20px 22px;
         background: #fff;
         border-right: 1px solid #e0e0e0;
         display: flex; flex-direction: column;
-        gap: 18px;
-        overflow-y: auto;
+        gap: 16px;
       }
 
-      .sidebar h1 { font-size: 20px; font-weight: 600; color: #222; }
-      .sidebar .eq { font-size: 14px; color: #888; margin-top: 2px; }
+      /* Embed mode: the slide carries its own title and a caption naming gradient
+         descent on the NLL, so the heading goes and the padding tightens (B4). The
+         definition of J stays, since the slide does not state it. */
+      body.embed .sidebar { padding: 16px 20px; }
+      body.embed .sidebar h1 { display: none; }
+
+      .sidebar h1 { font-size: 24px; font-weight: 600; }
+      .sidebar .eq { font-size: 20px; color: #5f6672; margin-top: 4px; }
 
       .control-group label {
-        display: block; font-size: 15px; font-weight: 500;
-        color: #555; margin-bottom: 6px;
+        display: block; font-size: 20px; font-weight: 500;
+        margin-bottom: 8px;
       }
 
       .control-group .val {
         font-family: "SF Mono", Menlo, monospace;
-        font-size: 15px; color: #222; float: right;
+        font-size: 20px; float: right;
       }
 
       input[type="range"] {
@@ -50,54 +59,81 @@
         border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2);
       }
 
+      input[type="range"]:focus-visible { outline: 2px solid #2b2b2b; outline-offset: 6px; }
+
       .btn-row { display: flex; gap: 8px; }
 
       .toggle-btn {
-        flex: 1; padding: 8px 0;
-        font-size: 14px; font-family: inherit;
+        flex: 1; padding: 9px 0;
+        font-size: 20px; font-family: inherit;
         border: 1px solid #ddd; border-radius: 4px;
-        background: #fff; color: #777; cursor: pointer;
-        transition: all .15s;
+        background: #fff; color: #555; cursor: pointer;
+        transition: background .15s, color .15s;
       }
 
+      .toggle-btn:active { transform: translateY(1px); }
+      .toggle-btn:focus-visible { outline: 2px solid #2b2b2b; outline-offset: 2px; }
       .toggle-btn.active { background: #555; color: #fff; border-color: #555; }
+      @media (prefers-reduced-motion: reduce) { .toggle-btn { transition: none; } }
 
-      .legend { font-size: 14px; color: #666; line-height: 2.2; }
+      /* Swatches match the marks they key: dots near the 20px data markers, the line
+         at the separator's 4px (A4). */
+      .legend { font-size: 20px; line-height: 1.5; }
+      .legend .pair { display: flex; gap: 24px; }
 
       .legend .dot {
-        display: inline-block; width: 9px; height: 9px;
-        border-radius: 50%; margin-right: 6px; vertical-align: middle;
+        display: inline-block; width: 16px; height: 16px;
+        border-radius: 50%; margin-right: 8px; vertical-align: -1px;
       }
 
       .legend .arrow {
         display: inline-block; color: #2ecc71;
-        font-size: 18px; margin-right: 4px; vertical-align: middle;
+        font-size: 24px; line-height: 1; margin-right: 6px;
       }
 
       .legend .line {
-        display: inline-block; width: 16px; height: 2px;
-        margin-right: 6px; vertical-align: middle;
+        display: inline-block; width: 24px; height: 4px;
+        margin-right: 8px; vertical-align: middle;
       }
 
-      .info {
+      /* Was 14px #aaa on white, about 2.3:1 and under the 20px floor. Iteration and J
+         are what the room watches during a run, so they take the read-this size; θ and
+         accuracy are there to glance at and sit at the floor. */
+      .readout {
         margin-top: auto; padding-top: 14px;
         border-top: 1px solid #e0e0e0;
-        font-size: 14px; color: #aaa; line-height: 1.8;
+        display: flex; flex-direction: column;
+        gap: 10px;
       }
 
-      .info span {
-        font-family: "SF Mono", Menlo, monospace; font-size: 14px; color: #666;
+      .readout .row { display: grid; gap: 12px; }
+      .readout .row.two { grid-template-columns: 1fr 1fr; }
+      .readout .row.three { grid-template-columns: 1fr 1fr 1fr; }
+
+      .readout .name { font-size: 20px; color: #5f6672; }
+
+      .readout .num {
+        font-family: "SF Mono", Menlo, monospace;
+        font-size: 32px; line-height: 1.15;
       }
+
+      .readout .val {
+        font-family: "SF Mono", Menlo, monospace;
+        font-size: 20px;
+      }
+
+      .readout .acc { font-size: 20px; color: #5f6672; }
+      .readout .acc span { font-family: "SF Mono", Menlo, monospace; color: #2b2b2b; }
 
       .plots { flex: 1; display: flex; height: 100%; min-width: 0; }
-      .plots > div { flex: 1; height: 100%; min-width: 0; }
+      .plots > div { flex: 1; height: 100%; min-width: 0; min-height: 0; }
     </style>
   </head>
   <body>
     <div class="container">
       <div class="sidebar">
         <div>
-          <h1>Gradient Descent</h1>
+          <h1>Gradient descent</h1>
           <div class="eq">J(θ, θ₀) = mean NLL</div>
         </div>
 
@@ -108,24 +144,30 @@
         </div>
 
         <div class="control-group">
-          <label>Learning rate η <span class="val" id="lrVal">0.30</span></label>
+          <label for="lr">Learning rate η <span class="val" id="lrVal">0.30</span></label>
           <input type="range" id="lr" min="-2" max="0.69897" value="-0.5229" step="0.001" />
         </div>
 
         <div class="legend">
-          <div><span class="dot" style="background:#e74c3c"></span>Positive (+1)</div>
-          <div><span class="dot" style="background:#3a7ebf"></span>Negative (0)</div>
+          <div class="pair">
+            <div><span class="dot" style="background:#e74c3c"></span>y = 1</div>
+            <div><span class="dot" style="background:#3a7ebf"></span>y = 0</div>
+          </div>
           <div><span class="line" style="background:#333"></span>Separator</div>
-          <div><span class="arrow">→</span>θ direction (positive side)</div>
+          <div><span class="arrow">→</span>θ, toward y = 1</div>
         </div>
 
-        <div class="info">
-          Iteration: <span id="infoIter">0</span><br>
-          J: <span id="infoJ">–</span><br>
-          θ₁: <span id="infoT1">–</span>&nbsp;
-          θ₂: <span id="infoT2">–</span><br>
-          θ₀: <span id="infoT0">–</span><br>
-          Accuracy: <span id="infoAcc">–</span>
+        <div class="readout">
+          <div class="row two">
+            <div><div class="name">Iteration</div><div class="num" id="infoIter">0</div></div>
+            <div><div class="name">J</div><div class="num" id="infoJ"></div></div>
+          </div>
+          <div class="row three">
+            <div><div class="name">θ₁</div><div class="val" id="infoT1"></div></div>
+            <div><div class="name">θ₂</div><div class="val" id="infoT2"></div></div>
+            <div><div class="name">θ₀</div><div class="val" id="infoT0"></div></div>
+          </div>
+          <div class="acc">Accuracy <span id="infoAcc"></span></div>
         </div>
       </div>
 
@@ -153,6 +195,24 @@
       const posCol = '#e74c3c', negCol = '#3a7ebf';
       const cfg = { displayModeBar: false, responsive: true };
 
+      // A2 for axis titles and A3 for ticks, in deck pixels. Marks follow A4: the data
+      // points and the current J at 20, plot lines at 4. A nested title.font replaces
+      // titlefont whole, size and all, so an axis that recolours its title restates
+      // titlefont rather than nesting a font. Hover is off because the readout already
+      // carries every number it showed (B9).
+      const INK = '#2b2b2b', TICK_COLOR = '#5f6672';
+      const AXIS_TITLE = 24, TICK = 20, MARK = 20, LINE = 4;
+      const axis = {
+        titlefont: { size: AXIS_TITLE, color: INK },
+        tickfont: { size: TICK, color: TICK_COLOR },
+        zeroline: false, gridcolor: '#e2e2e2', fixedrange: true,
+      };
+      const baseLayout = {
+        font: { family: '"Helvetica Neue", Helvetica, Arial, sans-serif', color: INK },
+        paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',
+        showlegend: false, hovermode: false,
+      };
+
       // Fixed bad init: θ points the wrong way, all 10 points misclassified.
       const INIT = { t1: 1.0, t2: -1.0, t0: -0.3 };
 
@@ -176,6 +236,14 @@
         });
         return J / pts.length;
       }
+
+      // The J axis is pinned to the starting loss with a little headroom, so the curve
+      // descends through a fixed frame instead of the frame rescaling under it, and a
+      // run that climbs past the start leaves the top edge visibly (B11). Read at
+      // load, while θ still holds INIT. The floor sits just under 0 so the y tick 0
+      // clears the x tick 0 at the corner.
+      const J0 = lossOf();
+      const J_RANGE = [-0.06 * J0, 1.12 * J0];
 
       // Batch gradient of the mean NLL:
       //   dJ/dθ  = (1/n) Σ (g_i − y_i) x_i
@@ -212,17 +280,20 @@
       function boundaryPts() {
         let bx = [], by = [];
         if (Math.abs(t2) > 0.01) {
-          bx = Array.from({ length: 100 }, (_, i) => -2 + 4 * i / 99);
+          bx = Array.from({ length: 100 }, (_, i) => -EXT + 2 * EXT * i / 99);
           by = bx.map(x => (-t0 - t1 * x) / t2);
         } else if (Math.abs(t1) > 0.01) {
-          by = Array.from({ length: 100 }, (_, i) => -2 + 4 * i / 99);
+          by = Array.from({ length: 100 }, (_, i) => -EXT + 2 * EXT * i / 99);
           bx = by.map(() => -t0 / t1);
         }
         return { bx, by };
       }
 
+      // The view runs a quarter past ±2 so the corner tick labels, -2 on each axis, do
+      // not collide once the plot area is squared up below.
+      const EXT = 2.25;
       const NG = 61;
-      const gAxis = Array.from({ length: NG }, (_, i) => -2 + 4 * i / (NG - 1));
+      const gAxis = Array.from({ length: NG }, (_, i) => -EXT + 2 * EXT * i / (NG - 1));
 
       function drawData() {
         // Faint probability shading: blue where g ≈ 0, red where g ≈ 1.
@@ -236,15 +307,14 @@
             [1, 'rgba(231,76,60,.18)'],
           ],
           zmin: 0, zmax: 1,
-          showscale: false, hoverinfo: 'skip',
+          showscale: false,
         };
 
         const { bx, by } = boundaryPts();
         const sep = {
           x: bx, y: by,
           type: 'scatter', mode: 'lines',
-          line: { color: '#333', width: 2 },
-          hoverinfo: 'skip',
+          line: { color: '#333', width: LINE },
         };
 
         const pos = pts.filter(p => p.y === 1);
@@ -253,14 +323,12 @@
         const posT = {
           x: pos.map(p => p.x1), y: pos.map(p => p.x2),
           type: 'scatter', mode: 'markers',
-          marker: { size: 19, color: posCol, line: { color: '#fff', width: 1.5 } },
-          hovertemplate: '(%{x:.1f}, %{y:.1f})<extra>+1</extra>',
+          marker: { size: MARK, color: posCol, line: { color: '#fff', width: 2 } },
         };
         const negT = {
           x: neg.map(p => p.x1), y: neg.map(p => p.x2),
           type: 'scatter', mode: 'markers',
-          marker: { size: 19, color: negCol, line: { color: '#fff', width: 1.5 } },
-          hovertemplate: '(%{x:.1f}, %{y:.1f})<extra>0</extra>',
+          marker: { size: MARK, color: negCol, line: { color: '#fff', width: 2 } },
         };
 
         // Unit-length arrow for the direction of θ (its magnitude grows
@@ -270,25 +338,21 @@
         const ax1 = hasVec ? 0.9 * t1 / nrm : 0;
         const ax2 = hasVec ? 0.9 * t2 / nrm : 0;
 
+        // constrain 'domain' keeps both ranges fixed and shrinks the plot area to
+        // a square instead. Left at the default, scaleanchor stretches the y range to
+        // fill the tall pane and the shading floats in a band with bare axis above and
+        // below it.
         const layout = {
-          xaxis: {
-            title: { text: 'x<sub>1</sub>', font: { size: 14 } },
-            range: [-2, 2], zeroline: false, gridcolor: '#eee',
-          },
-          yaxis: {
-            title: { text: 'x<sub>2</sub>', font: { size: 14 } },
-            range: [-2, 2], zeroline: false, gridcolor: '#eee',
-            scaleanchor: 'x',
-          },
-          margin: { l: 48, r: 16, t: 16, b: 44 },
-          paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',
-          showlegend: false, hovermode: 'closest',
+          ...baseLayout,
+          xaxis: { ...axis, title: { text: 'x<sub>1</sub>' }, range: [-EXT, EXT], dtick: 1, constrain: 'domain' },
+          yaxis: { ...axis, title: { text: 'x<sub>2</sub>' }, range: [-EXT, EXT], dtick: 1, constrain: 'domain', scaleanchor: 'x' },
+          margin: { l: 64, r: 16, t: 16, b: 84 },
           annotations: hasVec ? [{
             x: ax1, y: ax2,
             ax: 0, ay: 0,
             xref: 'x', yref: 'y', axref: 'x', ayref: 'y',
             showarrow: true,
-            arrowhead: 2, arrowsize: 1.5, arrowwidth: 2,
+            arrowhead: 2, arrowsize: 1, arrowwidth: LINE,
             arrowcolor: '#2ecc71', text: '',
           }] : [],
         };
@@ -307,30 +371,21 @@
         const curve = {
           x: xs, y: ys,
           type: 'scatter', mode: 'lines',
-          line: { color: '#555', width: 2 },
-          hovertemplate: 'iter %{x}<br>J=%{y:.4f}<extra></extra>',
+          line: { color: '#555', width: LINE },
         };
 
+        // cliponaxis off so the current point stays whole at the edges of the frame.
         const marker = {
           x: [iter], y: [lossHist[n - 1]],
-          type: 'scatter', mode: 'markers',
-          marker: { size: 19, color: '#f1c40f', line: { color: '#fff', width: 1.5 } },
-          hovertemplate: 'iter %{x}<br>J=%{y:.4f}<extra></extra>',
+          type: 'scatter', mode: 'markers', cliponaxis: false,
+          marker: { size: MARK, color: '#f1c40f', line: { color: '#fff', width: 2 } },
         };
 
         const layout = {
-          xaxis: {
-            title: { text: 'iteration', font: { size: 14 } },
-            range: [-2, Math.max(60, iter * 1.05)],
-            zeroline: false, gridcolor: '#eee',
-          },
-          yaxis: {
-            title: { text: 'J (mean NLL)', font: { size: 14 } },
-            rangemode: 'tozero', zeroline: false, gridcolor: '#eee',
-          },
-          margin: { l: 52, r: 16, t: 16, b: 44 },
-          paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',
-          showlegend: false, hovermode: 'closest',
+          ...baseLayout,
+          xaxis: { ...axis, title: { text: 'iteration' }, range: [-2, Math.max(60, iter * 1.05)], nticks: 5 },
+          yaxis: { ...axis, title: { text: 'J (mean NLL)' }, range: J_RANGE, dtick: 0.5 },
+          margin: { l: 80, r: 24, t: 16, b: 92 },
         };
 
         Plotly.react('plotLoss', [curve, marker], layout, cfg);
@@ -388,19 +443,24 @@
       });
 
       // Optional URL params (handy for embedding and screenshots):
+      //   ?embed       drop the heading the slide already supplies (B4)
       //   ?eta=0.5     set the learning rate
       //   ?iters=300   pre-run this many iterations at load
       const q = new URLSearchParams(location.search);
+      if (q.has('embed')) document.body.classList.add('embed');
       if (q.has('eta')) lrEl.value = Math.log10(parseFloat(q.get('eta')));
       lossHist = [lossOf()];
       const pre = parseInt(q.get('iters') || '0', 10);
       for (let i = 0; i < pre; i++) stepOnce();
       draw();
 
-      window.addEventListener('resize', () => {
-        Plotly.Plots.resize(document.getElementById('plotData'));
-        Plotly.Plots.resize(document.getElementById('plotLoss'));
-      });
+      const plotEls = [document.getElementById('plotData'), document.getElementById('plotLoss')];
+      if (window.ResizeObserver) {
+        const ro = new ResizeObserver(() => plotEls.forEach((el) => Plotly.Plots.resize(el)));
+        plotEls.forEach((el) => ro.observe(el));
+      } else {
+        window.addEventListener('resize', () => plotEls.forEach((el) => Plotly.Plots.resize(el)));
+      }
     </script>
   </body>
 </html>

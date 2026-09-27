@@ -33,8 +33,8 @@
       body.embed .sidebar { padding: 14px 18px; gap: 16px; }
 
       /* Sizes are deck pixels. The deck embeds this full-bleed at 1280x720, so one
-         CSS px is one slide px, and slides/10-250.md sets the floors: nothing under
-         19, and 29 for anything a student is expected to read. The sidebar widened
+         CSS px is one slide px, and ROOM.md sets the floors: nothing under
+         20, and 29 for anything a student is expected to read. The sidebar widened
          from 260 to fit the larger type without wrapping the objective. */
       .sidebar {
         width: 330px;
@@ -57,7 +57,7 @@
 
       /* The objective sits at the foot of the sidebar. The slide behind this demo is
          bare, iframe only, so this is the only statement of what is being minimised,
-         but the room reads it once rather than continuously, so it takes the 19px floor
+         but the room reads it once rather than continuously, so it takes the 20px floor
          and the muted ink instead of a full-width row of its own. It is written as two
          lines because the whole expression does not fit across the 286px the sidebar
          spares; split as below the lines measure 178px and 129px, with the update rule
@@ -66,7 +66,7 @@
         margin-top: auto;
         padding-top: 16px;
         border-top: 1px solid #e0e0e0;
-        font-size: 19px;
+        font-size: 20px;
         color: #5f6672;
         line-height: 1.6;
       }
@@ -123,7 +123,7 @@
       .view-toggle button {
         flex: 1;
         padding: 9px 0;
-        font-size: 19px;
+        font-size: 20px;
         font-family: inherit;
         border: none;
         background: #fff;
@@ -145,12 +145,12 @@
         border-right: 1px solid #ddd;
       }
 
-      /* Was 12px #aaa on white, about 2.3:1 and under half the 19px floor. These are
+      /* Was 12px #aaa on white, about 2.3:1 and well under the 20px floor. These are
          the numbers the demo is for, so they are read-this text now. */
       .info {
         padding-top: 16px;
         border-top: 1px solid #e0e0e0;
-        font-size: 19px;
+        font-size: 20px;
         color: #5f6672;
         line-height: 1.7;
       }
@@ -254,10 +254,10 @@
       const lrSteps = [0.05, 0.15, 0.30, 0.50, 0.70];
       const config = { displayModeBar: false, responsive: true };
 
-      // Deck pixels, the same floors the CSS above follows: 19 for anything, 29 for
+      // Deck pixels, the same floors the CSS above follows: 20 for anything, 29 for
       // text a student must read. Axis titles name the quantity, so they are read-this;
-      // ticks clear 19 and the tick count drops to keep them from colliding at that size.
-      const AXIS_TITLE = 24, TICK = 19, TICK_COLOR = "#5f6672", INK = "#2b2b2b";
+      // ticks clear 20 and the tick count drops to keep them from colliding at that size.
+      const AXIS_TITLE = 24, TICK = 20, TICK_COLOR = "#5f6672", INK = "#2b2b2b";
       const axis2d = {
         titlefont: { size: AXIS_TITLE, color: INK },
         tickfont: { size: TICK, color: TICK_COLOR },
@@ -331,8 +331,8 @@
         );
       }
 
-      // Sizes below follow B4 in slides/10-250.md, in deck pixels: the first and last
-      // step are marks a viewer has to tell apart, so 19, the floor for the smallest
+      // Sizes below follow A4 in ROOM.md, in deck pixels: the first and last
+      // step are marks a viewer has to tell apart, so 20, the floor for the smallest
       // text; the steps between only trace the path, so 10 to 12. They overlap once
       // the iteration count is high, which is the intended outcome, since a thick
       // beaded line still reads as a path and a line of specks does not.
@@ -371,7 +371,7 @@
             x: t1Arr, y: t2Arr, z: zGrid, type: "contour",
             colorscale: [[0, "#f5f5f5"], [0.2, "#dce9f5"], [0.5, "#8cb4d9"], [1, "#3a7ebf"]],
             // Inline contour labels are dropped rather than enlarged. At 10px they were
-            // half the floor, and at 19 they collide on a contour this dense. The colour
+            // half the floor, and at 20 they collide on a contour this dense. The colour
             // ramp and the colorbar carry the level, which is all this demo needs.
             contours: { coloring: "heatmap", showlabels: false },
             colorbar: { title: { text: "J", font: { size: AXIS_TITLE, color: INK } },
@@ -381,7 +381,7 @@
           {
             x: path.p1, y: path.p2, mode: "markers+lines", type: "scatter",
             line: { color: "rgba(200,170,40,0.6)", width: 5 },
-            marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 19, 11), line: { color: "#fff", width: 2 } },
+            marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 20, 11), line: { color: "#fff", width: 2 } },
             hovertemplate: "θ₁ = %{x:.3f}<br>θ₂ = %{y:.3f}<extra></extra>",
           },
           {
@@ -416,7 +416,7 @@
             x: path.p1, y: path.p2, z: path.pJ,
             mode: "markers+lines", type: "scatter3d",
             line: { color: "#ffd966", width: 6 },
-            marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 19, 11) },
+            marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 20, 11) },
             hovertemplate: "θ₁ = %{x:.3f}<br>θ₂ = %{y:.3f}<br>J = %{z:.3f}<extra></extra>",
           },
         ];
@@ -432,10 +432,10 @@
             // 0 and 40 sit inside Z_RANGE, which the grid puts at about -3 to 45.
             zaxis: { title: "J", ...axis3d, tickvals: [0, 40], range: Z_RANGE },
             // The surface covers about half the panel's width here, which is short of
-            // what slides/10-250.md C1 asks for. Shortening the eye is the documented
+            // what ROOM.md B1 asks for. Shortening the eye is the documented
             // fix and it does work on fill, 49% to 74% at eye 1.75, but not at this
             // type size: a 3D scene sets its tick labels outside the domain box, the
-            // 19px ticks this demo needs are much larger than the 12px default, and a
+            // 20px ticks this demo needs are much larger than the 12px default, and a
             // closer camera takes away the margin they sit in. At 1.75 the ticks jam
             // against the top of the panel and a whole axis leaves the frame.
             // Half-filled with readable axes beats filled with two axes cut off.
@@ -470,7 +470,7 @@
           {
             x: path.p1, y: path.p2, mode: "markers+lines", type: "scatter",
             line: { color: "rgba(200,170,40,0.6)", width: 5 },
-            marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 19, 10), line: { color: "#fff", width: 2 } },
+            marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 20, 10), line: { color: "#fff", width: 2 } },
             hovertemplate: "θ₁ = %{x:.3f}<br>θ₂ = %{y:.3f}<extra></extra>",
             xaxis: "x", yaxis: "y",
           },
@@ -492,11 +492,11 @@
             x: path.p1, y: path.p2, z: path.pJ,
             mode: "markers+lines", type: "scatter3d",
             line: { color: "#ffd966", width: 5 },
-            // 19 and 11 per B4 in slides/10-250.md, the same pair the full-width 3D view
+            // 20 and 11 per A4 in ROOM.md, the same pair the full-width 3D view
             // uses. The first and last step are marks the room has to tell apart; the ones
             // between only trace the path. A half-width panel does not earn smaller marks,
             // because the floor is in deck pixels and the back row is the same distance away.
-            marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 19, 11) },
+            marker: { color: markerColors(path.p1), size: markerSizes(path.p1, 20, 11) },
             hovertemplate: "θ₁ = %{x:.3f}<br>θ₂ = %{y:.3f}<br>J = %{z:.3f}<extra></extra>",
             scene: "scene",
           },

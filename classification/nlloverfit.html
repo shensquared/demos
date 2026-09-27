@@ -3,279 +3,271 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NLL Overfitting Demo</title>
+    <title>NLL on a Single Point</title>
+    <!-- Pinned like plotly (B6). Plotly typesets its $...$ labels through MathJax's
+         SVG output, and the control strip's \(...\) labels are typeset once on load. -->
+    <script>window.MathJax = { startup: { typeset: false } };</script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <style>
-      body, html {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        overflow: hidden;
-        font-family: sans-serif;
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      html, body {
+        width: 100%; height: 100%;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        background: #fafafa; color: #2b2b2b;
       }
-      .header {
-        display: flex;
+
+      /* Sizes are deck pixels. The deck places this at 1280x592 under the slide's
+         one-line header, so one CSS px is one slide px, and ROOM.md sets the floors:
+         20 for anything (A1), and axis titles at the size of the other demos (A2).
+
+         The frame splits where the slide's takeaway box begins. That box fades in
+         over the bottom 174px, full width, so the controls take a fixed 174px strip
+         there, since they are done by the time it shows, and the plots take all the
+         height above it. On the slide that is 418px, and the plots stay whole once
+         the box shows, including the corner where the loss meets zero. In a taller
+         window the plots grow and the strip keeps its size. There is
+         no heading: the slide states the training point and the loss above the
+         iframe, and this page has no other consumer. */
+      .page { display: flex; flex-direction: column; height: 100%; }
+
+      .plots { flex: 1 1 0; display: flex; min-height: 0; }
+      .plots > div { flex: 1; height: 100%; min-width: 0; }
+
+      .controls {
+        flex: 0 0 174px;
+        display: grid;
+        grid-template-columns: 1fr 1fr 0.8fr 0.8fr;
         align-items: center;
-        justify-content: center;
-        gap: 32px;
-        height: 7vh;
-        background: #f0f4ff;
-        border-bottom: 1px solid #ccd;
-        padding: 0 20px;
-        box-sizing: border-box;
+        gap: 48px;
+        padding: 0 56px;
+        background: #fff;
+        border-top: 1px solid #e0e0e0;
       }
-      .header-scenario {
-        font-size: 1em;
-        color: #333;
+
+      /* Embed mode only tightens the padding (B4); the page is already built for the
+         slide. */
+      body.embed .controls { padding: 0 40px; gap: 40px; }
+
+      .control-group label {
+        display: block; font-size: 20px; font-weight: 500;
+        margin-bottom: 10px;
       }
-      .header-scenario strong {
-        color: #1a1a6e;
+
+      .control-group .val {
+        font-family: "SF Mono", Menlo, monospace;
+        font-size: 20px; float: right;
       }
-      .loss-display {
-        font-size: 1.1em;
-        font-weight: bold;
-        color: #333;
-        white-space: nowrap;
+
+      input[type="range"] {
+        -webkit-appearance: none; width: 100%; height: 6px;
+        border-radius: 3px; background: #e0e0e0; outline: none;
       }
-      .loss-display #loss_value {
-        font-size: 1.4em;
-        padding: 2px 10px;
-        border-radius: 6px;
-        background: #e8e8e8;
-        transition: background 0.3s, color 0.3s;
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none; width: 18px; height: 18px;
+        border-radius: 50%; background: #555; cursor: pointer;
+        border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2);
       }
-      .loss-display #loss_value.overfit {
-        background: #ff4444;
-        color: white;
+
+      input[type="range"]:focus-visible { outline: 2px solid #2b2b2b; outline-offset: 6px; }
+
+      .readout .name { font-size: 20px; color: #5f6672; }
+
+      /* The strip's labels are typeset by MathJax too, once it loads, and stay hidden
+         until then so the TeX source never flashes. Its SVG is sized in ex, and
+         Computer Modern's x-height is about 0.86 of Helvetica's, so 116% brings the
+         math up to the 20px text beside it. */
+      .controls:not(.typeset) .tex { visibility: hidden; }
+      .controls mjx-container { font-size: 116%; }
+
+      .readout .num {
+        font-family: "SF Mono", Menlo, monospace;
+        font-size: 24px; line-height: 1.2; margin-top: 4px;
       }
-      .loss-display #loss_value.warning {
-        background: #ff9900;
-        color: white;
-      }
-      .overfit-label {
-        font-size: 0.9em;
-        font-weight: bold;
-        margin-left: 8px;
-        color: #cc0000;
-        opacity: 0;
-        transition: opacity 0.3s;
-      }
-      .overfit-label.visible {
-        opacity: 1;
-      }
-      .plots-container {
-        display: flex;
-        height: 76vh;
-      }
-      #plot_left, #plot_right {
-        width: 50%;
-        height: 100%;
-      }
-      .slider-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 17vh;
-        gap: 40px;
-      }
-      .slider-group {
-        text-align: center;
-      }
+
+      /* Plotly typesets $...$ labels with MathJax, whose SVG is sized in ex units, so
+         it follows the CSS font size of the group Plotly places it in and ignores
+         layout font.size. At 30px Computer Modern's x-height matches the 24px
+         Helvetica axis titles (A2): a math x measures 13.5px tall, a Helvetica x 12.5. */
+      .js-plotly-plot g[class$="-math-group"] { font-size: 30px; }
     </style>
   </head>
   <body>
-    <div class="header">
-      <div class="header-scenario">
-        Single training point: <strong>x = 1, y = +1</strong> &nbsp;—&nbsp;
-        increasing θ always reduces the loss, so NLL has no finite minimizer
+    <div class="page">
+      <div class="plots">
+        <div id="plotLeft"></div>
+        <div id="plotRight"></div>
       </div>
-      <div class="loss-display">
-        NLL loss: <span id="loss_value">—</span>
-        <span class="overfit-label" id="overfit_label">↓ loss → 0</span>
+
+      <div class="controls">
+        <div class="control-group">
+          <label for="theta"><span class="tex">\(\theta\)</span> <span class="val" id="thetaVal">-3.0</span></label>
+          <input type="range" id="theta" min="-7" max="7" value="-3" step="0.1" />
+        </div>
+
+        <div class="control-group">
+          <label for="theta0"><span class="tex">\(\theta_0\)</span> <span class="val" id="theta0Val">0.0</span></label>
+          <input type="range" id="theta0" min="-5" max="5" value="0" step="0.1" />
+        </div>
+
+        <div class="readout">
+          <div class="name tex">\(g = \sigma(\theta + \theta_0)\)</div>
+          <div class="num" id="gVal"></div>
+        </div>
+
+        <div class="readout">
+          <div class="name tex">\(\mathcal{L}_{\text{nll}}(g, 1)\)</div>
+          <div class="num" id="lossVal"></div>
+        </div>
       </div>
     </div>
-    <div class="plots-container">
-      <div id="plot_left"></div>
-      <div id="plot_right"></div>
-    </div>
-    <div class="slider-container">
-      <div class="slider-group">
-        <label for="theta">θ:</label>
-        <input type="range" id="theta" min="-7" max="7" value="-3" step="0.1" oninput="updateAll()">
-        <span id="theta_value">-3.0</span>
-      </div>
-      <div class="slider-group">
-        <label for="theta_0">θ₀:</label>
-        <input type="range" id="theta_0" min="-5" max="5" value="0" step="0.1" oninput="updateAll()">
-        <span id="theta_0_value">0.0</span>
-      </div>
-    </div>
+
     <script>
       const cfg = { displayModeBar: false, responsive: true };
 
+      // Same hues as nll.html three slides earlier, so the two demos read as one pair.
+      const G_BLUE = '#3a7ebf', LOSS_GREEN = '#2ecc71', LOSS_MARK = '#f1c40f';
+      const INK = '#2b2b2b', TICK_COLOR = '#5f6672';
+
+      // A3 for ticks, in deck pixels. Marks follow A4: the two points the room tracks
+      // at 20, plot lines at 4. Axis titles are math: the CSS rule above sets the
+      // glyph size, but Plotly still reserves room by titlefont.size, so it stays at
+      // the 24 the other demos use. A nested title.font replaces titlefont whole, so
+      // an axis that recolours its title restates titlefont with its size.
+      const AXIS_TITLE = 24, TICK = 20, MARK = 20, LINE = 4;
+      const axis = {
+        titlefont: { size: AXIS_TITLE, color: INK },
+        tickfont: { size: TICK, color: TICK_COLOR },
+        zeroline: false, gridcolor: '#e2e2e2', fixedrange: true,
+      };
+      const baseLayout = {
+        font: { family: '"Helvetica Neue", Helvetica, Arial, sans-serif', color: INK },
+        margin: { l: 100, r: 32, t: 20, b: 100 },
+        paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',
+        showlegend: false, hovermode: false,
+      };
+
+      const thetaEl = document.getElementById('theta');
+      const theta0El = document.getElementById('theta0');
+
+      function sigmoid(z) {
+        return 1 / (1 + Math.exp(-z));
+      }
+
+      // Enough decimals that g never rounds to 1: two past the first nonzero digit
+      // of 1 - g. At θ = 7, θ₀ = 5 that is 0.99999386.
       function formatG(g) {
-        const s = g.toFixed(3);
-        return s === "1.000" ? "> 0.999" : s;
+        const d = Math.min(8, Math.max(3, Math.ceil(-Math.log10(1 - g)) + 2));
+        return g.toFixed(d);
       }
 
-      function sigmoid(x, theta, theta0) {
-        return 1 / (1 + Math.exp(-(theta * x + theta0)));
+      // Three significant figures once the loss is small, so it keeps shrinking on
+      // screen instead of freezing at 0.000. That is the whole point of the demo.
+      function formatLoss(l) {
+        return l >= 0.01 ? l.toFixed(3) : l.toPrecision(3);
       }
 
-      function generateSigmoidData2D(theta, theta0) {
-        let x = [], y = [];
-        for (let i = -10; i <= 10; i += 0.1) {
-          x.push(i);
-          y.push(sigmoid(i, theta, theta0));
-        }
-        return { x, y };
+      const xs = [], gs = [], ls = [];
+      for (let x = -10; x <= 10.001; x += 0.05) xs.push(x);
+      for (let g = 0.001; g < 0.9995; g += 0.001) {
+        gs.push(g);
+        ls.push(-Math.log(g));
       }
 
-      function generateLossDataStatic() {
-        let g_vals = [], loss_vals = [];
-        for (let g = 0.001; g < 1; g += 0.001) {
-          g_vals.push(g);
-          loss_vals.push(-Math.log(g));
-        }
-        return { x: g_vals, y: loss_vals };
-      }
-
-      function markerColor(g_val) {
-        // Red when g→1 (low loss, overfitting); blue when g→0 (high loss)
-        const r = Math.round(30 + 225 * g_val);
-        const gb = Math.round(150 * (1 - g_val));
-        return `rgb(${r},${gb},${gb})`;
-      }
-
-      function updateLossDisplay(loss_val, g_val) {
-        const el = document.getElementById("loss_value");
-        const label = document.getElementById("overfit_label");
-        el.textContent = loss_val.toFixed(3);
-        if (g_val > 0.95) {
-          el.className = "overfit";
-          label.className = "overfit-label visible";
-        } else if (g_val > 0.80) {
-          el.className = "warning";
-          label.className = "overfit-label visible";
-        } else {
-          el.className = "";
-          label.className = "overfit-label";
-        }
-      }
-
-      function updateLeftPlot() {
-        let theta = parseFloat(document.getElementById("theta").value);
-        let theta0 = parseFloat(document.getElementById("theta_0").value);
-        document.getElementById("theta_value").textContent = theta.toFixed(1);
-        document.getElementById("theta_0_value").textContent = theta0.toFixed(1);
-
-        let data = generateSigmoidData2D(theta, theta0);
-        let g_at1 = sigmoid(1, theta, theta0);
-
-        let layoutLeft = {
-          margin: { l: 50, r: 10, t: 30, b: 50 },
-          title: { text: "g(x) at the training point x = 1", font: { size: 13 } },
-          xaxis: { title: "x", range: [-10, 10] },
-          yaxis: { title: "g(x) = σ(θx + θ<sub>0</sub>)", range: [0, 1] },
-          showlegend: false,
-          shapes: [
-            {
-              type: 'line', x0: 1, y0: 0, x1: 1, y1: 1,
-              line: { dash: 'dash', color: 'black', width: 1.5 }
-            }
-          ],
-          annotations: [
-            {
-              x: 1, y: g_at1,
-              xanchor: g_at1 > 0.85 ? 'right' : 'left',
-              yanchor: 'bottom',
-              xshift: g_at1 > 0.85 ? -10 : 10,
-              text: `g(1) = ${formatG(g_at1)}`,
-              showarrow: false,
-              font: { size: 12, color: markerColor(g_at1) },
-              bgcolor: 'rgba(255,255,255,0.7)'
-            }
-          ]
+      function drawLeft(t, t0, g1) {
+        const curve = {
+          x: xs, y: xs.map((x) => sigmoid(t * x + t0)),
+          type: 'scatter', mode: 'lines',
+          line: { color: G_BLUE, width: LINE },
         };
-
-        Plotly.react("plot_left", [
-          { x: data.x, y: data.y, mode: "lines", type: "scatter", line: { color: "#4477cc" } },
-          {
-            x: [1], y: [g_at1],
-            mode: "markers", type: "scatter",
-            marker: { size: 19, symbol: "square", color: markerColor(g_at1) }
-          }
-        ], layoutLeft, cfg);
-      }
-
-      function createRightPlot() {
-        let dataStatic = generateLossDataStatic();
-        let init_g = sigmoid(1, -3, 0);
-        let init_loss = -Math.log(init_g);
-
-        let layoutRight = {
-          margin: { l: 55, r: 20, t: 30, b: 50 },
-          title: { text: "NLL loss — decreases toward 0, but never reaches it", font: { size: 13 } },
-          xaxis: { title: "g(1) = σ(θ + θ<sub>0</sub>)", range: [0, 1] },
-          yaxis: { title: "−log(g(1))   [NLL loss]", range: [0, 10] },
-          showlegend: false,
-          shapes: [
-            {
-              type: 'rect',
-              x0: 0.85, y0: 0, x1: 1.0, y1: 10,
-              fillcolor: 'rgba(255,0,0,0.06)',
-              line: { width: 0 }
-            }
-          ],
-          annotations: [
-            {
-              x: 0.925, y: 9.2,
-              text: "loss → 0",
-              showarrow: false,
-              font: { size: 11, color: '#cc0000' },
-              align: 'center'
-            }
-          ]
+        const point = {
+          x: [1], y: [g1],
+          type: 'scatter', mode: 'markers', cliponaxis: false,
+          marker: { size: MARK, symbol: 'square', color: '#333', line: { color: '#fff', width: 2 } },
         };
-
-        Plotly.newPlot("plot_right", [
-          {
-            x: dataStatic.x, y: dataStatic.y,
-            mode: "lines", type: "scatter",
-            line: { color: "green" }
-          },
-          {
-            x: [init_g], y: [init_loss],
-            mode: "markers", type: "scatter",
-            marker: { size: 19, symbol: "circle", color: markerColor(init_g) }
-          }
-        ], layoutRight, cfg);
-
-        updateLossDisplay(init_loss, init_g);
+        const layout = {
+          ...baseLayout,
+          xaxis: { ...axis, title: { text: '$x$' }, range: [-10, 10], dtick: 5 },
+          yaxis: { ...axis, title: { text: '$g = \\sigma(\\theta x + \\theta_0)$' }, titlefont: { size: AXIS_TITLE, color: G_BLUE }, range: [-0.05, 1.05], dtick: 0.5 },
+          shapes: [
+            // The training point's column.
+            { type: 'line', layer: 'below', x0: 1, x1: 1, y0: 0, y1: 1, line: { dash: 'dash', color: TICK_COLOR, width: 2 } },
+            // g as a length up the y-axis, matched by the same bar along the right
+            // plot's x-axis.
+            { type: 'line', layer: 'below', xref: 'paper', x0: 0, x1: 0, y0: 0, y1: g1, line: { color: G_BLUE, width: 6 } },
+          ],
+        };
+        Plotly.react('plotLeft', [curve, point], layout, cfg);
       }
 
-      function updateRightMarker() {
-        let theta = parseFloat(document.getElementById("theta").value);
-        let theta0 = parseFloat(document.getElementById("theta_0").value);
-        let g_val = sigmoid(1, theta, theta0);
-        let loss_val = -Math.log(g_val);
-
-        Plotly.restyle("plot_right", {
-          x: [[g_val]],
-          y: [[loss_val]],
-          'marker.color': [markerColor(g_val)]
-        }, [1]);
-
-        updateLossDisplay(loss_val, g_val);
+      function drawRight(g1, l1) {
+        const curve = {
+          x: gs, y: ls,
+          type: 'scatter', mode: 'lines',
+          line: { color: LOSS_GREEN, width: LINE },
+        };
+        // cliponaxis off so the point stays whole as it runs into the corner at g = 1.
+        const point = {
+          x: [g1], y: [l1],
+          type: 'scatter', mode: 'markers', cliponaxis: false,
+          marker: { size: MARK, color: LOSS_MARK, line: { color: '#fff', width: 2 } },
+        };
+        const layout = {
+          ...baseLayout,
+          xaxis: { ...axis, title: { text: '$g = \\sigma(\\theta + \\theta_0)$' }, titlefont: { size: AXIS_TITLE, color: G_BLUE }, range: [0, 1], dtick: 0.5 },
+          yaxis: { ...axis, title: { text: '$\\mathcal{L}_{\\text{nll}}(g, 1) = -\\log g$' }, range: [0, 7], dtick: 2 },
+          shapes: [
+            { type: 'line', layer: 'below', yref: 'paper', x0: 0, x1: g1, y0: 0, y1: 0, line: { color: G_BLUE, width: 6 } },
+          ],
+        };
+        Plotly.react('plotRight', [curve, point], layout, cfg);
       }
 
-      function updateAll() {
-        updateLeftPlot();
-        updateRightMarker();
+      function update() {
+        const t = parseFloat(thetaEl.value);
+        const t0 = parseFloat(theta0El.value);
+        const g1 = sigmoid(t + t0);
+        const l1 = -Math.log(g1);
+
+        document.getElementById('thetaVal').textContent = t.toFixed(1);
+        document.getElementById('theta0Val').textContent = t0.toFixed(1);
+        document.getElementById('gVal').textContent = formatG(g1);
+        document.getElementById('lossVal').textContent = formatLoss(l1);
+
+        drawLeft(t, t0, g1);
+        drawRight(g1, l1);
       }
 
-      updateLeftPlot();
-      createRightPlot();
+      // A slider fires input faster than the screen repaints, several times a frame on
+      // a trackpad, and each redraw is a full Plotly pass over both panes. So input
+      // only asks for the next frame, and a burst of events costs one redraw.
+      let frameQueued = false;
+      function scheduleUpdate() {
+        if (frameQueued) return;
+        frameQueued = true;
+        requestAnimationFrame(() => { frameQueued = false; update(); });
+      }
+      thetaEl.addEventListener('input', scheduleUpdate);
+      theta0El.addEventListener('input', scheduleUpdate);
+
+      if (new URLSearchParams(window.location.search).has('embed')) {
+        document.body.classList.add('embed');
+      }
+
+      update();
+      MathJax.startup.promise
+        .then(() => MathJax.typesetPromise([document.querySelector('.controls')]))
+        .then(() => document.querySelector('.controls').classList.add('typeset'));
+
+      const plotEls = [document.getElementById('plotLeft'), document.getElementById('plotRight')];
+      if (window.ResizeObserver) {
+        const ro = new ResizeObserver(() => plotEls.forEach((el) => Plotly.Plots.resize(el)));
+        plotEls.forEach((el) => ro.observe(el));
+      } else {
+        window.addEventListener('resize', () => plotEls.forEach((el) => Plotly.Plots.resize(el)));
+      }
     </script>
   </body>
 </html>

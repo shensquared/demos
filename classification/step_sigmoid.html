@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Step vs Sigmoid</title>
+    <!-- Pinned like plotly (B6). Plotly typesets its $...$ labels through MathJax's
+         SVG output, and the sidebar's \(...\) labels are typeset on load and
+         again after any rewrite. -->
+    <script>window.MathJax = { startup: { typeset: false } };</script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -11,32 +16,36 @@
       html, body {
         width: 100%; height: 100%;
         font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-        background: #fafafa; color: #333;
+        background: #fafafa; color: #2b2b2b;
       }
 
       .container { display: flex; height: 100%; }
 
+      /* Sizes are deck pixels. The deck embeds this full-bleed at 1280x720, so one
+         CSS px is one slide px, and ROOM.md sets the floors: nothing under 20 (A1).
+         The sidebar widened from 240 to fit that size without wrapping the labels. */
       .sidebar {
-        width: 240px; min-width: 240px;
-        padding: 24px 20px;
+        width: 310px; min-width: 310px;
+        padding: 24px 22px;
         background: #fff;
         border-right: 1px solid #e0e0e0;
         display: flex; flex-direction: column;
-        gap: 18px;
+        gap: 20px;
         overflow-y: auto;
       }
 
-      .sidebar h1 { font-size: 20px; font-weight: 600; color: #222; }
-      .sidebar .eq { font-size: 15px; color: #888; margin-top: 2px; }
+      /* No heading: the two plot titles already name step and σ for the current
+         dimension. Embed mode only tightens the padding (B4). */
+      body.embed .sidebar { padding: 16px 20px; gap: 18px; }
 
       .control-group label {
-        display: block; font-size: 15px; font-weight: 500;
-        color: #555; margin-bottom: 6px;
+        display: block; font-size: 20px; font-weight: 500;
+        margin-bottom: 8px;
       }
 
       .control-group .val {
         font-family: "SF Mono", Menlo, monospace;
-        font-size: 15px; color: #222; float: right;
+        font-size: 20px; float: right;
       }
 
       input[type="range"] {
@@ -50,38 +59,40 @@
         border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2);
       }
 
+      input[type="range"]:focus-visible { outline: 2px solid #2b2b2b; outline-offset: 6px; }
+
       .control-group select {
         width: 100%; padding: 8px 10px;
         border: 1px solid #ddd; border-radius: 4px;
-        background: #fff; font-size: 14px;
-        font-family: inherit; cursor: pointer; outline: none;
+        background: #fff; color: #2b2b2b; font-size: 20px;
+        font-family: inherit; cursor: pointer;
       }
 
-      .info {
-        margin-top: auto; padding-top: 14px;
-        border-top: 1px solid #e0e0e0;
-        font-size: 14px; color: #aaa; line-height: 1.8;
-      }
-
-      .info a {
-        color: #007bff; text-decoration: none;
-      }
-      .info a:hover { text-decoration: underline; }
+      .control-group select:focus-visible { outline: 2px solid #2b2b2b; outline-offset: 2px; }
 
       .plots { flex: 1; display: flex; height: 100%; min-width: 0; }
-      .plots > div { flex: 1; height: 100%; min-width: 0; }
+      .plots > div { flex: 1; height: 100%; min-width: 0; min-height: 0; }
+      /* Plotly typesets $...$ labels with MathJax, whose SVG is sized in ex units, so
+         it follows the CSS font size of the group Plotly places it in and ignores
+         layout font.size. At 30px Computer Modern's x-height matches the 24px
+         Helvetica axis titles (A2): a math x measures 13.5px tall, a Helvetica x 12.5. */
+      .js-plotly-plot g[class$="-math-group"] { font-size: 30px; }
+
+      /* Sidebar math is typeset by MathJax as well: every \(...\) inside a .tex
+         element, once on load and again whenever a script rewrites one. A .tex
+         element stays hidden until its math is in, so the TeX source never flashes.
+         MathJax sizes its SVG in ex, and Computer Modern's x-height is about 0.86 of
+         Helvetica's, so 116% brings the math up to the text beside it. */
+      .sidebar:not(.typeset) .tex, .tex.pending { visibility: hidden; }
+      .tex mjx-container { font-size: 116%; }
+
     </style>
   </head>
   <body>
     <div class="container">
       <div class="sidebar">
-        <div>
-          <h1>Step vs Sigmoid</h1>
-          <div class="eq" id="eqLabel">step(θx + θ₀)  vs  σ(θx + θ₀)</div>
-        </div>
-
         <div class="control-group">
-          <label>Feature Dimension</label>
+          <label for="dimSelect">Feature dimension</label>
           <select id="dimSelect" onchange="setDim(this.value)">
             <option value="1d">1D</option>
             <option value="2d">2D</option>
@@ -89,20 +100,19 @@
         </div>
 
         <div class="control-group" id="thetaGroup">
-          <label id="thetaLabel">θ <span class="val" id="theta_val">-3.0</span></label>
-          <input type="range" id="theta" min="-10" max="10" value="-3" step="0.1" oninput="onSlider()" />
+          <label id="thetaLabel" for="theta"><span class="tex" id="thetaSym">\(\theta\)</span> <span class="val" id="theta_val">-3.0</span></label>
+          <input type="range" id="theta" min="-10" max="10" value="-3" step="0.1" oninput="scheduleSlider()" />
         </div>
 
         <div class="control-group" id="theta2Group" style="display:none">
-          <label>θ₂ <span class="val" id="theta2_val">1.0</span></label>
-          <input type="range" id="theta2" min="-10" max="10" value="1" step="0.1" oninput="onSlider()" />
+          <label for="theta2"><span class="tex">\(\theta_2\)</span> <span class="val" id="theta2_val">1.0</span></label>
+          <input type="range" id="theta2" min="-10" max="10" value="1" step="0.1" oninput="scheduleSlider()" />
         </div>
 
         <div class="control-group">
-          <label>θ₀ <span class="val" id="theta0_val">0.0</span></label>
-          <input type="range" id="theta0" min="-10" max="10" value="0" step="0.1" oninput="onSlider()" />
+          <label for="theta0"><span class="tex">\(\theta_0\)</span> <span class="val" id="theta0_val">0.0</span></label>
+          <input type="range" id="theta0" min="-10" max="10" value="0" step="0.1" oninput="scheduleSlider()" />
         </div>
-
       </div>
 
       <div class="plots">
@@ -115,6 +125,56 @@
       let currentDim = '1d';
       const cfg = { displayModeBar: false, responsive: true };
 
+      // The 3D views keep whatever angle the viewer leaves them at. A control that
+      // redraws hands Plotly a fresh layout, and a layout naming scene.camera snaps
+      // the view back to that eye, so every 3D layout asks sceneCamera for its eye:
+      // the live camera read off the scene, or, while the pane shows 2D, the last one
+      // it showed (B11). getCamera is Plotly-internal, which the pinned 2.27.0 makes
+      // safe to lean on (B6). A constant uirevision on the layouts backs this up for
+      // redraws through react.
+      const lastCamera = {};
+      function sceneCamera(id, home) {
+        const scene = document.getElementById(id)?._fullLayout?.scene?._scene;
+        if (scene) lastCamera[id] = scene.getCamera();
+        return lastCamera[id] || home;
+      }
+
+      // MathJax wants one typeset call at a time, so every call joins one queue.
+      // setTex swaps an element's TeX and typesets it again, hidden in between.
+      let texQueue = MathJax.startup.promise;
+      function typeset(el) {
+        texQueue = texQueue.then(() => MathJax.typesetPromise([el]));
+        return texQueue;
+      }
+      function setTex(el, html) {
+        el.classList.add('pending');
+        texQueue = texQueue.then(() => {
+          MathJax.typesetClear([el]);
+          el.innerHTML = html;
+          return MathJax.typesetPromise([el]);
+        }).then(() => el.classList.remove('pending'));
+      }
+
+      // Deck pixels, the same floors the CSS above follows. Axis and plot titles name
+      // the quantity, so they take 24; ticks clear 20 (A3). Marks follow A4: the test
+      // point at 20, plot lines at 4.
+      const AXIS_TITLE = 24, TICK = 20, MARK = 20, LINE = 4;
+      const INK = '#2b2b2b', TICK_COLOR = '#5f6672';
+      const FONT = '"Helvetica Neue", Helvetica, Arial, sans-serif';
+      const axis2d = {
+        titlefont: { size: AXIS_TITLE, color: INK },
+        tickfont: { size: TICK, color: TICK_COLOR },
+        gridcolor: '#e2e2e2', fixedrange: true,
+      };
+      const axis3d = {
+        titlefont: { size: AXIS_TITLE, color: INK },
+        tickfont: { size: TICK, color: TICK_COLOR },
+        gridcolor: '#dcdcdc', autorange: false,
+      };
+      // Hover only repeats what the plots and labels already show (B9), and its
+      // default 13px label is under the floor.
+      const hoverlabel = { font: { size: 20, family: FONT } };
+
       // --- Helpers ---
       function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
 
@@ -124,45 +184,44 @@
         return arr;
       }
 
-      // --- Responsive annotation font size (scales with plot width) ---
-      function annotFontSize() {
-        const w = document.getElementById('plotLeft').clientWidth || 400;
-        return Math.max(14, Math.min(22, Math.round(w / 25)));
+      function classText(feature, pred) {
+        return `$\\begin{array}{l}\\text{feature } x = ${feature}\\\\ \\text{predicted class: ${pred >= 0.5 ? 'positive' : 'negative'}}\\end{array}$`;
       }
 
-      // The label goes above the plot area, pinned to the pane. The box runs
-      // about 320px at this font, so in data or scene coordinates a long line
-      // runs off the pane, and every in-pane corner is already taken by a
-      // curve, a surface or the test point.
+      // The label goes above the plot area, pinned to the pane. At 24px it runs
+      // about 300px wide, so in data or scene coordinates a line runs off the pane,
+      // and every in-pane corner is already taken by a curve, a surface or the test
+      // point.
+      // Anchored by its top edge, 80px above the plot area. Plotly reserves height for
+      // math at layout font.size, short of what the 30px rule above draws, so a
+      // bottom anchor would let the second line run down into the plot. The text
+      // starts at the top edge, so a top anchor puts both lines exactly where asked.
+      // It sits in the empty margin, so it needs no background.
       function paperAnnotation(text) {
         return {
           xref: 'paper', yref: 'paper',
           x: 0, y: 1,
-          xanchor: 'left', yanchor: 'bottom',
-          yshift: 10,
+          xanchor: 'left', yanchor: 'top',
+          yshift: 80,
           text,
+          align: 'left',
           showarrow: false,
-          font: { size: annotFontSize(), family: 'SF Mono, Menlo, monospace', color: '#333' },
-          bgcolor: 'rgba(255,255,255,0.85)',
-          borderpad: 4,
+          font: { size: 24, family: FONT, color: INK },
         };
       }
 
-      // Pinned to the top of the div, since the tall top margin the label needs
-      // would otherwise centre the title in it and the label would land on top.
-      const titlePos = { yref: 'container', y: 0.98, yanchor: 'top' };
+      // Centred 34px below the top of the div, since the tall top margin the label
+      // needs would otherwise centre the title in it and the label would land on top.
+      // Centred rather than top-anchored for the same reason as the label: a top
+      // anchor trusts Plotly's short estimate of the math height and clips it.
+      const titlePos = { yref: 'container', y: 1 - 34 / 720, yanchor: 'middle' };
+      const titleFont = { size: AXIS_TITLE, color: INK };
 
       // --- Dimension switching ---
       function setDim(dim) {
         currentDim = dim;
         document.getElementById('theta2Group').style.display = dim === '2d' ? '' : 'none';
-        const t = parseFloat(document.getElementById('theta').value).toFixed(1);
-        document.getElementById('thetaLabel').innerHTML = dim === '2d'
-          ? 'θ₁ <span class="val" id="theta_val">' + t + '</span>'
-          : 'θ <span class="val" id="theta_val">' + t + '</span>';
-        document.getElementById('eqLabel').textContent = dim === '1d'
-          ? 'step(θx + θ₀)  vs  σ(θx + θ₀)'
-          : 'step(θ₁x₁ + θ₂x₂ + θ₀)  vs  σ(…)';
+        setTex(document.getElementById('thetaSym'), dim === '2d' ? '\\(\\theta_1\\)' : '\\(\\theta\\)');
         fullPlot();
       }
 
@@ -178,25 +237,30 @@
       // ============================================================
       function build1D() {
         const { t, t0 } = getParams();
-        const xs = linspace(-5, 5, 800);
-        const yStep = xs.map(x => (t * x + t0 >= 0 ? 1 : 0));
+        const step = (x) => (t * x + t0 >= 0 ? 1 : 0);
+        const xs = linspace(-5, 5, 240);
         const ySig = xs.map(x => sigmoid(t * x + t0));
 
         // Decision boundary
         const boundary = t !== 0 ? -t0 / t : null;
         const inRange = boundary !== null && boundary >= -5 && boundary <= 5;
 
+        // The step drawn exactly, flat to the boundary, a vertical jump, then flat:
+        // four points where 800 samples only approximated the jump.
+        const stepX = inRange ? [-5, boundary, boundary, 5] : [-5, 5];
+        const stepY = inRange ? [step(-5), step(-5), step(5), step(5)] : [step(-5), step(5)];
+
         const stepTraces = [
-          { x: xs, y: yStep, mode: 'lines', line: { color: '#3a7ebf', width: 2.5 }, hoverinfo: 'x+y' },
+          { x: stepX, y: stepY, mode: 'lines', line: { color: '#3a7ebf', width: LINE }, hoverinfo: 'x+y' },
         ];
         const sigTraces = [
-          { x: xs, y: ySig, mode: 'lines', line: { color: '#3a7ebf', width: 2.5 }, hoverinfo: 'x+y' },
+          { x: xs, y: ySig, mode: 'lines', line: { color: '#3a7ebf', width: LINE }, hoverinfo: 'x+y' },
         ];
 
         if (inRange) {
           const bndTrace = {
             x: [boundary, boundary], y: [0, 1],
-            mode: 'lines', line: { color: '#999', width: 1.5, dash: 'dash' },
+            mode: 'lines', line: { color: '#999', width: 2, dash: 'dash' },
             hoverinfo: 'skip',
           };
           stepTraces.push(bndTrace);
@@ -210,9 +274,10 @@
         const stepColor = stepPred >= 0.5 ? '#e74c3c' : '#3498db';
         const sigColor = sigPred >= 0.5 ? '#e74c3c' : '#3498db';
 
+        // cliponaxis off so the point stays whole when it sits on y = 0 or y = 1.
         const mkPoint = (x, y, color) => ({
-          x: [x], y: [y], mode: 'markers',
-          marker: { size: 16, color, line: { width: 2, color: '#fff' } },
+          x: [x], y: [y], mode: 'markers', cliponaxis: false,
+          marker: { size: MARK, color, line: { width: 2, color: '#fff' } },
           hovertemplate: 'x=%{x:.1f}, ŷ=%{y:.2f}<extra></extra>',
         });
 
@@ -220,23 +285,24 @@
         sigTraces.push(mkPoint(testX, sigPred, sigColor));
 
         const baseLayout = {
-          xaxis: { title: { text: 'x', font: { size: 13 } }, range: [-5, 5], zeroline: false, gridcolor: '#eee' },
-          yaxis: { title: { text: '', font: { size: 13 } }, range: [-0.1, 1.1], zeroline: true, zerolinecolor: '#ccc', gridcolor: '#eee' },
-          margin: { l: 50, r: 16, t: 110, b: 44 },
+          font: { family: FONT, color: INK },
+          xaxis: { ...axis2d, title: { text: '$x$' }, range: [-5, 5], zeroline: false },
+          yaxis: { ...axis2d, range: [-0.1, 1.1], dtick: 0.5, zeroline: true, zerolinecolor: '#ccc' },
+          margin: { l: 64, r: 24, t: 136, b: 92 },
           paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',
-          showlegend: false, hovermode: 'closest',
+          showlegend: false, hovermode: 'closest', hoverlabel,
         };
 
         return {
           left: {
             data: stepTraces,
-            layout: { ...baseLayout, title: { text: 'step(θx + θ<sub>0</sub>)', font: { size: 15 }, ...titlePos },
-              annotations: [paperAnnotation(`feature x = 1<br>predicted class: ${stepPred >= 0.5 ? 'positive' : 'negative'}`)] },
+            layout: { ...baseLayout, title: { text: '$\\operatorname{step}(\\theta x + \\theta_0)$', font: titleFont, ...titlePos },
+              annotations: [paperAnnotation(classText('1', stepPred))] },
           },
           right: {
             data: sigTraces,
-            layout: { ...baseLayout, title: { text: 'σ(θx + θ<sub>0</sub>)', font: { size: 15 }, ...titlePos },
-              annotations: [paperAnnotation(`feature x = 1<br>predicted class: ${sigPred >= 0.5 ? 'positive' : 'negative'}`)] },
+            layout: { ...baseLayout, title: { text: '$\\sigma(\\theta x + \\theta_0)$', font: titleFont, ...titlePos },
+              annotations: [paperAnnotation(classText('1', sigPred))] },
           },
         };
       }
@@ -244,6 +310,82 @@
       // ============================================================
       // 2D plots (3D surfaces)
       // ============================================================
+      // ============================================================
+      // Surface geometry
+      // ============================================================
+      // Both 2D-mode surfaces depend on (x₁, x₂) only through the score
+      // s = θ₁x₁ + θ₂x₂ + θ₀, so each is built from exact pieces of the square rather
+      // than a grid. Plotly's surface trace re-processed a 400x400 step grid and an
+      // 80x80 sigmoid grid on every slider tick, which held this view under 4 frames
+      // a second; these meshes are a few hundred vertices at most.
+      const SQUARE = [[-2, -2], [2, -2], [2, 2], [-2, 2]];
+
+      // The part of a convex polygon where f >= 0 (Sutherland-Hodgman, one edge).
+      function clip(poly, f) {
+        const out = [];
+        poly.forEach((p, n) => {
+          const q = poly[(n + 1) % poly.length];
+          const fp = f(p), fq = f(q);
+          if (fp >= 0) out.push(p);
+          if ((fp >= 0) !== (fq >= 0)) {
+            const u = fp / (fp - fq);
+            out.push([p[0] + u * (q[0] - p[0]), p[1] + u * (q[1] - p[1])]);
+          }
+        });
+        return out;
+      }
+
+      // Convex polygons of [x, y, z] corners fanned into mesh3d triangles, coloured
+      // by height. Corners that coincide are shared, so adjacent pieces shade as one
+      // smooth surface.
+      function mesh(polys) {
+        const x = [], y = [], z = [], i = [], j = [], k = [], seen = new Map();
+        const vertex = ([px, py, pz]) => {
+          const key = px.toFixed(6) + ',' + py.toFixed(6) + ',' + pz.toFixed(6);
+          if (!seen.has(key)) { seen.set(key, x.length); x.push(px); y.push(py); z.push(pz); }
+          return seen.get(key);
+        };
+        polys.forEach(poly => {
+          const ids = poly.map(vertex);
+          for (let n = 1; n + 1 < ids.length; n++) { i.push(ids[0]); j.push(ids[n]); k.push(ids[n + 1]); }
+        });
+        return { x, y, z, i, j, k, intensity: z, type: 'mesh3d', showscale: false, hoverinfo: 'skip' };
+      }
+
+      // step(s): the class-1 side (s >= 0) at height 1, the rest at 0, and a wall on
+      // the chord between them. Flat shading keeps the wall's edges sharp.
+      function stepMesh(score) {
+        const f = (v) => score(v[0], v[1]);
+        const lift = (poly, h) => poly.map(([px, py]) => [px, py, h]);
+        const side1 = clip(SQUARE, f), side0 = clip(SQUARE, (v) => -f(v));
+        const chord = side1.filter((v) => Math.abs(f(v)) < 1e-9);
+        const ends = chord.length >= 2 ? [chord[0], chord[chord.length - 1]] : null;
+        const wall = ends && Math.hypot(ends[0][0] - ends[1][0], ends[0][1] - ends[1][1]) > 1e-9
+          ? [[[...ends[0], 0], [...ends[1], 0], [...ends[1], 1], [...ends[0], 1]]]
+          : [];
+        return { ...mesh([lift(side1, 1), lift(side0, 0), ...wall]), flatshading: true };
+      }
+
+      // h(s) is constant along every line s = c, so the square is cut into strips
+      // between level lines, every strip corner is lifted exactly, and only strip
+      // interiors are interpolated. The levels sit where σ passes these heights,
+      // denser in the tails so the shoulders do not sag between strips.
+      const SIGMOID_LEVELS = [0.003, 0.01, 0.03, 0.06, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45,
+        0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.94, 0.97, 0.99, 0.997]
+        .map((q) => Math.log(q / (1 - q)));
+      function ridgeMesh(score, h, levels) {
+        const f = (v) => score(v[0], v[1]);
+        const ss = SQUARE.map(f), smin = Math.min(...ss), smax = Math.max(...ss);
+        const cuts = [smin, ...levels.filter((c) => c > smin && c < smax), smax];
+        const polys = [];
+        for (let n = 0; n + 1 < cuts.length; n++) {
+          const a = cuts[n], b = cuts[n + 1];
+          const strip = clip(clip(SQUARE, (v) => f(v) - a), (v) => b - f(v));
+          if (strip.length >= 3) polys.push(strip.map(([px, py]) => [px, py, h(score(px, py))]));
+        }
+        return mesh(polys);
+      }
+
       const surfaceColorscale = [
         [0, '#7eafd4'], [0.4, '#c8dce8'],
         [0.5, '#f0f0f0'],
@@ -252,54 +394,39 @@
 
       function build2D() {
         const { t, t2, t0 } = getParams();
+        const score = (x1, x2) => t * x1 + t2 * x2 + t0;
+        const look = { colorscale: surfaceColorscale, cmin: 0, cmax: 1, opacity: 0.85 };
+        const stepSurface = { ...stepMesh(score), ...look };
+        const sigSurface = { ...ridgeMesh(score, sigmoid, SIGMOID_LEVELS), ...look };
 
-        // Step surface — high res for clean cut
-        const Nstep = 400;
-        const gStep = linspace(-2, 2, Nstep);
-        const zStep = [];
-        for (let j = 0; j < Nstep; j++) {
-          const row = [];
-          for (let i = 0; i < Nstep; i++) {
-            row.push(t * gStep[i] + t2 * gStep[j] + t0 >= 0 ? 1 : 0);
-          }
-          zStep.push(row);
-        }
-
-        // Sigmoid surface
-        const Nsig = 80;
-        const gSig = linspace(-2, 2, Nsig);
-        const zSig = [];
-        for (let j = 0; j < Nsig; j++) {
-          const row = [];
-          for (let i = 0; i < Nsig; i++) {
-            row.push(sigmoid(t * gSig[i] + t2 * gSig[j] + t0));
-          }
-          zSig.push(row);
-        }
-
-        const mkSurface = (gx, gy, z) => ({
-          x: gx, y: gy, z,
-          type: 'surface',
-          colorscale: surfaceColorscale,
-          cmin: 0, cmax: 1,
-          showscale: false,
-          opacity: 0.85,
-          hoverinfo: 'skip',
-        });
-
-        const mkLayout = (title) => ({
-          title: { text: title, font: { size: 15 }, ...titlePos },
+        // Every scene range is pinned, and each layout reads the live camera back
+        // through sceneCamera and keeps a constant uirevision, so a slider redraw
+        // leaves the box still and the camera where the viewer left it (B11).
+        // Switching dimension redraws with newPlot, which picks the last 3D camera
+        // back up the same way.
+        // The eye stays where it was: any closer and the z ticks leave the pane (B1a),
+        // so the box fills more of its panel by standing taller instead, z at 0.85.
+        // At 20px the ticks collide wherever two axes meet, so x ticks stop short of
+        // the corners and z names only the two class values.
+        const mkLayout = (id, title, ann) => ({
+          font: { family: FONT, color: INK },
+          title: { text: title, font: titleFont, ...titlePos },
           scene: {
-            xaxis: { title: 'x<sub>1</sub>', range: [-2, 2], autorange: false, gridcolor: '#e0e0e0' },
-            yaxis: { title: 'x<sub>2</sub>', range: [-2, 2], autorange: false, gridcolor: '#e0e0e0' },
-            zaxis: { title: '', range: [-0.1, 1.1], autorange: false, gridcolor: '#e0e0e0' },
-            aspectmode: 'manual', aspectratio: { x: 1, y: 1, z: 0.6 },
-            camera: { eye: { x: 0, y: -2, z: 1.2 }, up: { x: 0, y: 0, z: 1 } },
+            xaxis: { ...axis3d, title: 'x<sub>1</sub>', range: [-2, 2], tickvals: [-1, 0, 1] },
+            // The camera looks nearly down x₂, which folds its tick labels into the axis
+            // title at the far corner, where the two read as one label. The title stays
+            // and the digits go, per A3.
+            yaxis: { ...axis3d, title: 'x<sub>2</sub>', range: [-2, 2], tickvals: [-1, 0, 1], showticklabels: false },
+            zaxis: { ...axis3d, title: '', range: [-0.1, 1.1], tickvals: [0, 1] },
+            aspectmode: 'manual', aspectratio: { x: 1, y: 1, z: 0.85 },
+            camera: sceneCamera(id, { eye: { x: 0, y: -2, z: 1.2 }, up: { x: 0, y: 0, z: 1 } }),
             bgcolor: '#fafafa',
           },
-          margin: { l: 0, r: 0, t: 110, b: 0 },
+          annotations: [ann],
+          margin: { l: 0, r: 0, t: 136, b: 0 },
           paper_bgcolor: '#fafafa',
-          showlegend: false,
+          showlegend: false, hoverlabel,
+          uirevision: 'keep',
         });
 
         // Test point at x = [1, 1]
@@ -309,29 +436,24 @@
         const stepColor = stepPred >= 0.5 ? '#e74c3c' : '#3498db';
         const sigColor = sigPred >= 0.5 ? '#e74c3c' : '#3498db';
 
+        // A scatter3d marker is scaled by perspective, so 12 is a lower bound (A4);
+        // measured on the render it lands at about 21 across.
         const mkPoint3D = (x, y, z, color) => ({
           x: [x], y: [y], z: [z],
           type: 'scatter3d', mode: 'markers',
-          marker: { size: 8, color, line: { color: '#fff', width: 0.5 } },
+          marker: { size: 12, color, line: { color: '#fff', width: 0.5 } },
           hovertemplate: '(%{x:.1f}, %{y:.1f}) ŷ=%{z:.2f}<extra></extra>',
         });
 
-        const mkLayout3D = (title, ann) => {
-          const l = mkLayout(title);
-          l.annotations = [ann];
-          return l;
-        };
-
         return {
           left: {
-            data: [mkSurface(gStep, gStep, zStep), mkPoint3D(tx1, tx2, stepPred, stepColor)],
-            layout: mkLayout3D('step(θ<sub>1</sub>x<sub>1</sub> + θ<sub>2</sub>x<sub>2</sub> + θ<sub>0</sub>)', paperAnnotation(`feature x = [1,1]<br>predicted class: ${stepPred >= 0.5 ? 'positive' : 'negative'}`)),
+            data: [stepSurface, mkPoint3D(tx1, tx2, stepPred, stepColor)],
+            layout: mkLayout('plotLeft', '$\\operatorname{step}(\\theta_1 x_1 + \\theta_2 x_2 + \\theta_0)$', paperAnnotation(classText('[1, 1]', stepPred))),
           },
           right: {
-            data: [mkSurface(gSig, gSig, zSig), mkPoint3D(tx1, tx2, sigPred, sigColor)],
-            layout: mkLayout3D('σ(θ<sub>1</sub>x<sub>1</sub> + θ<sub>2</sub>x<sub>2</sub> + θ<sub>0</sub>)', paperAnnotation(`feature x = [1,1]<br>predicted class: ${sigPred >= 0.5 ? 'positive' : 'negative'}`)),
+            data: [sigSurface, mkPoint3D(tx1, tx2, sigPred, sigColor)],
+            layout: mkLayout('plotRight', '$\\sigma(\\theta_1 x_1 + \\theta_2 x_2 + \\theta_0)$', paperAnnotation(classText('[1, 1]', sigPred))),
           },
-          zStep, zSig, stepPred, sigPred, stepColor, sigColor,
         };
       }
 
@@ -349,15 +471,19 @@
 
       function fullPlot() {
         updateLabels();
-        if (currentDim === '1d') {
-          const { left, right } = build1D();
-          Plotly.newPlot('plotLeft', left.data, left.layout, cfg);
-          Plotly.newPlot('plotRight', right.data, right.layout, cfg);
-        } else {
-          const { left, right } = build2D();
-          Plotly.newPlot('plotLeft', left.data, left.layout, cfg);
-          Plotly.newPlot('plotRight', right.data, right.layout, cfg);
-        }
+        const { left, right } = currentDim === '1d' ? build1D() : build2D();
+        Plotly.newPlot('plotLeft', left.data, left.layout, cfg);
+        Plotly.newPlot('plotRight', right.data, right.layout, cfg);
+      }
+
+      // A slider fires input faster than the screen repaints, several times a frame on
+      // a trackpad, and each redraw is a full Plotly pass over both panes. So input
+      // only asks for the next frame, and a burst of events costs one redraw.
+      let frameQueued = false;
+      function scheduleSlider() {
+        if (frameQueued) return;
+        frameQueued = true;
+        requestAnimationFrame(() => { frameQueued = false; onSlider(); });
       }
 
       function onSlider() {
@@ -367,28 +493,30 @@
           Plotly.react('plotLeft', left.data, left.layout, cfg);
           Plotly.react('plotRight', right.data, right.layout, cfg);
         } else {
-          const r = build2D();
-          Plotly.restyle('plotLeft', { z: [r.zStep] }, [0]);
-          Plotly.restyle('plotRight', { z: [r.zSig] }, [0]);
-          Plotly.restyle('plotLeft', { z: [[r.stepPred]], 'marker.color': [r.stepColor] }, [1]);
-          Plotly.restyle('plotRight', { z: [[r.sigPred]], 'marker.color': [r.sigColor] }, [1]);
-          // Update 3D annotations
-          Plotly.relayout('plotLeft', { 'scene.annotations[0].z': r.stepPred, 'scene.annotations[0].text': `feature x = [1,1]<br>predicted class: ${r.stepPred >= 0.5 ? 'positive' : 'negative'}` });
-          Plotly.relayout('plotRight', { 'scene.annotations[0].z': r.sigPred, 'scene.annotations[0].text': `feature x = [1,1]<br>predicted class: ${r.sigPred >= 0.5 ? 'positive' : 'negative'}` });
+          // One react per pane, since every restyle or relayout call re-processes
+          // every trace in the scene.
+          const { left, right } = build2D();
+          Plotly.react('plotLeft', left.data, left.layout, cfg);
+          Plotly.react('plotRight', right.data, right.layout, cfg);
         }
       }
 
-      // --- Init ---
+      if (new URLSearchParams(window.location.search).has('embed')) {
+        document.body.classList.add('embed');
+      }
+
       fullPlot();
 
-      // Resize plots and rescale annotations
-      let resizeTimer;
-      window.addEventListener('resize', () => {
-        Plotly.Plots.resize(document.getElementById('plotLeft'));
-        Plotly.Plots.resize(document.getElementById('plotRight'));
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => fullPlot(), 150);
-      });
+      const plotEls = [document.getElementById('plotLeft'), document.getElementById('plotRight')];
+      if (window.ResizeObserver) {
+        const ro = new ResizeObserver(() => plotEls.forEach((el) => Plotly.Plots.resize(el)));
+        plotEls.forEach((el) => ro.observe(el));
+      } else {
+        window.addEventListener('resize', () => plotEls.forEach((el) => Plotly.Plots.resize(el)));
+      }
+
+      const sidebarEl = document.querySelector('.sidebar');
+      typeset(sidebarEl).then(() => sidebarEl.classList.add('typeset'));
     </script>
   </body>
 </html>

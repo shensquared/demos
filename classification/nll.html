@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NLL Loss</title>
+    <!-- Pinned like plotly (B6). Plotly typesets its $...$ labels through MathJax's
+         SVG output, and the sidebar's \(...\) labels are typeset on load and
+         again after any rewrite. -->
+    <script>window.MathJax = { startup: { typeset: false } };</script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -11,32 +16,44 @@
       html, body {
         width: 100%; height: 100%;
         font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-        background: #fafafa; color: #333;
+        background: #fafafa; color: #2b2b2b;
       }
 
       .container { display: flex; height: 100%; }
 
+      /* Sizes are deck pixels. The deck embeds this full-bleed at 1280x720, so one
+         CSS px is one slide px, and ROOM.md sets the floors: 20 for anything (A1) and
+         29 for what the room must read (A2), which here is g and the loss. */
       .sidebar {
-        width: 240px; min-width: 240px;
-        padding: 24px 20px;
+        width: 370px; min-width: 370px;
+        padding: 24px 22px;
         background: #fff;
         border-right: 1px solid #e0e0e0;
         display: flex; flex-direction: column;
-        gap: 18px;
-        overflow-y: auto;
+        gap: 20px;
       }
 
-      .sidebar h1 { font-size: 20px; font-weight: 600; color: #222; }
-      .sidebar .eq { font-size: 14px; color: #888; margin-top: 2px; }
+      /* Embed mode: the slide is bare, iframe only, so the heading stays and only the
+         padding tightens (B4). */
+      body.embed .sidebar { padding: 16px 20px; gap: 18px; }
+
+      .sidebar h1 { font-size: 24px; font-weight: 600; }
+      /* The loss for the chosen label, under the label toggle. MathJax sizes its SVG
+         in ex, so the formula scales with this font size; at 22px Computer Modern
+         has about the x-height of the 20px labels. The sidebar is 370px wide so the
+         y = 0 form, the longer of the two at 316px, fits on one line at that size.
+         min-height holds the space while MathJax loads, so the controls below do
+         not jump. */
+      .eq { font-size: 22px; margin-top: 12px; min-height: 32px; }
 
       .control-group label {
-        display: block; font-size: 15px; font-weight: 500;
-        color: #555; margin-bottom: 6px;
+        display: block; font-size: 20px; font-weight: 500;
+        margin-bottom: 8px;
       }
 
       .control-group .val {
         font-family: "SF Mono", Menlo, monospace;
-        font-size: 15px; color: #222; float: right;
+        font-size: 20px; float: right;
       }
 
       input[type="range"] {
@@ -50,122 +67,90 @@
         border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2);
       }
 
+      input[type="range"]:focus-visible { outline: 2px solid #2b2b2b; outline-offset: 6px; }
+
       .class-toggle {
-        display: flex; gap: 0;
+        display: flex;
         border: 1px solid #ddd; border-radius: 4px;
         overflow: hidden;
       }
 
       .class-toggle button {
-        flex: 1; padding: 8px 0;
-        font-size: 14px; font-family: inherit;
-        border: none; background: #fff; color: #777;
-        cursor: pointer; transition: all .15s;
+        flex: 1; padding: 9px 0;
+        font-size: 20px; font-family: inherit;
+        border: none; background: #fff; color: #555;
+        cursor: pointer; transition: background .15s, color .15s;
       }
-
-      .class-toggle button.active { background: #555; color: #fff; }
 
       .class-toggle button:not(:last-child) { border-right: 1px solid #ddd; }
+      .class-toggle button.active { background: #555; color: #fff; }
+      .class-toggle button:focus-visible { outline: 2px solid #2b2b2b; outline-offset: -2px; }
+      @media (prefers-reduced-motion: reduce) { .class-toggle button { transition: none; } }
 
-      /* Pipeline */
-      .pipeline {
-        margin-top: auto;
-        padding-top: 14px;
+      .readout {
+        padding-top: 16px;
         border-top: 1px solid #e0e0e0;
         display: flex; flex-direction: column;
-        align-items: center;
-        gap: 0;
+        gap: 12px;
       }
 
-      .pipe-row {
-        display: flex; flex-direction: column;
-        align-items: center; width: 100%;
-        position: relative;
-      }
+      .readout .name { font-size: 20px; color: #5f6672; }
 
-      .pipe-label {
-        font-size: 12px; color: #888;
-        margin-bottom: 4px; font-weight: 500;
-      }
-
-      .pipe-track {
-        width: 100%; height: 4px;
-        background: #e0e0e0; border-radius: 2px;
-        position: relative;
-      }
-
-      .pipe-dot {
-        width: 12px; height: 12px;
-        border-radius: 50%;
-        position: absolute; top: -4px;
-        transform: translateX(-50%);
-        box-shadow: 0 1px 3px rgba(0,0,0,.2);
-      }
-
-      .pipe-val {
+      .readout .num {
         font-family: "SF Mono", Menlo, monospace;
-        font-size: 11px; color: #555;
-        margin-top: 4px;
-      }
-
-      .pipe-arrow {
-        font-size: 16px; color: #ccc;
-        margin: 10px 0;
+        font-size: 24px; line-height: 1.2;
       }
 
       .plots { flex: 1; display: flex; height: 100%; min-width: 0; }
-      .plots > div { flex: 1; height: 100%; min-width: 0; }
+      .plots > div { flex: 1; height: 100%; min-width: 0; min-height: 0; }
+      /* Plotly typesets $...$ labels with MathJax, whose SVG is sized in ex units, so
+         it follows the CSS font size of the group Plotly places it in and ignores
+         layout font.size. At 30px Computer Modern's x-height matches the 24px
+         Helvetica axis titles (A2): a math x measures 13.5px tall, a Helvetica x 12.5. */
+      .js-plotly-plot g[class$="-math-group"] { font-size: 30px; }
+
+      /* Sidebar math is typeset by MathJax as well: every \(...\) inside a .tex
+         element, once on load and again whenever a script rewrites one. A .tex
+         element stays hidden until its math is in, so the TeX source never flashes.
+         MathJax sizes its SVG in ex, and Computer Modern's x-height is about 0.86 of
+         Helvetica's, so 116% brings the math up to the text beside it. */
+      .sidebar:not(.typeset) .tex, .tex.pending { visibility: hidden; }
+      .tex mjx-container { font-size: 116%; }
+
     </style>
   </head>
   <body>
     <div class="container">
       <div class="sidebar">
-        <div>
-          <h1>NLL Loss</h1>
-          <div class="eq" id="eqDisplay">L = −log(σ(θx + θ₀))</div>
-        </div>
+        <h1>NLL loss</h1>
 
         <div class="control-group">
           <label>True label</label>
           <div class="class-toggle">
-            <button data-y="1" class="active">y = 1</button>
-            <button data-y="0">y = 0</button>
+            <button data-y="1" class="active"><span class="tex">\(y = 1\)</span></button>
+            <button data-y="0"><span class="tex">\(y = 0\)</span></button>
           </div>
+          <div class="eq" id="eqDisplay"></div>
         </div>
 
         <div class="control-group">
-          <label>θ <span class="val" id="thetaVal">-3.0</span></label>
+          <label for="theta"><span class="tex">\(\theta\)</span> <span class="val" id="thetaVal">-3.0</span></label>
           <input type="range" id="theta" min="-7" max="7" value="-3" step="0.1" />
         </div>
 
         <div class="control-group">
-          <label>θ₀ <span class="val" id="theta0Val">0.0</span></label>
+          <label for="theta0"><span class="tex">\(\theta_0\)</span> <span class="val" id="theta0Val">0.0</span></label>
           <input type="range" id="theta0" min="-5" max="5" value="0" step="0.1" />
         </div>
 
-        <div class="pipeline">
-          <div class="pipe-row">
-            <div class="pipe-label">x</div>
-            <div class="pipe-track">
-              <div class="pipe-dot" id="pipeDotX" style="background:#333"></div>
-            </div>
-            <div class="pipe-val" id="pipeValX">1.0</div>
+        <div class="readout">
+          <div>
+            <div class="name tex">\(g\) at \(x = 1\)</div>
+            <div class="num" id="gVal"></div>
           </div>
-          <div class="pipe-arrow">↓</div>
-          <div class="pipe-row">
-            <div class="pipe-label" style="color:#3a7ebf">g</div>
-            <div class="pipe-track">
-              <div class="pipe-dot" id="pipeDotG" style="background:#3a7ebf"></div>
-            </div>
-            <div class="pipe-val" id="pipeValG">–</div>
-          </div>
-          <div class="pipe-arrow">↓</div>
-          <div class="pipe-row">
-            <div class="pipe-label">L</div>
-            <div class="pipe-track">
-              <div class="pipe-dot" id="pipeDotL" style="background:#f1c40f"></div>
-            </div>
-            <div class="pipe-val" id="pipeValL">–</div>
+          <div>
+            <div class="name tex">loss \(\mathcal{L}_{\text{nll}}\)</div>
+            <div class="num" id="lossVal"></div>
           </div>
         </div>
       </div>
@@ -178,7 +163,43 @@
 
     <script>
       const cfg = { displayModeBar: false, responsive: true };
+
+      // MathJax wants one typeset call at a time, so every call joins one queue.
+      // setTex swaps an element's TeX and typesets it again, hidden in between.
+      let texQueue = MathJax.startup.promise;
+      function typeset(el) {
+        texQueue = texQueue.then(() => MathJax.typesetPromise([el]));
+        return texQueue;
+      }
+      function setTex(el, html) {
+        el.classList.add('pending');
+        texQueue = texQueue.then(() => {
+          MathJax.typesetClear([el]);
+          el.innerHTML = html;
+          return MathJax.typesetPromise([el]);
+        }).then(() => el.classList.remove('pending'));
+      }
       let trueLabel = 1;
+
+      const G_BLUE = '#3a7ebf', LOSS_MARK = '#f1c40f';
+      const INK = '#2b2b2b', TICK_COLOR = '#5f6672';
+
+      // A2 for axis titles and A3 for ticks, in deck pixels. Marks follow A4: the two
+      // points the room tracks at 20, plot lines at 4. A nested title.font replaces
+      // titlefont whole, size and all, so an axis that recolours its title restates
+      // titlefont rather than nesting a font.
+      const AXIS_TITLE = 24, TICK = 20, MARK = 20, LINE = 4;
+      const axis = {
+        titlefont: { size: AXIS_TITLE, color: INK },
+        tickfont: { size: TICK, color: TICK_COLOR },
+        zeroline: false, gridcolor: '#e2e2e2', fixedrange: true,
+      };
+      const baseLayout = {
+        font: { family: '"Helvetica Neue", Helvetica, Arial, sans-serif', color: INK },
+        margin: { l: 80, r: 24, t: 24, b: 92 },
+        paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',
+        showlegend: false, hovermode: false,
+      };
 
       const thetaEl = document.getElementById('theta');
       const theta0El = document.getElementById('theta0');
@@ -191,40 +212,24 @@
         return y === 1 ? -Math.log(Math.max(g, 1e-15)) : -Math.log(Math.max(1 - g, 1e-15));
       }
 
-      function pipePct(val, min, max) {
-        return Math.max(0, Math.min(1, (val - min) / (max - min))) * 100;
-      }
-
-      function updatePipeline(g1, l1) {
-        document.getElementById('pipeDotX').style.left = pipePct(1, -10, 10) + '%';
-        document.getElementById('pipeValX').textContent = '1.0';
-
-        document.getElementById('pipeDotG').style.left = pipePct(g1, 0, 1) + '%';
-        document.getElementById('pipeValG').textContent = g1.toFixed(3);
-
-        const lClamped = Math.min(l1, 7);
-        document.getElementById('pipeDotL').style.left = pipePct(lClamped, 0, 7) + '%';
-        document.getElementById('pipeValL').textContent = l1.toFixed(3);
-      }
-
       function update() {
         const t = parseFloat(thetaEl.value);
         const t0 = parseFloat(theta0El.value);
-
-        document.getElementById('thetaVal').textContent = t.toFixed(1);
-        document.getElementById('theta0Val').textContent = t0.toFixed(1);
-
         const g1 = sigmoid(1, t, t0);
         const l1 = loss(g1, trueLabel);
 
-        updatePipeline(g1, l1);
+        document.getElementById('thetaVal').textContent = t.toFixed(1);
+        document.getElementById('theta0Val').textContent = t0.toFixed(1);
+        document.getElementById('gVal').textContent = g1.toFixed(3);
+        document.getElementById('lossVal').textContent = l1.toFixed(3);
+
         drawLeft(t, t0, g1);
         drawRight(g1, l1);
       }
 
       function drawLeft(t, t0, g1) {
         const xs = [], ys = [];
-        for (let x = -10; x <= 10; x += 0.1) {
+        for (let x = -10; x <= 10.001; x += 0.05) {
           xs.push(x);
           ys.push(sigmoid(x, t, t0));
         }
@@ -232,36 +237,25 @@
         const sigTrace = {
           x: xs, y: ys,
           type: 'scatter', mode: 'lines',
-          line: { color: '#3a7ebf', width: 2.5 },
-          hovertemplate: 'x=%{x:.1f}<br>σ=%{y:.3f}<extra></extra>',
+          line: { color: G_BLUE, width: LINE },
         };
 
         const marker = {
           x: [1], y: [g1],
-          type: 'scatter', mode: 'markers',
-          marker: { size: 15, symbol: 'square', color: '#333', line: { color: '#fff', width: 1.5 } },
-          hovertemplate: 'x=1<br>σ=%{y:.4f}<extra></extra>',
+          type: 'scatter', mode: 'markers', cliponaxis: false,
+          marker: { size: MARK, symbol: 'square', color: '#333', line: { color: '#fff', width: 2 } },
         };
 
         const layout = {
-          xaxis: { title: { text: 'x', font: { size: 20 } }, range: [-10, 10], zeroline: false, gridcolor: '#eee' },
-          yaxis: { title: { text: 'g = σ(θx + θ<sub>0</sub>)', font: { size: 20, color: '#3a7ebf' } }, range: [-0.05, 1.05], zeroline: false, gridcolor: '#eee' },
-          margin: { l: 52, r: 16, t: 16, b: 44 },
-          paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',
-          showlegend: false, hovermode: 'closest',
+          ...baseLayout,
+          xaxis: { ...axis, title: { text: '$x$' }, range: [-10, 10], dtick: 5 },
+          yaxis: { ...axis, title: { text: '$g = \\sigma(\\theta x + \\theta_0)$' }, titlefont: { size: AXIS_TITLE, color: G_BLUE }, range: [-0.05, 1.05], dtick: 0.5 },
           shapes: [
-            // Vertical dashed line at x=1
-            {
-              type: 'line', x0: 1, y0: 0, x1: 1, y1: 1,
-              line: { dash: 'dash', color: '#333', width: 2 },
-            },
-            // Blue segment on y-axis from 0 to g
-            {
-              type: 'line',
-              x0: 0, x1: 0, xref: 'paper',
-              y0: 0, y1: g1, yref: 'y',
-              line: { color: '#3a7ebf', width: 4 },
-            },
+            // The training point's column at x = 1.
+            { type: 'line', layer: 'below', x0: 1, y0: 0, x1: 1, y1: 1, line: { dash: 'dash', color: TICK_COLOR, width: 2 } },
+            // g as a length up the y-axis, matched by the same bar along the right
+            // plot's x-axis.
+            { type: 'line', layer: 'below', xref: 'paper', x0: 0, x1: 0, y0: 0, y1: g1, line: { color: G_BLUE, width: 6 } },
           ],
         };
 
@@ -270,7 +264,7 @@
 
       function drawRight(g1, l1) {
         const gs = [], ls = [];
-        for (let g = 0.001; g < 0.999; g += 0.001) {
+        for (let g = 0.001; g < 0.9995; g += 0.001) {
           gs.push(g);
           ls.push(loss(g, trueLabel));
         }
@@ -280,64 +274,80 @@
         const lossTrace = {
           x: gs, y: ls,
           type: 'scatter', mode: 'lines',
-          line: { color: curveColor, width: 2.5 },
-          hovertemplate: 'g=%{x:.3f}<br>L=%{y:.3f}<extra></extra>',
+          line: { color: curveColor, width: LINE },
         };
 
+        // cliponaxis off so the point stays whole at either end of the curve. Past a
+        // loss of 7 it rises out of the frame, which is what a runaway should look
+        // like (B11).
         const marker = {
           x: [g1], y: [l1],
-          type: 'scatter', mode: 'markers',
-          marker: { size: 15, color: '#f1c40f', line: { color: '#fff', width: 1.5 } },
-          hovertemplate: 'g=%{x:.4f}<br>L=%{y:.4f}<extra></extra>',
+          type: 'scatter', mode: 'markers', cliponaxis: false,
+          marker: { size: MARK, color: LOSS_MARK, line: { color: '#fff', width: 2 } },
         };
 
-        const yLabel = trueLabel === 1 ? '−log(g)' : '−log(1 − g)';
+        const yLabel = trueLabel === 1 ? '$-\\log g$' : '$-\\log(1 - g)$';
 
         const layout = {
-          xaxis: { title: { text: 'g = σ(θx + θ<sub>0</sub>)', font: { size: 20, color: '#3a7ebf' } }, range: [0, 1], zeroline: false, gridcolor: '#eee' },
-          yaxis: { title: { text: yLabel, font: { size: 20 } }, range: [0, 7], zeroline: false, gridcolor: '#eee' },
-          margin: { l: 52, r: 16, t: 16, b: 44 },
-          paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',
-          showlegend: false, hovermode: 'closest',
+          ...baseLayout,
+          xaxis: { ...axis, title: { text: '$g = \\sigma(\\theta x + \\theta_0)$' }, titlefont: { size: AXIS_TITLE, color: G_BLUE }, range: [0, 1], dtick: 0.5 },
+          yaxis: { ...axis, title: { text: yLabel }, range: [0, 7], dtick: 2 },
           shapes: [
-            // Blue segment on x-axis from 0 to g
-            {
-              type: 'line',
-              x0: 0, x1: g1, xref: 'x',
-              y0: 0, y1: 0, yref: 'paper',
-              line: { color: '#3a7ebf', width: 4 },
-            },
+            { type: 'line', layer: 'below', yref: 'paper', x0: 0, x1: g1, y0: 0, y1: 0, line: { color: G_BLUE, width: 6 } },
           ],
         };
 
         Plotly.react('plotRight', [lossTrace, marker], layout, cfg);
       }
 
-      // Slider listeners
-      thetaEl.addEventListener('input', update);
-      theta0El.addEventListener('input', update);
+      const LOSS_TEX = {
+        1: '\\mathcal{L}_{\\text{nll}} = -\\log \\sigma(\\theta x + \\theta_0)',
+        0: '\\mathcal{L}_{\\text{nll}} = -\\log\\bigl(1 - \\sigma(\\theta x + \\theta_0)\\bigr)',
+      };
+      function showLoss() {
+        document.getElementById('eqDisplay').replaceChildren(MathJax.tex2svg(LOSS_TEX[trueLabel], { display: false }));
+      }
 
-      // Class toggle
+      // A slider fires input faster than the screen repaints, several times a frame on
+      // a trackpad, and each redraw is a full Plotly pass over both panes. So input
+      // only asks for the next frame, and a burst of events costs one redraw.
+      let frameQueued = false;
+      function scheduleUpdate() {
+        if (frameQueued) return;
+        frameQueued = true;
+        requestAnimationFrame(() => { frameQueued = false; update(); });
+      }
+      thetaEl.addEventListener('input', scheduleUpdate);
+      theta0El.addEventListener('input', scheduleUpdate);
+
       document.querySelectorAll('.class-toggle button').forEach(btn => {
         btn.addEventListener('click', function () {
           trueLabel = parseInt(this.dataset.y);
           document.querySelectorAll('.class-toggle button').forEach(b => b.classList.remove('active'));
           this.classList.add('active');
 
-          // Update equation display
-          document.getElementById('eqDisplay').textContent =
-            trueLabel === 1 ? 'L = −log(σ(θx + θ₀))' : 'L = −log(1 − σ(θx + θ₀))';
-
+          MathJax.startup.promise.then(showLoss);
           update();
         });
       });
 
-      update();
+      if (new URLSearchParams(window.location.search).has('embed')) {
+        document.body.classList.add('embed');
+      }
 
-      window.addEventListener('resize', () => {
-        Plotly.Plots.resize(document.getElementById('plotLeft'));
-        Plotly.Plots.resize(document.getElementById('plotRight'));
-      });
+      update();
+      MathJax.startup.promise.then(showLoss);
+
+      const plotEls = [document.getElementById('plotLeft'), document.getElementById('plotRight')];
+      if (window.ResizeObserver) {
+        const ro = new ResizeObserver(() => plotEls.forEach((el) => Plotly.Plots.resize(el)));
+        plotEls.forEach((el) => ro.observe(el));
+      } else {
+        window.addEventListener('resize', () => plotEls.forEach((el) => Plotly.Plots.resize(el)));
+      }
+
+      const sidebarEl = document.querySelector('.sidebar');
+      typeset(sidebarEl).then(() => sidebarEl.classList.add('typeset'));
     </script>
   </body>
 </html>

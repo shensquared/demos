@@ -22,9 +22,9 @@ the same size as one of the hold-out images above, so the panels match:
     validation-cv-val-lam{0p1,1,10}.png    each fold's 2 held-out points, and E_i
 
 Sizing is the reason for the two widths, not taste. Type has to clear the floors in
-slides/10-250.md, 19 deck px for anything and 29 for anything a student must read. A
+ROOM.md, 20 deck px for anything and 29 for anything a student must read. A
 figure authored at its display width puts a point at 1.39 deck px, so 21pt titles land
-at 29 and 14pt ticks at 19. A single plot does that comfortably inside 400px. Five
+at 29 and 15pt ticks at 21. A single plot does that comfortably inside 400px. Five
 subplots inside 400px would give each about 80px of width, which no type size rescues,
 so the cross-validation grids are authored at 1200 instead.
 
@@ -70,7 +70,7 @@ XLIM, YLIM = (0.4, 9.2), (-1.0, 14.5)
 # A point is 1.39 deck px whenever a figure is authored at the width it is displayed at,
 # which both sets below are. 21pt puts the titles at 29.5, just over the 29 floor for
 # text a student must read. Ticks are 15 rather than 14 because the wider subplot
-# spacing in the strips costs a little: at 14 they measured 18.8, under the 19 floor.
+# spacing in the strips costs a little: at 14 they measured 18.8, under the 20 floor.
 TITLE, TICK = 21, 15
 
 

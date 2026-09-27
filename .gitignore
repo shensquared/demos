@@ -6,6 +6,9 @@
 # Claude Code
 .claude/
 
+# Working notes kept out of the public tree, which nginx serves as it stands
+ROOM.md
+
 # Marimo build artifacts
 **/assets/
 **/__marimo__/

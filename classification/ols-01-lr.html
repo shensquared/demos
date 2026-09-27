@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Model Output and Training Error</title>
+    <!-- Pinned like plotly (B6). Plotly typesets its $...$ labels through MathJax's
+         SVG output, and the sidebar's \(...\) labels are typeset on load and
+         again after any rewrite. -->
+    <script>window.MathJax = { startup: { typeset: false } };</script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -11,14 +16,19 @@
       html, body {
         width: 100%; height: 100%;
         font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-        background: #fafafa; color: #333;
+        background: #fafafa; color: #2b2b2b;
       }
 
       .container { display: flex; height: 100%; }
 
+      /* Sizes are deck pixels. The deck embeds this full-bleed at 1280x720, so one
+         CSS px is one slide px, and ROOM.md sets the floors: 20 for anything (A1) and
+         29 for what the room must read (A2), which here is the loss. The sidebar is
+         330 wide so the longest case, "Step-based binary classifier" at 249px, fits
+         inside its select without being cut off. */
       .sidebar {
-        width: 240px; min-width: 240px;
-        padding: 24px 20px;
+        width: 330px; min-width: 330px;
+        padding: 22px 18px;
         background: #fff;
         border-right: 1px solid #e0e0e0;
         display: flex; flex-direction: column;
@@ -26,17 +36,19 @@
         overflow-y: auto;
       }
 
-      .sidebar h1 { font-size: 20px; font-weight: 600; color: #222; }
-      .sidebar .eq { font-size: 15px; color: #888; margin-top: 2px; }
+      /* No heading: each plot's title already names g for the current case and
+         dimension. Embed mode only tightens the padding (B4). */
+      body.embed .sidebar { padding: 16px; gap: 16px; }
+
 
       .control-group label {
-        display: block; font-size: 15px; font-weight: 500;
-        color: #555; margin-bottom: 6px;
+        display: block; font-size: 20px; font-weight: 500;
+        margin-bottom: 8px;
       }
 
       .control-group .val {
         font-family: "SF Mono", Menlo, monospace;
-        font-size: 15px; color: #222; float: right;
+        font-size: 20px; float: right;
       }
 
       input[type="range"] {
@@ -50,62 +62,70 @@
         border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2);
       }
 
+      input[type="range"]:focus-visible { outline: 2px solid #2b2b2b; outline-offset: 6px; }
+
+      /* The native arrow is drawn over by two gradient triangles, so the text gets
+         every pixel up to a fixed 28px arrow column instead of the platform's. */
       .control-group select {
-        width: 100%; padding: 8px 10px;
+        -webkit-appearance: none; appearance: none;
+        width: 100%; padding: 8px 28px 8px 10px;
         border: 1px solid #ddd; border-radius: 4px;
-        background: #fff; font-size: 14px;
-        font-family: inherit; cursor: pointer; outline: none;
+        background-color: #fff;
+        background-image:
+          linear-gradient(45deg, transparent 50%, #555 50%),
+          linear-gradient(135deg, #555 50%, transparent 50%);
+        background-position: calc(100% - 17px) 55%, calc(100% - 11px) 55%;
+        background-size: 6px 6px;
+        background-repeat: no-repeat;
+        font-size: 20px; font-family: inherit; color: #2b2b2b;
+        cursor: pointer;
       }
 
-      .legend { font-size: 14px; color: #666; line-height: 2.2; }
+      .control-group select:focus-visible { outline: 2px solid #2b2b2b; outline-offset: 2px; }
 
+      .legend { font-size: 20px; line-height: 1.8; }
+
+      /* Swatches at 20, the A4 floor for a mark the room tells apart. */
       .legend .dot {
-        display: inline-block; width: 15px; height: 15px;
-        border-radius: 50%; margin-right: 6px; vertical-align: middle;
+        display: inline-block; width: 20px; height: 20px;
+        border-radius: 50%; margin-right: 8px; vertical-align: -3px;
       }
 
-      .legend .line {
-        display: inline-block; width: 16px; height: 2px;
-        margin-right: 6px; vertical-align: middle;
-      }
-
-      .info {
-        margin-top: auto; padding-top: 14px;
+      .readout {
+        margin-top: auto; padding-top: 16px;
         border-top: 1px solid #e0e0e0;
-        font-size: 14px; color: #aaa; line-height: 1.8;
       }
 
-      .info span {
-        font-family: "SF Mono", Menlo, monospace; font-size: 14px; color: #666;
-      }
+      .readout .name { font-size: 20px; color: #5f6672; }
 
-      .info a {
-        color: #007bff; text-decoration: none;
+      .readout .num {
+        font-family: "SF Mono", Menlo, monospace;
+        font-size: 24px; line-height: 1.2;
       }
-      .info a:hover { text-decoration: underline; }
 
       .plots { flex: 1; display: flex; height: 100%; min-width: 0; }
-      .plots > div { flex: 1; height: 100%; min-width: 0; }
+      .plots > div { flex: 1; height: 100%; min-width: 0; min-height: 0; }
+      /* Plotly typesets $...$ labels with MathJax, whose SVG is sized in ex units, so
+         it follows the CSS font size of the group Plotly places it in and ignores
+         layout font.size. At 30px Computer Modern's x-height matches the 24px
+         Helvetica axis titles (A2): a math x measures 13.5px tall, a Helvetica x 12.5. */
+      .js-plotly-plot g[class$="-math-group"] { font-size: 30px; }
+
+      /* Sidebar math is typeset by MathJax as well: every \(...\) inside a .tex
+         element, once on load and again whenever a script rewrites one. A .tex
+         element stays hidden until its math is in, so the TeX source never flashes.
+         MathJax sizes its SVG in ex, and Computer Modern's x-height is about 0.86 of
+         Helvetica's, so 116% brings the math up to the text beside it. */
+      .sidebar:not(.typeset) .tex, .tex.pending { visibility: hidden; }
+      .tex mjx-container { font-size: 116%; }
+
     </style>
   </head>
   <body>
     <div class="container">
       <div class="sidebar">
-        <div>
-          <h1>Model Output and Training Error</h1>
-          <div class="eq" id="eqLabel">g = θx</div>
-        </div>
-
         <div class="control-group">
-          <label>Feature Dimension</label>
-          <select id="dimSelect" onchange="setDim(this.value)">
-            <option value="1d">1D</option>
-            <option value="2d" selected>2D</option>
-          </select>
-        </div>
-
-        <div class="control-group">
-          <label>Cases</label>
+          <label for="modeSelect">Cases</label>
           <select id="modeSelect" onchange="setMode(this.value)">
             <option value="mse">OLS</option>
             <option value="01">Step-based binary classifier</option>
@@ -114,22 +134,31 @@
         </div>
 
         <div class="control-group">
-          <label id="theta1Label">θ <span class="val" id="theta_value">1.0</span></label>
-          <input type="range" id="theta" min="-3" max="3" value="1.0" step="0.1" oninput="update()" />
+          <label for="dimSelect">Feature dimension</label>
+          <select id="dimSelect" onchange="setDim(this.value)">
+            <option value="1d">1D</option>
+            <option value="2d" selected>2D</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label id="theta1Label"><span class="tex" id="theta1Sym">\(\theta\)</span> <span class="val" id="theta_value">1.0</span></label>
+          <input type="range" id="theta" min="-3" max="3" value="1.0" step="0.1" oninput="scheduleUpdate()" />
         </div>
 
         <div class="control-group" id="theta2Group" style="display:none">
-          <label>θ₂ <span class="val" id="theta2_value">0.5</span></label>
-          <input type="range" id="theta2" min="-3" max="3" value="0.5" step="0.1" oninput="update()" />
+          <label><span class="tex">\(\theta_2\)</span> <span class="val" id="theta2_value">0.5</span></label>
+          <input type="range" id="theta2" min="-3" max="3" value="0.5" step="0.1" oninput="scheduleUpdate()" />
         </div>
 
         <div class="legend">
           <div><span class="dot" style="background:#e74c3c"></span>Training data point</div>
-          <div><span class="dot" style="background:#ffd966;border:2px solid #333"></span>Current θ</div>
+          <div><span class="dot" style="background:#5f6672"></span><span class="tex">Current \(\theta\)</span></div>
         </div>
 
-        <div class="info">
-          Loss: <span id="infoLoss">–</span>
+        <div class="readout">
+          <div class="name tex">Loss \(J(\theta)\)</div>
+          <div class="num" id="infoLoss"></div>
         </div>
       </div>
 
@@ -162,8 +191,65 @@
 
       let currentMode = document.getElementById('modeSelect').value;
       let currentDim = '1d';
-      let prevDim = '1d';
       const cfg = { displayModeBar: false, responsive: true };
+
+      // The 3D views keep whatever angle the viewer leaves them at. A control that
+      // redraws hands Plotly a fresh layout, and a layout naming scene.camera snaps
+      // the view back to that eye, so every 3D layout asks sceneCamera for its eye:
+      // the live camera read off the scene, or, while the pane shows 2D, the last one
+      // it showed (B11). getCamera is Plotly-internal, which the pinned 2.27.0 makes
+      // safe to lean on (B6). A constant uirevision on the layouts backs this up for
+      // redraws through react.
+      const lastCamera = {};
+      function sceneCamera(id, home) {
+        const scene = document.getElementById(id)?._fullLayout?.scene?._scene;
+        if (scene) lastCamera[id] = scene.getCamera();
+        return lastCamera[id] || home;
+      }
+
+      // MathJax wants one typeset call at a time, so every call joins one queue.
+      // setTex swaps an element's TeX and typesets it again, hidden in between.
+      let texQueue = MathJax.startup.promise;
+      function typeset(el) {
+        texQueue = texQueue.then(() => MathJax.typesetPromise([el]));
+        return texQueue;
+      }
+      function setTex(el, html) {
+        el.classList.add('pending');
+        texQueue = texQueue.then(() => {
+          MathJax.typesetClear([el]);
+          el.innerHTML = html;
+          return MathJax.typesetPromise([el]);
+        }).then(() => el.classList.remove('pending'));
+      }
+
+      // A2 for plot and axis titles and A3 for ticks, in deck pixels. Marks follow
+      // A4: points the room tells apart at 20, plot lines at 4. A nested title.font
+      // on an axis replaces titlefont whole, size and all, so axes take their title
+      // size from this shared object and never nest a font.
+      const TITLE = 24, AXIS_TITLE = 24, TICK = 20, MARK = 20, LINE = 4;
+      const INK = '#2b2b2b', TICK_COLOR = '#5f6672';
+      const axis2d = {
+        titlefont: { size: AXIS_TITLE, color: INK },
+        tickfont: { size: TICK, color: TICK_COLOR },
+        nticks: 6, gridcolor: '#e2e2e2',
+      };
+      const axis3d = {
+        titlefont: { size: AXIS_TITLE, color: INK },
+        tickfont: { size: TICK, color: TICK_COLOR },
+        nticks: 5, gridcolor: '#e0e0e0',
+      };
+      // Hover labels repeat what the readouts already show (B9), so they stay as an
+      // extra, at the A1 floor.
+      const baseLayout = {
+        font: { family: '"Helvetica Neue", Helvetica, Arial, sans-serif', color: INK },
+        hoverlabel: { font: { size: TICK } },
+        paper_bgcolor: '#fafafa',
+        showlegend: false,
+      };
+      function plotTitle(text) {
+        return { text, font: { size: TITLE, color: INK } };
+      }
 
       // --- Helpers ---
       function sigmoid(z) {
@@ -177,29 +263,12 @@
         return arr;
       }
 
-      // --- Equation label ---
-      function updateEqLabel() {
-        const el = document.getElementById('eqLabel');
-        if (currentDim === '1d') {
-          if (currentMode === 'mse') el.textContent = 'g = θx';
-          else if (currentMode === '01') el.textContent = 'g = step(θx)';
-          else el.textContent = 'g = σ(θx)';
-        } else {
-          if (currentMode === 'mse') el.textContent = 'g = θ₁x₁ + θ₂x₂';
-          else if (currentMode === '01') el.textContent = 'g = step(θ₁x₁ + θ₂x₂)';
-          else el.textContent = 'g = σ(θ₁x₁ + θ₂x₂)';
-        }
-      }
 
       // --- Dimension switching ---
       function setDim(dim) {
-        prevDim = currentDim;
         currentDim = dim;
         document.getElementById('theta2Group').style.display = dim === '2d' ? '' : 'none';
-        document.getElementById('theta1Label').innerHTML = dim === '2d'
-          ? 'θ₁ <span class="val" id="theta_value">'+parseFloat(document.getElementById('theta').value).toFixed(1)+'</span>'
-          : 'θ <span class="val" id="theta_value">'+parseFloat(document.getElementById('theta').value).toFixed(1)+'</span>';
-        updateEqLabel();
+        setTex(document.getElementById('theta1Sym'), dim === '2d' ? '\\(\\theta_1\\)' : '\\(\\theta\\)');
         // 2D↔3D requires newPlot
         fullPlot();
       }
@@ -207,7 +276,6 @@
       // --- Mode switching ---
       function setMode(mode) {
         currentMode = mode;
-        updateEqLabel();
         if (currentDim === '1d') {
           update();
         } else {
@@ -270,7 +338,7 @@
         const modelTrace = {
           x: xRange, y: yModel,
           mode: 'lines',
-          line: { color: '#3a7ebf', width: 2.5 },
+          line: { color: '#3a7ebf', width: LINE },
           hoverinfo: 'x+y',
         };
 
@@ -280,28 +348,23 @@
         const scatterTrace = {
           x: xData, y: yData,
           mode: 'markers',
-          marker: { size: 19, color: colors, line: { width: 1.5, color: '#fff' } },
+          marker: { size: MARK, color: colors, line: { width: 2, color: '#fff' } },
           hovertemplate: '(%{x:.1f}, %{y})<extra></extra>',
         };
 
         let titleText = '';
-        if (currentMode === 'mse') titleText = 'g = θx';
-        else if (currentMode === '01') titleText = 'g = step(θx)';
-        else titleText = 'g = σ(θx)';
+        if (currentMode === 'mse') titleText = '$g = \\theta x$';
+        else if (currentMode === '01') titleText = '$g = \\operatorname{step}(\\theta x)$';
+        else titleText = '$g = \\sigma(\\theta x)$';
 
         const layout = {
-          title: { text: titleText, font: { size: 15 } },
-          xaxis: {
-            title: { text: 'x', font: { size: 13 } },
-            range: [-4, 5], zeroline: false, gridcolor: '#eee',
-          },
-          yaxis: {
-            title: { text: 'g', font: { size: 13 } },
-            range: [-2, 2], zeroline: true, zerolinecolor: '#ccc', gridcolor: '#eee',
-          },
-          margin: { l: 50, r: 16, t: 40, b: 44 },
-          paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',
-          showlegend: false, hovermode: 'closest',
+          ...baseLayout,
+          title: plotTitle(titleText),
+          // No tick at -4: at 20px it lands on the y-axis's -2 in the corner.
+          xaxis: { ...axis2d, title: { text: '$x$' }, range: [-4, 5], tickvals: [-2, 0, 2, 4], zeroline: false },
+          yaxis: { ...axis2d, title: { text: '$g$' }, range: [-2, 2], zeroline: true, zerolinecolor: '#ccc' },
+          margin: { l: 72, r: 24, t: 64, b: 92 },
+          plot_bgcolor: '#fafafa', hovermode: 'closest',
         };
 
         return { data: [modelTrace, scatterTrace], layout };
@@ -314,7 +377,7 @@
         const lossTrace = {
           x: thetaRange, y: lossValues,
           mode: 'lines',
-          line: { color: '#333', width: 2.5 },
+          line: { color: LOSS_GOLD, width: LINE },
           hoverinfo: 'x+y',
         };
 
@@ -322,32 +385,116 @@
         const markerTrace = {
           x: [theta], y: [currentLoss],
           mode: 'markers',
-          marker: { size: 19, color: '#ffd966', line: { width: 2, color: '#333' } },
+          marker: { size: MARK, color: THETA_GREY, line: { width: 2, color: '#fff' } },
           hovertemplate: 'θ=%{x:.1f}, J=%{y:.2f}<extra></extra>',
         };
 
         let titleText = '';
-        if (currentMode === 'mse') titleText = 'J(θ): MSE loss';
-        else if (currentMode === '01') titleText = 'J(θ): 0-1 loss';
-        else titleText = 'J(θ): NLL';
+        if (currentMode === 'mse') titleText = '$J(\\theta)\\text{: MSE loss}$';
+        else if (currentMode === '01') titleText = '$J(\\theta)\\text{: 0-1 loss}$';
+        else titleText = '$J(\\theta)\\text{: NLL}$';
 
         const layout = {
-          title: { text: titleText, font: { size: 15 } },
-          xaxis: {
-            title: { text: 'θ', font: { size: 13 } },
-            range: [-3, 3], zeroline: false, gridcolor: '#eee',
-          },
-          yaxis: {
-            title: { text: 'J(θ)', font: { size: 13 } },
-            range: [-1, 8], zeroline: true, zerolinecolor: '#ccc', gridcolor: '#eee',
-          },
-          margin: { l: 50, r: 16, t: 40, b: 44 },
-          paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',
-          showlegend: false, hovermode: 'closest',
+          ...baseLayout,
+          title: plotTitle(titleText),
+          xaxis: { ...axis2d, title: { text: '$\\theta$' }, range: [-3, 3], zeroline: false },
+          // The 0-1 loss only takes 0 and 1, so its axis matches the g pane's [-2, 2]
+          // and the two steps stand the same height side by side.
+          yaxis: { ...axis2d, title: { text: '$J(\\theta)$' }, range: currentMode === '01' ? [-2, 2] : [-1, 8], zeroline: true, zerolinecolor: '#ccc' },
+          margin: { l: 72, r: 24, t: 64, b: 92 },
+          plot_bgcolor: '#fafafa', hovermode: 'closest',
         };
 
         return { data: [lossTrace, markerTrace], layout };
       }
+
+      // ============================================================
+      // Surface geometry
+      // ============================================================
+      // Every 2D-mode surface depends on its two inputs only through one linear
+      // score: s = θ₁x₁ + θ₂x₂ for the model on the left, and, since data2D holds a
+      // single point, s = θ₁x₁ + θ₂x₂ at that point for the loss on the right. So
+      // each is built from exact pieces of its square rather than a grid. Plotly's
+      // surface trace re-processed 400x400 step grids on every slider tick, which held
+      // the step case near 7 frames a second; these meshes are a few hundred vertices.
+      const square = (lo, hi) => [[lo, lo], [hi, lo], [hi, hi], [lo, hi]];
+
+      // The part of a convex polygon where f >= 0 (Sutherland-Hodgman, one edge).
+      function clip(poly, f) {
+        const out = [];
+        poly.forEach((p, n) => {
+          const q = poly[(n + 1) % poly.length];
+          const fp = f(p), fq = f(q);
+          if (fp >= 0) out.push(p);
+          if ((fp >= 0) !== (fq >= 0)) {
+            const u = fp / (fp - fq);
+            out.push([p[0] + u * (q[0] - p[0]), p[1] + u * (q[1] - p[1])]);
+          }
+        });
+        return out;
+      }
+
+      // Convex polygons of [x, y, z] corners fanned into mesh3d triangles, coloured
+      // by height. Corners that coincide are shared, so adjacent pieces shade as one
+      // smooth surface.
+      function mesh(polys) {
+        const x = [], y = [], z = [], i = [], j = [], k = [], seen = new Map();
+        const vertex = ([px, py, pz]) => {
+          const key = px.toFixed(6) + ',' + py.toFixed(6) + ',' + pz.toFixed(6);
+          if (!seen.has(key)) { seen.set(key, x.length); x.push(px); y.push(py); z.push(pz); }
+          return seen.get(key);
+        };
+        polys.forEach(poly => {
+          const ids = poly.map(vertex);
+          for (let n = 1; n + 1 < ids.length; n++) { i.push(ids[0]); j.push(ids[n]); k.push(ids[n + 1]); }
+        });
+        return { x, y, z, i, j, k, intensity: z, type: 'mesh3d', showscale: false, hoverinfo: 'skip' };
+      }
+
+      // A step in s: height `high` where s >= 0, `low` elsewhere, and a wall on the
+      // chord between them. Flat shading keeps the wall's edges sharp.
+      function stepMesh(score, sq, high, low) {
+        const f = (v) => score(v[0], v[1]);
+        const lift = (poly, h) => poly.map(([px, py]) => [px, py, h]);
+        const side1 = clip(sq, f), side0 = clip(sq, (v) => -f(v));
+        const chord = side1.filter((v) => Math.abs(f(v)) < 1e-9);
+        const ends = chord.length >= 2 ? [chord[0], chord[chord.length - 1]] : null;
+        const wall = ends && Math.hypot(ends[0][0] - ends[1][0], ends[0][1] - ends[1][1]) > 1e-9
+          ? [[[...ends[0], low], [...ends[1], low], [...ends[1], high], [...ends[0], high]]]
+          : [];
+        return { ...mesh([lift(side1, high), lift(side0, low), ...wall]), flatshading: true };
+      }
+
+      // h(s) is constant along every line s = c, so the square is cut into strips
+      // between level lines, every strip corner is lifted exactly, and only strip
+      // interiors are interpolated. With no levels the square is one flat piece,
+      // which is exact for the OLS plane.
+      function ridgeMesh(score, h, levels, sq) {
+        const f = (v) => score(v[0], v[1]);
+        const ss = sq.map(f), smin = Math.min(...ss), smax = Math.max(...ss);
+        const cuts = [smin, ...levels.filter((c) => c > smin && c < smax), smax];
+        const polys = [];
+        for (let n = 0; n + 1 < cuts.length; n++) {
+          const a = cuts[n], b = cuts[n + 1];
+          const strip = clip(clip(sq, (v) => f(v) - a), (v) => b - f(v));
+          if (strip.length >= 3) polys.push(strip.map(([px, py]) => [px, py, h(score(px, py))]));
+        }
+        return mesh(polys);
+      }
+
+      // Level lines where σ passes these heights, denser in the tails so the
+      // shoulders do not sag between strips.
+      const SIGMOID_LEVELS = [0.003, 0.01, 0.03, 0.06, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45,
+        0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.94, 0.97, 0.99, 0.997]
+        .map((q) => Math.log(q / (1 - q)));
+      // The losses are smooth in s, so even levels every half unit are plenty.
+      const LOSS_LEVELS = Array.from({ length: 37 }, (_, n) => -9 + n * 0.5);
+
+      // A mesh drawn in one flat colour: Plotly ignores `color` while an intensity
+      // key is present, even an undefined one, so the key has to go.
+      const withoutIntensity = ({ intensity, ...rest }) => rest;
+
+      const activation = (z) => currentMode === 'nll' ? sigmoid(z) : currentMode === '01' ? (z >= 0 ? 1 : 0) : z;
 
       // ============================================================
       // 2D PLOTS (3D surfaces)
@@ -358,66 +505,64 @@
         [0.6, '#e8c8c8'], [1, '#d47e7e'],
       ];
 
-      // Ridge's grey for a loss surface. Neutral, so the yellow current-θ
-      // marker reads at every height of the bowl, including the optimum.
-      const lossColorscale = [[0, '#e0e0e0'], [1, '#999999']];
+      // The loss J is yellow in both dimensions: a gold curve in 1D, and in 2D a
+      // surface running from pale yellow where J is low to the same gold where it is
+      // high. Gold rather than the pale #ffd966, which as a 4px line on the page
+      // background measures too faint to read. The current-θ marker is the house grey,
+      // which reads against every height of the yellow.
+      const LOSS_GOLD = '#e0a800', THETA_GREY = '#5f6672';
+      const lossColorscale = [[0, '#fff5cc'], [1, LOSS_GOLD]];
 
-      // Single-color colorscale for 0-1 classifier
-      const flatColorscale = [[0, '#a8c8e0'], [1, '#a8c8e0']];
+      // One flat colour for the OLS plane, whose height alone carries g.
+      const flatColor = '#a8c8e0';
 
       function buildLeftPlot2D(t1, t2) {
-        const is01 = currentMode === '01';
-        const N = is01 ? 400 : 80;
-        const gx = linspace(-2, 2, N);
-        const gy = linspace(-2, 2, N);
-
-        const zGrid = [];
-        for (let j = 0; j < N; j++) {
-          const row = [];
-          for (let i = 0; i < N; i++) {
-            row.push(modelOutput2D(gx[i], gy[j], t1, t2));
-          }
-          zGrid.push(row);
-        }
-
-        const surface = {
-          x: gx, y: gy, z: zGrid,
-          type: 'surface',
-          colorscale: currentMode === 'mse' ? flatColorscale : surfaceColorscale,
-          cmin: currentMode === 'mse' ? undefined : 0,
-          cmax: currentMode === 'mse' ? undefined : 1,
-          showscale: false,
-          opacity: is01 ? 1 : 0.75,
-          hoverinfo: 'skip',
-        };
+        const score = (x1, x2) => t1 * x1 + t2 * x2;
+        const sq = square(-2, 2);
+        const surface = currentMode === 'mse'
+          ? { ...withoutIntensity(ridgeMesh(score, (z) => z, [], sq)), color: flatColor, opacity: 0.75 }
+          : currentMode === '01'
+            ? { ...stepMesh(score, sq, 1, 0), colorscale: surfaceColorscale, cmin: 0, cmax: 1, opacity: 1 }
+            : { ...ridgeMesh(score, sigmoid, SIGMOID_LEVELS, sq), colorscale: surfaceColorscale, cmin: 0, cmax: 1, opacity: 0.75 };
 
         // Data point marker (pinned at true label)
         const d = data2D[0];
         const scatter = {
           x: [d.x1], y: [d.x2], z: [d.y],
           type: 'scatter3d', mode: 'markers',
-          marker: { size: 19, color: '#e74c3c', line: { color: '#fff', width: 0.5 } },
+          marker: { size: MARK, color: '#e74c3c', line: { color: '#fff', width: 0.5 } },
           hovertemplate: '(%{x:.1f}, %{y:.1f}, %{z:.2f})<extra>label=1</extra>',
         };
 
         let titleText = '';
-        if (currentMode === 'mse') titleText = 'g = θ<sub>1</sub>x<sub>1</sub> + θ<sub>2</sub>x<sub>2</sub>';
-        else if (currentMode === '01') titleText = 'g = step(θ<sub>1</sub>x<sub>1</sub> + θ<sub>2</sub>x<sub>2</sub>)';
-        else titleText = 'g = σ(θ<sub>1</sub>x<sub>1</sub> + θ<sub>2</sub>x<sub>2</sub>)';
+        if (currentMode === 'mse') titleText = '$g = \\theta_1 x_1 + \\theta_2 x_2$';
+        else if (currentMode === '01') titleText = '$g = \\operatorname{step}(\\theta_1 x_1 + \\theta_2 x_2)$';
+        else titleText = '$g = \\sigma(\\theta_1 x_1 + \\theta_2 x_2)$';
 
         const layout = {
-          title: { text: titleText, font: { size: 15 } },
+          ...baseLayout,
+          title: plotTitle(titleText),
           scene: {
-            xaxis: { title: 'x<sub>1</sub>', range: [-2, 2], autorange: false, gridcolor: '#e0e0e0' },
-            yaxis: { title: 'x<sub>2</sub>', range: [-2, 2], autorange: false, gridcolor: '#e0e0e0' },
-            zaxis: { title: 'g', range: currentMode === 'mse' ? [-10, 10] : [-0.5, 1.5], autorange: false, gridcolor: '#e0e0e0' },
+            // The eye looks down x2, so that axis recedes up the left edge beside z and
+            // at 20px their ticks pile onto each other. x2 keeps its two ends only, and
+            // z keeps two quarter-points: clear of its own title, which Plotly anchors
+            // mid-axis, and of the x1 ticks along the bottom corner.
+            xaxis: { ...axis3d, title: 'x<sub>1</sub>', range: [-2, 2], autorange: false },
+            // The camera looks nearly down x₂, which folds its tick labels into the axis
+            // title at the far corner, where the two read as one label. The title stays
+            // and the digits go, per A3.
+            yaxis: { ...axis3d, title: 'x<sub>2</sub>', range: [-2, 2], autorange: false, tickvals: [-2, 2], showticklabels: false },
+            zaxis: { ...axis3d, title: 'g', range: currentMode === 'mse' ? [-10, 10] : [-0.5, 1.5], autorange: false,
+              tickvals: currentMode === 'mse' ? [-5, 5] : [0, 1] },
             aspectmode: 'manual', aspectratio: { x: 1, y: 1, z: 1 },
-            camera: { eye: { x: 0, y: -2, z: 1.2 }, up: { x: 0, y: 0, z: 1 } },
+            // 1.15 times the old eye distance, the least that keeps the z ticks inside
+            // the frame at 20px (B1a). A 3D scene clips its labels to its own viewport,
+            // so a narrower domain does not help; only pulling the camera back does.
+            camera: sceneCamera('plotLeft', { eye: { x: 0, y: -2.3, z: 1.38 }, up: { x: 0, y: 0, z: 1 } }),
             bgcolor: '#fafafa',
           },
-          margin: { l: 0, r: 0, t: 40, b: 0 },
-          paper_bgcolor: '#fafafa',
-          showlegend: false,
+          margin: { l: 0, r: 0, t: 56, b: 0 },
+          uirevision: 'keep',
         };
 
         return { data: [surface, scatter], layout };
@@ -425,58 +570,48 @@
 
       function buildRightPlot2D(t1, t2) {
         const is01 = currentMode === '01';
-        const N = is01 ? 400 : 80;
-        const g = linspace(-3, 3, N);
-
-        const Z = [];
-        for (let j = 0; j < N; j++) {
-          const row = [];
-          for (let i = 0; i < N; i++) {
-            row.push(averageLoss2D(g[i], g[j]));
-          }
-          Z.push(row);
-        }
-
         const surface = {
-          x: g, y: g, z: Z,
-          type: 'surface',
+          ...buildRightMesh(),
           colorscale: lossColorscale,
-          contours: is01 ? undefined : { z: { show: true, usecolormap: true, project: { z: true } } },
-          showscale: false,
           // Translucent so the marker shows through instead of sinking into
           // the surface, which hid it almost completely in the step case.
           opacity: 0.85,
         };
+        const zMax = Math.max(...surface.z);
+        rightLift = liftFor(zMax);
 
         const currentLoss = averageLoss2D(t1, t2);
         const marker = {
-          x: [t1], y: [t2], z: [currentLoss + liftFor(Z)],
+          x: [t1], y: [t2], z: [currentLoss + rightLift],
           type: 'scatter3d', mode: 'markers',
-          marker: { size: 19, color: '#ffd966' },
+          marker: { size: MARK, color: THETA_GREY, line: { color: '#fff', width: 0.5 } },
           customdata: [currentLoss],
           hovertemplate: 'θ<sub>1</sub>=%{x:.1f}, θ<sub>2</sub>=%{y:.1f}, J=%{customdata:.2f}<extra></extra>',
         };
 
         let titleText = '';
-        if (currentMode === 'mse') titleText = 'J(θ): MSE loss';
-        else if (currentMode === '01') titleText = 'J(θ): 0-1 loss';
-        else titleText = 'J(θ): NLL';
+        if (currentMode === 'mse') titleText = '$J(\\theta)\\text{: MSE loss}$';
+        else if (currentMode === '01') titleText = '$J(\\theta)\\text{: 0-1 loss}$';
+        else titleText = '$J(\\theta)\\text{: NLL}$';
 
         const layout = {
-          title: { text: titleText, font: { size: 15 } },
+          ...baseLayout,
+          title: plotTitle(titleText),
           scene: {
-            xaxis: { title: 'θ<sub>1</sub>', gridcolor: '#e0e0e0' },
-            yaxis: { title: 'θ<sub>2</sub>', gridcolor: '#e0e0e0' },
-            zaxis: { title: 'J(θ)', gridcolor: '#e0e0e0',
+            xaxis: { ...axis3d, title: 'θ<sub>1</sub>' },
+            yaxis: { ...axis3d, title: 'θ<sub>2</sub>' },
+            // Ticks at the ends only, so none sits where the title anchors mid-axis.
+            zaxis: { ...axis3d, title: 'J(θ)', tickvals: [0, Math.floor(zMax)],
               range: is01 ? [-0.1, 1.1] : undefined,
               autorange: is01 ? false : undefined,
             },
-            camera: { eye: { x: 1.5, y: -1.5, z: 1.5 } },
+            // 1.3 times the old eye distance, for the same reason as the left scene:
+            // nearer in, the z ticks and the J(θ) title fall off the left edge.
+            camera: sceneCamera('plotRight', { eye: { x: 1.95, y: -1.95, z: 1.95 } }),
             bgcolor: '#fafafa',
           },
-          margin: { l: 0, r: 0, t: 40, b: 0 },
-          paper_bgcolor: '#fafafa',
-          showlegend: false,
+          margin: { l: 0, r: 0, t: 56, b: 0 },
+          uirevision: 'keep',
         };
 
         return { data: [surface, marker], layout };
@@ -506,44 +641,37 @@
           Plotly.newPlot('plotLeft', left.data, left.layout, cfg);
           Plotly.newPlot('plotRight', right.data, right.layout, cfg);
         }
-        prevDim = currentDim;
-      }
-
-      // Helper: build just the surface z-grid for the left 2D plot
-      function buildLeftZGrid(t1, t2) {
-        const is01 = currentMode === '01';
-        const N = is01 ? 400 : 80;
-        const gx = linspace(-2, 2, N);
-        const gy = linspace(-2, 2, N);
-        const zGrid = [];
-        for (let j = 0; j < N; j++) {
-          const row = [];
-          for (let i = 0; i < N; i++) row.push(modelOutput2D(gx[i], gy[j], t1, t2));
-          zGrid.push(row);
-        }
-        return zGrid;
       }
 
       // How far to float a mark above the loss surface. At 0.85 opacity a mark
       // underneath blends toward white and washes out, worst in the step case
       // where J is flat and the mark otherwise lies in the plateau itself.
-      function liftFor(Z) {
-        let zMax = 0;
-        for (const row of Z) for (const v of row) if (v > zMax) zMax = v;
+      function liftFor(zMax) {
         return 0.02 * (zMax || 1);
       }
 
-      // Helper: build just the loss z-grid for the right 2D plot
-      function buildRightZGrid(t1, t2) {
-        const N = currentMode === '01' ? 400 : 80;
-        const g = linspace(-3, 3, N);
-        const Z = [];
-        for (let j = 0; j < N; j++) {
-          const row = [];
-          for (let i = 0; i < N; i++) row.push(averageLoss2D(g[i], g[j]));
-          Z.push(row);
-        }
-        return Z;
+      // The loss surface depends only on the data and the case, never on the current
+      // θ, so it is built once per full plot and a slider move only shifts the marker.
+      // With one training point d, J(θ) is the point loss of the model output at the
+      // score θ₁d.x₁ + θ₂d.x₂.
+      let rightLift = 0;
+      function buildRightMesh() {
+        const d = data2D[0];
+        const score = (a, b) => a * d.x1 + b * d.x2;
+        const sq = square(-3, 3);
+        return currentMode === '01'
+          ? stepMesh(score, sq, pointLoss(1, d.y), pointLoss(0, d.y))
+          : ridgeMesh(score, (z) => pointLoss(activation(z), d.y), LOSS_LEVELS, sq);
+      }
+
+      // A slider fires input faster than the screen repaints, several times a frame on
+      // a trackpad, and each redraw is a full Plotly pass over both panes. So input
+      // only asks for the next frame, and a burst of events costs one redraw.
+      let frameQueued = false;
+      function scheduleUpdate() {
+        if (frameQueued) return;
+        frameQueued = true;
+        requestAnimationFrame(() => { frameQueued = false; update(); });
       }
 
       function update() {
@@ -562,12 +690,14 @@
           document.getElementById('theta2_value').textContent = t2.toFixed(1);
           const currentLoss = averageLoss2D(theta, t2);
           document.getElementById('infoLoss').textContent = currentLoss.toFixed(3);
-          // Update only surface z-data and marker position via restyle (preserves camera)
-          Plotly.restyle('plotLeft', { z: [buildLeftZGrid(theta, t2)] }, [0]);
-          const rightZ = buildRightZGrid(theta, t2);
-          Plotly.restyle('plotRight', { z: [rightZ] }, [0]);
+          // The left pane redraws in one react, and the right only moves its marker.
+          // Each layout reads the live camera back and keeps a constant uirevision,
+          // and scene ranges are fixed per case, so no move shifts or rescales
+          // either scene (B11).
+          const left = buildLeftPlot2D(theta, t2);
+          Plotly.react('plotLeft', left.data, left.layout, cfg);
           Plotly.restyle('plotRight', {
-            x: [[theta]], y: [[t2]], z: [[currentLoss + liftFor(rightZ)]],
+            x: [[theta]], y: [[t2]], z: [[currentLoss + rightLift]],
             customdata: [[currentLoss]],
           }, [1]);
         }
@@ -575,13 +705,26 @@
 
       // --- Init ---
       // Drives the whole default off the selected option, so the dropdown, the
-      // θ₂ slider, the θ₁ label and the equation cannot drift apart.
+      // θ₂ slider and the θ₁ label cannot drift apart.
+      // Every other demo in this deck honours ?embed, and the deck cannot tell the
+      // difference when one does not. Here the slide is bare, so embed mode only
+      // tightens the padding.
+      if (new URLSearchParams(window.location.search).has('embed')) {
+        document.body.classList.add('embed');
+      }
+
       setDim(document.getElementById('dimSelect').value);
 
-      window.addEventListener('resize', () => {
-        Plotly.Plots.resize(document.getElementById('plotLeft'));
-        Plotly.Plots.resize(document.getElementById('plotRight'));
-      });
+      const plotEls = [document.getElementById('plotLeft'), document.getElementById('plotRight')];
+      if (window.ResizeObserver) {
+        const ro = new ResizeObserver(() => plotEls.forEach((el) => Plotly.Plots.resize(el)));
+        plotEls.forEach((el) => ro.observe(el));
+      } else {
+        window.addEventListener('resize', () => plotEls.forEach((el) => Plotly.Plots.resize(el)));
+      }
+
+      const sidebarEl = document.querySelector('.sidebar');
+      typeset(sidebarEl).then(() => sidebarEl.classList.add('typeset'));
     </script>
   </body>
 </html>

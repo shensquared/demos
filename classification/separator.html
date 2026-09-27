@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Linear Separator</title>
+    <!-- Pinned like plotly (B6). Plotly typesets its $...$ labels through MathJax's
+         SVG output, and the sidebar's \(...\) labels are typeset on load and
+         again after any rewrite. -->
+    <script>window.MathJax = { startup: { typeset: false } };</script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -11,32 +16,40 @@
       html, body {
         width: 100%; height: 100%;
         font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-        background: #fafafa; color: #333;
+        background: #fafafa; color: #2b2b2b;
       }
 
       .container { display: flex; height: 100%; }
 
+      /* Sizes are deck pixels. The deck embeds this full-bleed at 1280x720, so one
+         CSS px is one slide px, and ROOM.md sets the floors: 20 for anything (A1) and
+         29 for what the room must read (A2), which here is the 0-1 loss. Seven
+         children at 20px leave little room in 720px, so the gap is 12 and the scale
+         label shares a row with its buttons. */
       .sidebar {
-        width: 240px; min-width: 240px;
-        padding: 24px 20px;
+        width: 350px; min-width: 350px;
+        padding: 20px 22px;
         background: #fff;
         border-right: 1px solid #e0e0e0;
         display: flex; flex-direction: column;
-        gap: 18px;
-        overflow-y: auto;
+        gap: 12px;
       }
 
-      .sidebar h1 { font-size: 20px; font-weight: 600; color: #222; }
-      .sidebar .eq { font-size: 15px; color: #888; margin-top: 2px; }
+      /* Embed mode: the slide is bare, iframe only, so the heading stays and only the
+         padding tightens (B4). */
+      body.embed .sidebar { padding: 14px 20px; }
+
+      .sidebar h1 { font-size: 24px; font-weight: 600; }
+      .sidebar .eq { font-size: 20px; color: #5f6672; margin-top: 4px; line-height: 1.3; }
 
       .control-group label {
-        display: block; font-size: 15px; font-weight: 500;
-        color: #555; margin-bottom: 6px;
+        display: block; font-size: 20px; font-weight: 500;
+        margin-bottom: 6px;
       }
 
       .control-group .val {
         font-family: "SF Mono", Menlo, monospace;
-        font-size: 15px; color: #222; float: right;
+        font-size: 20px; float: right;
       }
 
       input[type="range"] {
@@ -50,17 +63,22 @@
         border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2);
       }
 
+      input[type="range"]:focus-visible { outline: 2px solid #2b2b2b; outline-offset: 6px; }
+
+      .scale-row { display: flex; align-items: center; gap: 12px; }
+      .scale-row label { margin-bottom: 0; white-space: nowrap; }
+
       .scale-toggle {
-        display: flex; gap: 0;
+        flex: 1; display: flex;
         border: 1px solid #ddd; border-radius: 4px;
         overflow: hidden;
       }
 
       .scale-toggle button {
-        flex: 1; padding: 8px 0;
-        font-size: 14px; font-family: inherit;
-        border: none; background: #fff; color: #777;
-        cursor: pointer; transition: all .15s;
+        flex: 1; padding: 7px 0;
+        font-size: 20px; font-family: inherit;
+        border: none; background: #fff; color: #555;
+        cursor: pointer; transition: background .15s, color .15s;
       }
 
       .scale-toggle button.active { background: #555; color: #fff; }
@@ -68,86 +86,117 @@
       .scale-toggle button:not(:last-child) { border-right: 1px solid #ddd; }
 
       .toggle-btn {
-        width: 100%; padding: 8px 0;
-        font-size: 14px; font-family: inherit;
+        width: 100%; padding: 7px 0;
+        font-size: 20px; font-family: inherit;
         border: 1px solid #ddd; border-radius: 4px;
-        background: #fff; color: #777; cursor: pointer;
-        transition: all .15s;
+        background: #fff; color: #555; cursor: pointer;
+        transition: background .15s, color .15s, border-color .15s;
       }
 
       .toggle-btn.active { background: #555; color: #fff; border-color: #555; }
 
-      .toggle-stack { display: flex; flex-direction: column; gap: 8px; }
+      .scale-toggle button:focus-visible,
+      .toggle-btn:focus-visible { outline: 2px solid #2b2b2b; outline-offset: -2px; }
 
-      .legend { font-size: 14px; color: #666; line-height: 2.2; }
-
-      .legend .dot {
-        display: inline-block; width: 9px; height: 9px;
-        border-radius: 50%; margin-right: 6px; vertical-align: middle;
+      @media (prefers-reduced-motion: reduce) {
+        .scale-toggle button, .toggle-btn { transition: none; }
       }
 
+      .toggle-stack { display: flex; flex-direction: column; gap: 8px; }
+
+      /* Swatches are marks that key a label to the plot, so they sit near the A4
+         floor rather than at the old 9px. */
+      .legend { font-size: 20px; color: #2b2b2b; line-height: 1.45; }
+
+      .legend .dot {
+        display: inline-block; width: 16px; height: 16px;
+        border-radius: 50%; margin-right: 6px; vertical-align: -1px;
+      }
+
+      .legend .dot + .dot-label { margin-right: 18px; }
+
       .legend .arrow {
-        display: inline-block; color: #2ecc71;
-        font-size: 18px; margin-right: 4px; vertical-align: middle;
+        display: inline-block; color: #2ecc71; font-weight: 700;
+        width: 24px; margin-right: 6px; text-align: center;
       }
 
       .legend .line {
-        display: inline-block; width: 16px; height: 2px;
+        display: inline-block; width: 24px; height: 4px;
         margin-right: 6px; vertical-align: middle;
       }
 
       /* Split swatch, the two shades the 2D panel paints either side of the
          separator, so the legend entry points at something recognisable. */
       .legend .shade {
-        display: inline-block; width: 16px; height: 10px;
-        margin-right: 6px; vertical-align: middle;
+        display: inline-block; width: 24px; height: 16px;
+        margin-right: 6px; vertical-align: -1px;
         border: 1px solid #ddd;
         background: linear-gradient(90deg,
           rgba(58,126,191,.35) 0 50%, rgba(231,76,60,.35) 50% 100%);
       }
 
-      .info {
-        margin-top: auto; padding-top: 14px;
+      /* The count of misclassified points is what the room watches while the
+         sliders move, so it takes the house readout size (A2). The two figures
+         sit side by side to save the height a stack would cost. */
+      .readout {
+        margin-top: auto; padding-top: 12px;
         border-top: 1px solid #e0e0e0;
-        font-size: 14px; color: #aaa; line-height: 1.8;
+        display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
       }
 
-      .info span {
-        font-family: "SF Mono", Menlo, monospace; font-size: 14px; color: #666;
+      .readout .name { font-size: 20px; color: #5f6672; }
+
+      .readout .num {
+        font-family: "SF Mono", Menlo, monospace;
+        font-size: 24px; line-height: 1.2;
       }
 
       .plots { flex: 1; display: flex; height: 100%; min-width: 0; }
-      .plots > div { flex: 1; height: 100%; min-width: 0; }
+      .plots > div { flex: 1; height: 100%; min-width: 0; min-height: 0; }
+      /* Plotly typesets $...$ labels with MathJax, whose SVG is sized in ex units, so
+         it follows the CSS font size of the group Plotly places it in and ignores
+         layout font.size. At 30px Computer Modern's x-height matches the 24px
+         Helvetica axis titles (A2): a math x measures 13.5px tall, a Helvetica x 12.5. */
+      .js-plotly-plot g[class$="-math-group"] { font-size: 30px; }
+
+      /* Sidebar math is typeset by MathJax as well: every \(...\) inside a .tex
+         element, once on load and again whenever a script rewrites one. A .tex
+         element stays hidden until its math is in, so the TeX source never flashes.
+         MathJax sizes its SVG in ex, and Computer Modern's x-height is about 0.86 of
+         Helvetica's, so 116% brings the math up to the text beside it. */
+      .sidebar:not(.typeset) .tex, .tex.pending { visibility: hidden; }
+      .tex mjx-container { font-size: 116%; }
+
     </style>
   </head>
   <body>
     <div class="container">
       <div class="sidebar">
         <div>
-          <h1>Linear Separator</h1>
-          <!-- Breaks at the second "=" on purpose: at 15px in a 200px sidebar the
-               expression cannot fit one line, and the default wrap split θ₂x₂
-               from "+ θ₀)". -->
-          <div class="eq">g = step(z)<br>= step(θ<sub>1</sub>x<sub>1</sub> + θ<sub>2</sub>x<sub>2</sub> + θ<sub>0</sub>)</div>
+          <h1>Linear separator</h1>
+          <!-- Breaks at the second "=" on purpose, so the default wrap never splits
+               θ₂x₂ from "+ θ₀)". Typeset at 116% the second line measures 293px, and
+               the 350px sidebar spares 306px; the legend's last row needs about 297. -->
+          <div class="eq tex">\(g = \operatorname{step}(z)\)<br>\(= \operatorname{step}(\theta_1 x_1 + \theta_2 x_2 + \theta_0)\)</div>
         </div>
 
         <div class="control-group">
-          <label>θ₁ <span class="val" id="t1Val">0.5</span></label>
+          <label for="t1"><span class="tex">\(\theta_1\)</span> <span class="val" id="t1Val">0.5</span></label>
           <input type="range" id="t1" min="-2" max="2" value="0.5" step="0.1" />
         </div>
 
         <div class="control-group">
-          <label>θ₂ <span class="val" id="t2Val">0.5</span></label>
+          <label for="t2"><span class="tex">\(\theta_2\)</span> <span class="val" id="t2Val">0.5</span></label>
           <input type="range" id="t2" min="-2" max="2" value="0.5" step="0.1" />
         </div>
 
         <div class="control-group">
-          <label>θ₀ <span class="val" id="t0Val">0.0</span></label>
+          <label for="t0"><span class="tex">\(\theta_0\)</span> <span class="val" id="t0Val">0.0</span></label>
           <input type="range" id="t0" min="-2" max="2" value="0" step="0.1" />
         </div>
 
-        <div class="control-group">
-          <label>Scale θ by</label>
+        <div class="control-group scale-row">
+          <label class="tex">Scale \(\theta\) by</label>
           <div class="scale-toggle">
             <button data-s="-2">−2</button>
             <button data-s="-1">−1</button>
@@ -157,21 +206,27 @@
         </div>
 
         <div class="toggle-stack">
-          <button class="toggle-btn" id="btnZ0">Show z = 0 plane</button>
-          <button class="toggle-btn" id="btnStep">Show g = step(z)</button>
+          <button class="toggle-btn" id="btnZ0"><span class="tex">Show \(z = 0\) plane</span></button>
+          <button class="toggle-btn" id="btnStep"><span class="tex">Show \(g = \operatorname{step}(z)\)</span></button>
         </div>
 
         <div class="legend">
-          <div><span class="dot" style="background:#e74c3c"></span>True label 1</div>
-          <div><span class="dot" style="background:#3a7ebf"></span>True label 0</div>
+          <div>True label
+            <span class="dot" style="background:#e74c3c; margin-left: 10px"></span><span class="dot-label">1</span><span class="dot" style="background:#3a7ebf"></span><span>0</span></div>
           <div><span class="line" style="background:#333"></span>Separator</div>
-          <div><span class="arrow">→</span>Normal vector (θ)</div>
-          <div><span class="shade"></span>Shaded region: g = step(z)</div>
+          <div><span class="arrow">→</span><span class="tex">Normal vector (\(\theta\))</span></div>
+          <div><span class="shade"></span><span class="tex">Shaded region: \(g = \operatorname{step}(z)\)</span></div>
         </div>
 
-        <div class="info">
-          0-1 loss: <span id="infoErr">–</span> / <span id="infoN">10</span><br>
-          Accuracy: <span id="infoAcc">–</span>
+        <div class="readout">
+          <div>
+            <div class="name">0-1 loss</div>
+            <div class="num"><span id="infoErr"></span> / <span id="infoN">10</span></div>
+          </div>
+          <div>
+            <div class="name">Accuracy</div>
+            <div class="num" id="infoAcc"></div>
+          </div>
         </div>
       </div>
 
@@ -198,9 +253,52 @@
       const posCol = '#e74c3c', negCol = '#3a7ebf';
       const cfg = { displayModeBar: false, responsive: true };
 
-      const N = 80;
-      const gx = Array.from({ length: N }, (_, i) => -2 + 4 * i / (N - 1));
-      const gy = [...gx];
+      // The 3D views keep whatever angle the viewer leaves them at. A control that
+      // redraws hands Plotly a fresh layout, and a layout naming scene.camera snaps
+      // the view back to that eye, so every 3D layout asks sceneCamera for its eye:
+      // the live camera read off the scene, or, while the pane shows 2D, the last one
+      // it showed (B11). getCamera is Plotly-internal, which the pinned 2.27.0 makes
+      // safe to lean on (B6). A constant uirevision on the layouts backs this up for
+      // redraws through react.
+      const lastCamera = {};
+      function sceneCamera(id, home) {
+        const scene = document.getElementById(id)?._fullLayout?.scene?._scene;
+        if (scene) lastCamera[id] = scene.getCamera();
+        return lastCamera[id] || home;
+      }
+
+      // MathJax wants one typeset call at a time, so every call joins one queue.
+      // setTex swaps an element's TeX and typesets it again, hidden in between.
+      let texQueue = MathJax.startup.promise;
+      function typeset(el) {
+        texQueue = texQueue.then(() => MathJax.typesetPromise([el]));
+        return texQueue;
+      }
+      function setTex(el, html) {
+        el.classList.add('pending');
+        texQueue = texQueue.then(() => {
+          MathJax.typesetClear([el]);
+          el.innerHTML = html;
+          return MathJax.typesetPromise([el]);
+        }).then(() => el.classList.remove('pending'));
+      }
+
+      // A2 for axis titles and A3 for ticks, in deck pixels. A nested title.font
+      // replaces titlefont whole, size and all, so every axis takes its title size
+      // from these shared objects rather than nesting a font.
+      const AXIS_TITLE = 24, TICK = 20, INK = '#2b2b2b', TICK_COLOR = '#5f6672';
+      const FONT = { family: '"Helvetica Neue", Helvetica, Arial, sans-serif', color: INK };
+      const HOVER = { font: { size: 20 } };
+      const axis2d = {
+        titlefont: { size: AXIS_TITLE, color: INK },
+        tickfont: { size: TICK, color: TICK_COLOR },
+        zeroline: false, gridcolor: '#e2e2e2', fixedrange: true,
+      };
+      const axis3d = {
+        titlefont: { size: AXIS_TITLE, color: INK },
+        tickfont: { size: TICK, color: TICK_COLOR },
+        gridcolor: '#dcdcdc',
+      };
 
       let showZ0 = false;
       let showStep = false;
@@ -219,17 +317,10 @@
         [0.5, '#d47e7e'], [1, '#d47e7e'],
       ];
 
-      // Plotly.react hands the scene a fresh layout on every redraw, and a
-      // layout naming scene.camera snaps the view back to that eye, so the
-      // surface toggle would throw away whatever angle the room had rotated to.
-      // Same remedy as gd/gd3d.html: read the live camera and hand it back.
-      const HOME_EYE = { eye: { x: 0, y: -2, z: 1.2 }, up: { x: 0, y: 0, z: 1 } };
-      function currentCamera() {
-        const gd = document.getElementById('plot3d');
-        return (gd && gd.layout && gd.layout.scene && gd.layout.scene.camera)
-          ? gd.layout.scene.camera
-          : HOME_EYE;
-      }
+      // The eye the page opens at, about 15 percent further out than (0, -2, 1.2),
+      // along nearly the same direction. At 20px the nearer eye pushed the z title
+      // and its ticks off the left edge of the pane, and B1a puts labels ahead of fill.
+      const HOME_CAMERA = { eye: { x: 0, y: -2.3, z: 1.4 }, up: { x: 0, y: 0, z: 1 } };
       const t1El = document.getElementById('t1');
       const t2El = document.getElementById('t2');
       const t0El = document.getElementById('t0');
@@ -255,52 +346,75 @@
         document.getElementById('infoAcc').textContent =
           ((pts.length - errs) / pts.length * 100).toFixed(0) + '%';
 
-        draw3D(t1, t2, t0);
-        draw2D(t1, t2, t0);
+        const cut = cutSquare(t1, t2, t0);
+        draw3D(t1, t2, t0, cut);
+        draw2D(t1, t2, t0, cut);
       }
 
-      function boundaryPts(t1, t2, t0) {
-        let bx = [], by = [];
-        if (Math.abs(t2) > 0.01) {
-          bx = Array.from({ length: 100 }, (_, i) => -2 + 4 * i / 99);
-          by = bx.map(x => (-t0 - t1 * x) / t2);
-        } else if (Math.abs(t1) > 0.01) {
-          by = Array.from({ length: 100 }, (_, i) => -2 + 4 * i / 99);
-          bx = by.map(() => -t0 / t1);
-        }
-        return { bx, by };
+      // The square [-2, 2]² split by the separator θ₁x₁ + θ₂x₂ + θ₀ = 0, found in one
+      // walk round its corners: the side where the score is positive (class 1), the
+      // side where it is not (class 0), and the chord between them. The 2D shading,
+      // both separator lines and the 3D step surface are built from these exact
+      // pieces, so none of them needs a grid, and every panel uses the same
+      // threshold as the error count for which side is class 1.
+      const SQUARE = [[-2, -2], [2, -2], [2, 2], [-2, 2]];
+      function cutSquare(t1, t2, t0) {
+        const pos = [], neg = [], chord = [];
+        SQUARE.forEach((p, i) => {
+          const q = SQUARE[(i + 1) % 4];
+          const sp = sc(t1, t2, t0, p[0], p[1]), sq = sc(t1, t2, t0, q[0], q[1]);
+          (sp > 0 ? pos : neg).push(p);
+          if ((sp > 0) !== (sq > 0)) {
+            const t = sp / (sp - sq);
+            const x = [p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])];
+            pos.push(x); neg.push(x); chord.push(x);
+          }
+        });
+        return { pos, neg, chord };
       }
 
-      function draw3D(t1, t2, t0) {
-        // Same threshold the error count and the 2D shading use, so all three
-        // panels agree on which side is class 1.
-        const raw = gy.map(y => gx.map(x => sc(t1, t2, t0, x, y)));
-        const zGrid = showStep ? raw.map(r => r.map(z => (z > 0 ? 1 : 0))) : raw;
+      // Convex polygons of [x, y, z] corners, fanned into the triangles mesh3d takes,
+      // coloured by height. Every 3D surface here is one of these: Plotly's surface
+      // trace spends about 7ms per redraw on setup whatever its grid size, and a
+      // mesh3d of a dozen vertices costs a fraction of that.
+      function mesh(polys) {
+        const x = [], y = [], z = [], i = [], j = [], k = [];
+        polys.forEach(poly => {
+          const base = x.length;
+          poly.forEach(([px, py, pz]) => { x.push(px); y.push(py); z.push(pz); });
+          for (let n = 1; n + 1 < poly.length; n++) { i.push(base); j.push(base + n); k.push(base + n + 1); }
+        });
+        return { x, y, z, i, j, k, intensity: z, type: 'mesh3d', showscale: false, hoverinfo: 'skip' };
+      }
 
-        const surface = {
-          x: gx, y: gy, z: zGrid,
-          type: 'surface',
-          colorscale: showStep ? stepColorscale : planeColorscale,
-          cmin: showStep ? 0 : -6,
-          cmax: showStep ? 1 : 6,
-          showscale: false, opacity: 0.75, hoverinfo: 'skip',
-        };
+      function draw3D(t1, t2, t0, cut) {
+        const { pos: side1, neg: side0, chord } = cut;
+        const lift = (poly, h) => poly.map(([px, py]) => [px, py, h(px, py)]);
+        const score = (px, py) => sc(t1, t2, t0, px, py);
+        // The z view is the plane z = θ₁x₁ + θ₂x₂ + θ₀, split along the chord, where
+        // z is 0, so the white middle of the colour scale sits exactly on the
+        // separator. The step view is g = step(z) as exact geometry: the class-1 side
+        // at height 1, the class-0 side at 0, and a wall standing on the chord.
+        const wall = chord.length === 2
+          ? [[[...chord[0], 0], [...chord[1], 0], [...chord[1], 1], [...chord[0], 1]]]
+          : [];
+        const surface = showStep
+          ? { ...mesh([lift(side1, () => 1), lift(side0, () => 0), ...wall]),
+              colorscale: stepColorscale, cmin: 0, cmax: 1, opacity: 0.75 }
+          : { ...mesh([lift(side1, score), lift(side0, score)]),
+              colorscale: planeColorscale, cmin: -6, cmax: 6, opacity: 0.75 };
 
-        const { bx, by } = boundaryPts(t1, t2, t0);
         const boundary = {
-          x: bx, y: by, z: bx.map(() => 0),
+          x: cut.chord.map(p => p[0]), y: cut.chord.map(p => p[1]), z: cut.chord.map(() => 0),
           type: 'scatter3d', mode: 'lines',
           line: { color: '#333', width: 5 },
           hoverinfo: 'skip',
         };
 
-        const z0plane = {
-          x: [-2, 2], y: [-2, 2], z: [[0, 0], [0, 0]],
-          type: 'surface',
-          colorscale: [[0, 'rgba(140,140,140,.3)'], [1, 'rgba(140,140,140,.3)']],
-          showscale: false, opacity: 0.4,
-          visible: showZ0, hoverinfo: 'skip',
-        };
+        // One flat colour: Plotly ignores `color` while an intensity key is present,
+        // even an undefined one, so the key has to go.
+        const { intensity, ...flatPlane } = mesh([lift(SQUARE, () => 0)]);
+        const z0plane = { ...flatPlane, color: '#8c8c8c', opacity: 0.12, visible: showZ0 };
 
         const pos = pts.filter(p => p.y === 1);
         const neg = pts.filter(p => p.y === 0);
@@ -320,43 +434,48 @@
 
         const layout = {
           scene: {
-            xaxis: { title: 'x<sub>1</sub>', range: [-2, 2], tickmode: 'linear', dtick: 1, gridcolor: '#e0e0e0' },
-            yaxis: { title: 'x<sub>2</sub>', range: [-2, 2], tickmode: 'linear', dtick: 1, gridcolor: '#e0e0e0' },
+            // Three ticks an axis: at 20px (A3) five of them collide, worst on x₂,
+            // which runs straight into the screen from this eye. The x ticks stop at
+            // ±1 because a tick at −2 lands on the z axis's −5 in the front corner.
+            // g only takes 0 and 1, so the step view labels just those two levels.
+            xaxis: { ...axis3d, title: { text: 'x<sub>1</sub>' }, range: [-2, 2], tickvals: [-1, 0, 1] },
+            // The camera looks nearly down x₂, which folds its tick labels into the axis
+            // title at the far corner, where the two read as one label. The title stays
+            // and the digits go, per A3; the flat panel carries the x2 positions.
+            yaxis: { ...axis3d, title: { text: 'x<sub>2</sub>' }, range: [-2, 2], tickvals: [-1, 0, 1], showticklabels: false },
             zaxis: {
-              title: showStep ? 'g' : 'z',
+              ...axis3d,
+              title: { text: showStep ? 'g' : 'z' },
               range: showStep ? [-0.4, 1.4] : [-6, 6],
-              gridcolor: '#e0e0e0',
+              tickvals: showStep ? [0, 1] : [-5, 0, 5],
             },
             aspectmode: 'manual', aspectratio: { x: 1, y: 1, z: 1 },
-            camera: currentCamera(),
+            camera: sceneCamera('plot3d', HOME_CAMERA),
             bgcolor: '#fafafa',
           },
           margin: { l: 0, r: 0, t: 0, b: 0 },
+          font: FONT, hoverlabel: HOVER,
           paper_bgcolor: '#fafafa',
           showlegend: false,
+          uirevision: 'keep',
         };
 
         Plotly.react('plot3d', [surface, boundary, z0plane, posT, negT], layout, cfg);
       }
 
-      function draw2D(t1, t2, t0) {
-        const N2 = 150;
-        const gx2 = Array.from({ length: N2 }, (_, i) => -2 + 4 * i / (N2 - 1));
-        const gy2 = [...gx2];
-        const signGrid = gy2.map(y => gx2.map(x => sc(t1, t2, t0, x, y) > 0 ? 1 : 0));
+      function draw2D(t1, t2, t0, cut) {
+        const shade = (poly, color) => ({
+          x: poly.map(p => p[0]), y: poly.map(p => p[1]),
+          type: 'scatter', mode: 'none', fill: 'toself', fillcolor: color,
+          hoverinfo: 'skip',
+        });
+        const shadeNeg = shade(cut.neg, 'rgba(58,126,191,.1)');
+        const shadePos = shade(cut.pos, 'rgba(231,76,60,.1)');
 
-        const region = {
-          x: gx2, y: gy2, z: signGrid,
-          type: 'heatmap',
-          colorscale: [[0, 'rgba(58,126,191,.1)'], [1, 'rgba(231,76,60,.1)']],
-          showscale: false, hoverinfo: 'skip',
-        };
-
-        const { bx, by } = boundaryPts(t1, t2, t0);
         const sep = {
-          x: bx, y: by,
+          x: cut.chord.map(p => p[0]), y: cut.chord.map(p => p[1]),
           type: 'scatter', mode: 'lines',
-          line: { color: '#333', width: 2 },
+          line: { color: '#333', width: 4 },
           hoverinfo: 'skip',
         };
 
@@ -366,29 +485,25 @@
         const posT = {
           x: pos.map(p => p.x1), y: pos.map(p => p.x2),
           type: 'scatter', mode: 'markers',
-          marker: { size: 19, color: posCol, line: { color: '#fff', width: 1.5 } },
+          marker: { size: 20, color: posCol, line: { color: '#fff', width: 2 } },
           hovertemplate: '(%{x:.1f}, %{y:.1f})<extra>1</extra>',
         };
         const negT = {
           x: neg.map(p => p.x1), y: neg.map(p => p.x2),
           type: 'scatter', mode: 'markers',
-          marker: { size: 19, color: negCol, line: { color: '#fff', width: 1.5 } },
+          marker: { size: 20, color: negCol, line: { color: '#fff', width: 2 } },
           hovertemplate: '(%{x:.1f}, %{y:.1f})<extra>0</extra>',
         };
 
         const hasVec = Math.abs(t1) > 0.01 || Math.abs(t2) > 0.01;
 
         const layout = {
-          xaxis: {
-            title: { text: 'x<sub>1</sub>', font: { size: 13 } },
-            range: [-2, 2], zeroline: false, gridcolor: '#eee',
-          },
-          yaxis: {
-            title: { text: 'x<sub>2</sub>', font: { size: 13 } },
-            range: [-2, 2], zeroline: false, gridcolor: '#eee',
-            scaleanchor: 'x',
-          },
-          margin: { l: 48, r: 16, t: 16, b: 44 },
+          // constrain: 'domain' keeps the square aspect by shrinking the plot box
+          // rather than stretching the pinned [-2, 2] range out to ±3 (B11).
+          xaxis: { ...axis2d, title: { text: '$x_1$' }, range: [-2, 2], dtick: 1, constrain: 'domain' },
+          yaxis: { ...axis2d, title: { text: '$x_2$' }, range: [-2, 2], dtick: 1, scaleanchor: 'x', constrain: 'domain' },
+          margin: { l: 72, r: 24, t: 24, b: 84 },
+          font: FONT, hoverlabel: HOVER,
           paper_bgcolor: '#fafafa', plot_bgcolor: '#fafafa',
           showlegend: false, hovermode: 'closest',
           annotations: hasVec ? [{
@@ -396,17 +511,26 @@
             ax: 0, ay: 0,
             xref: 'x', yref: 'y', axref: 'x', ayref: 'y',
             showarrow: true,
-            arrowhead: 2, arrowsize: 1.5, arrowwidth: 2,
+            arrowhead: 2, arrowsize: 1, arrowwidth: 4,
             arrowcolor: '#2ecc71', text: '',
           }] : [],
         };
 
-        Plotly.react('plot2d', [region, sep, posT, negT], layout, cfg);
+        Plotly.react('plot2d', [shadeNeg, shadePos, sep, posT, negT], layout, cfg);
       }
 
-      t1El.addEventListener('input', update);
-      t2El.addEventListener('input', update);
-      t0El.addEventListener('input', update);
+      // A slider fires input faster than the screen repaints, and each redraw is a
+      // full Plotly pass over both panes, so input only asks for the next frame and
+      // a burst of events costs one redraw instead of a backlog.
+      let frameQueued = false;
+      function scheduleUpdate() {
+        if (frameQueued) return;
+        frameQueued = true;
+        requestAnimationFrame(() => { frameQueued = false; update(); });
+      }
+      t1El.addEventListener('input', scheduleUpdate);
+      t2El.addEventListener('input', scheduleUpdate);
+      t0El.addEventListener('input', scheduleUpdate);
 
       document.querySelectorAll('.scale-toggle button').forEach(btn => {
         btn.addEventListener('click', function () {
@@ -420,23 +544,37 @@
       document.getElementById('btnZ0').addEventListener('click', function () {
         showZ0 = !showZ0;
         this.classList.toggle('active', showZ0);
-        this.textContent = showZ0 ? 'Hide z = 0 plane' : 'Show z = 0 plane';
+        setTex(this.firstElementChild, showZ0 ? 'Hide \\(z = 0\\) plane' : 'Show \\(z = 0\\) plane');
         update();
       });
 
       document.getElementById('btnStep').addEventListener('click', function () {
         showStep = !showStep;
         this.classList.toggle('active', showStep);
-        this.textContent = showStep ? 'Show z surface' : 'Show g = step(z)';
+        setTex(this.firstElementChild, showStep ? 'Show \\(z\\) surface' : 'Show \\(g = \\operatorname{step}(z)\\)');
         update();
       });
 
+      // Every other demo in this deck honours ?embed, and the deck cannot tell the
+      // difference when one does not (B4).
+      if (new URLSearchParams(window.location.search).has('embed')) {
+        document.body.classList.add('embed');
+      }
+
       update();
 
-      window.addEventListener('resize', () => {
-        Plotly.Plots.resize(document.getElementById('plot3d'));
-        Plotly.Plots.resize(document.getElementById('plot2d'));
-      });
+      // A window listener misses a reflow that changes the plots' boxes without the
+      // window changing, such as the sidebar settling once its fonts load.
+      const plotEls = [document.getElementById('plot3d'), document.getElementById('plot2d')];
+      if (window.ResizeObserver) {
+        const ro = new ResizeObserver(() => plotEls.forEach((el) => Plotly.Plots.resize(el)));
+        plotEls.forEach((el) => ro.observe(el));
+      } else {
+        window.addEventListener('resize', () => plotEls.forEach((el) => Plotly.Plots.resize(el)));
+      }
+
+      const sidebarEl = document.querySelector('.sidebar');
+      typeset(sidebarEl).then(() => sidebarEl.classList.add('typeset'));
     </script>
   </body>
 </html>
